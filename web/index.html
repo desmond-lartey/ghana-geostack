@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ghana GeoStack — query and map</title>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+
+<style>
+/* ---------------------------------------------------------------------------
+   Design notes, so the next person does not undo these on purpose.
+
+   The map is the subject; the interface is a instrument panel around it and
+   should recede. Dark petrol green rather than the usual near-black: it reads
+   as a field instrument, and it keeps the ochre accent legible without the
+   acid-on-black look every dashboard has.
+
+   One typeface family in two cuts. Plex Sans for interface, Plex Mono for SQL
+   and for numbers, where column alignment is doing real work.
+
+   Colour is reserved for data. The interface uses exactly one accent, and it
+   only ever marks the thing you are currently acting on.
+--------------------------------------------------------------------------- */
+
+:root {
+  --ink:        #0C1A17;   /* panel background, deep petrol */
+  --panel:      #132925;
+  --line:       #23423C;
+  --text:       #D9E4E0;
+  --text-muted: #7E9791;
+  --accent:     #D8A13A;   /* ochre: the only accent, used sparingly */
+  --accent-dim: #8A6621;
+  --warn:       #D2694A;
+  --radius:     3px;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  font-family: "IBM Plex Sans", system-ui, -apple-system, sans-serif;
+  background: var(--ink);
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* Layout: a fixed instrument rail on the left, map filling the rest. On a
+   phone the rail becomes a sheet over the bottom of the map. */
+#app {
+  display: grid;
+  grid-template-columns: 340px 1fr;
+  height: 100%;
+}
+
+@media (max-width: 760px) {
+  #app { grid-template-columns: 1fr; grid-template-rows: 1fr 45vh; }
+  #rail { order: 2; border-right: none; border-top: 1px solid var(--line); }
+}
+
+/* --- Rail ---------------------------------------------------------------- */
+
+#rail {
+  background: var(--panel);
+  border-right: 1px solid var(--line);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+header {
+  padding: 18px 18px 14px;
+  border-bottom: 1px solid var(--line);
+}
+
+header h1 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+header p {
+  margin: 4px 0 0;
+  color: var(--text-muted);
+  font-size: 12.5px;
+}
+
+section { padding: 16px 18px; border-bottom: 1px solid var(--line); }
+
+h2 {
+  margin: 0 0 10px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+/* Layer list. The checkbox is the control; the row is the target. */
+.layer {
+  display: flex;
+  align-items: baseline;
+  gap: 9px;
+  padding: 5px 0;
+  cursor: pointer;
+}
+
+.layer input { accent-color: var(--accent); margin: 0; }
+
+.layer .name { flex: 1; }
+
+.layer .count {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 11.5px;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.layer.off .name { color: var(--text-muted); }
+
+/* SQL console */
+textarea {
+  width: 100%;
+  min-height: 118px;
+  resize: vertical;
+  background: var(--ink);
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 10px;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 12.5px;
+  line-height: 1.55;
+}
+
+textarea:focus, button:focus-visible, .layer:focus-within {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.row { display: flex; gap: 8px; margin-top: 10px; align-items: center; }
+
+button {
+  font-family: inherit;
+  font-size: 13px;
+  padding: 7px 13px;
+  border-radius: var(--radius);
+  border: 1px solid var(--accent-dim);
+  background: var(--accent);
+  color: #1A1204;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+button.secondary {
+  background: transparent;
+  color: var(--text);
+  border-color: var(--line);
+  font-weight: 400;
+}
+
+button:disabled { opacity: 0.45; cursor: not-allowed; }
+
+#status { font-size: 12px; color: var(--text-muted); }
+#status.error { color: var(--warn); }
+
+/* Example prompts double as documentation of what the data can answer. */
+.example {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  border-left: 2px solid var(--line);
+  color: var(--text-muted);
+  padding: 4px 0 4px 10px;
+  margin: 2px 0;
+  font-size: 12.5px;
+  cursor: pointer;
+  font-weight: 400;
+}
+
+.example:hover { color: var(--text); border-left-color: var(--accent); }
+
+/* Result table */
+#result { overflow-x: auto; }
+
+table { border-collapse: collapse; font-size: 12px; width: 100%; }
+
+th, td {
+  text-align: left;
+  padding: 4px 10px 4px 0;
+  border-bottom: 1px solid var(--line);
+  white-space: nowrap;
+}
+
+th { color: var(--text-muted); font-weight: 500; }
+
+td { font-family: "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums; }
+
+footer {
+  margin-top: auto;
+  padding: 14px 18px;
+  font-size: 11.5px;
+  color: var(--text-muted);
+  line-height: 1.6;
+}
+
+footer a { color: var(--text-muted); }
+
+/* --- Map ----------------------------------------------------------------- */
+
+#map { height: 100%; width: 100%; background: var(--ink); }
+
+.maplibregl-popup-content {
+  background: var(--panel);
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 12px;
+  padding: 10px 12px;
+}
+
+.maplibregl-popup-tip { border-top-color: var(--panel); }
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition: none !important; }
+}
+</style>
+</head>
+
+<body>
+<div id="app">
+
+  <div id="rail">
+    <header>
+      <h1>Ghana GeoStack</h1>
+      <p>Spatial data for Ghana. Query it here, or connect any tool that speaks
+         SQL, OGC API or vector tiles.</p>
+    </header>
+
+    <section>
+      <h2>Layers</h2>
+      <div id="layers"></div>
+    </section>
+
+    <section>
+      <h2>Ask the data</h2>
+      <textarea id="sql" spellcheck="false">
+SELECT name, round(area_km2) AS area_km2, population
+FROM ghana.region
+ORDER BY area_km2 DESC;</textarea>
+      <div class="row">
+        <button id="run">Run query</button>
+        <button id="mapit" class="secondary">Map result</button>
+        <span id="status">Loading engine…</span>
+      </div>
+      <div id="result"></div>
+    </section>
+
+    <section>
+      <h2>Try one of these</h2>
+      <button class="example" data-sql="SELECT name, round(area_km2) AS area_km2, population&#10;FROM ghana.region ORDER BY area_km2 DESC;">Regions by area</button>
+      <button class="example" data-sql="SELECT class, round(sum(length_m)/1000) AS km&#10;FROM ghana.road GROUP BY 1 ORDER BY km DESC;">Road length by class</button>
+      <button class="example" data-sql="SELECT d.name, count(*) AS buildings&#10;FROM ghana.building b JOIN ghana.district d ON b.district_id = d.id&#10;GROUP BY 1 ORDER BY buildings DESC LIMIT 20;">Districts with the most buildings</button>
+      <button class="example" data-sql="SELECT name, geom&#10;FROM ghana.district&#10;WHERE region_id = 'GH-AA';">Greater Accra districts, on the map</button>
+    </section>
+
+    <footer id="attribution">
+      Data licences and credits vary by layer. Every layer carries its own
+      attribution — see <a href="../data/exports/attribution.md">attribution.md</a>.
+      Boundaries, buildings and roads are not authoritative for legal or
+      cadastral purposes.
+    </footer>
+  </div>
+
+  <div id="map"></div>
+</div>
+
+<script type="module">
+import maplibregl from "https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/+esm";
+import * as duckdb from "https://cdn.jsdelivr.net/npm/@duckdb/duckdb-wasm@1.29.0/+esm";
+
+/* ---------------------------------------------------------------------------
+   Configuration. Point TILES at a running pg_tileserv, or leave it and the
+   viewer falls back to the static GeoParquet exports read by DuckDB-WASM.
+--------------------------------------------------------------------------- */
+
+const TILES    = "http://localhost:7800";        // pg_tileserv
+const FEATURES = "http://localhost:9000";        // pg_featureserv
+const EXPORTS  = "../data/exports";              // GeoParquet, for the static path
+
+// Basemap. Swap in your own style URL, or a self-hosted PMTiles archive, for
+// production — a public demo tile endpoint is not something to depend on.
+const BASEMAP = {
+  version: 8,
+  sources: {
+    carto: {
+      type: "raster",
+      tiles: ["https://basemaps.cartocdn.com/rastertiles/dark_nolabels/{z}/{x}/{y}@2x.png"],
+      tileSize: 256,
+      attribution: "© OpenStreetMap contributors © CARTO"
+    }
+  },
+  layers: [{ id: "basemap", type: "raster", source: "carto" }]
+};
+
+const LAYERS = [
+  { id: "region",   table: "serve.region",   label: "Regions",   type: "line",
+    paint: { "line-color": "#D8A13A", "line-width": 1.2, "line-opacity": 0.9 } },
+  { id: "district", table: "serve.district", label: "Districts", type: "line",
+    paint: { "line-color": "#5E8F84", "line-width": 0.5, "line-opacity": 0.7 } },
+  { id: "road",     table: "serve.road_major", label: "Major roads", type: "line",
+    paint: { "line-color": "#9FB8B1", "line-width": 0.8, "line-opacity": 0.8 } },
+  { id: "building", table: "serve.building", label: "Buildings", type: "fill",
+    minzoom: 12,
+    paint: { "fill-color": "#E8C67A", "fill-opacity": 0.55 } },
+  { id: "facility", table: "serve.facility", label: "Facilities", type: "circle",
+    paint: { "circle-radius": 3, "circle-color": "#D2694A", "circle-opacity": 0.85 } },
+  // Density is shown as equal-area hexes rather than a district choropleth.
+  // District areas in Ghana vary by two orders of magnitude, so a choropleth
+  // of a count is mostly a map of how big the districts are.
+  { id: "density",  table: "serve.building_density", label: "Building density (H3)",
+    type: "fill", default: false,
+    paint: {
+      "fill-color": ["interpolate", ["linear"], ["get", "built_pct"],
+                     0, "#12332C", 2, "#2F6B4F", 6, "#8FA23C", 12, "#D8A13A", 25, "#E8734A"],
+      "fill-opacity": 0.7
+    } }
+];
+
+/* --- Map ----------------------------------------------------------------- */
+
+const map = new maplibregl.Map({
+  container: "map",
+  style: BASEMAP,
+  center: [-1.02, 7.95],      // Ghana, from config/ghana.yml
+  zoom: 6.4,
+  attributionControl: { compact: true }
+});
+
+map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
+map.addControl(new maplibregl.ScaleControl({ unit: "metric" }), "bottom-right");
+
+map.on("load", () => {
+  for (const layer of LAYERS) addTileLayer(layer);
+  buildLayerList();
+});
+
+function addTileLayer(layer) {
+  const src = `${layer.id}_src`;
+  map.addSource(src, {
+    type: "vector",
+    tiles: [`${TILES}/${layer.table}/{z}/{x}/{y}.pbf`],
+    minzoom: 0,
+    maxzoom: 16
+  });
+  map.addLayer({
+    id: layer.id,
+    type: layer.type,
+    source: src,
+    "source-layer": layer.table,
+    minzoom: layer.minzoom ?? 0,
+    paint: layer.paint,
+    layout: { visibility: layer.default === false ? "none" : "visible" }
+  });
+
+  map.on("click", layer.id, (e) => {
+    const props = e.features?.[0]?.properties ?? {};
+    const rows = Object.entries(props)
+      .filter(([, v]) => v !== null && v !== "")
+      .slice(0, 12)
+      .map(([k, v]) => `${k}: ${v}`)
+      .join("<br>");
+    new maplibregl.Popup().setLngLat(e.lngLat).setHTML(rows || "No attributes").addTo(map);
+  });
+
+  map.on("mouseenter", layer.id, () => map.getCanvas().style.cursor = "pointer");
+  map.on("mouseleave", layer.id, () => map.getCanvas().style.cursor = "");
+}
+
+function buildLayerList() {
+  const host = document.getElementById("layers");
+  host.innerHTML = "";
+  for (const layer of LAYERS) {
+    const on = layer.default !== false;
+    const row = document.createElement("label");
+    row.className = "layer" + (on ? "" : " off");
+    row.innerHTML = `
+      <input type="checkbox" ${on ? "checked" : ""}>
+      <span class="name">${layer.label}</span>
+      <span class="count" data-count="${layer.id}"></span>`;
+    row.querySelector("input").addEventListener("change", (e) => {
+      map.setLayoutProperty(layer.id, "visibility", e.target.checked ? "visible" : "none");
+      row.classList.toggle("off", !e.target.checked);
+    });
+    host.appendChild(row);
+  }
+}
+
+/* --- DuckDB in the browser ------------------------------------------------
+   The whole point of the GeoParquet exports: someone with no database, no
+   Docker and no credentials can still run real SQL against the data. The
+   engine is a few hundred kilobytes of WebAssembly and the Parquet files are
+   read over range requests, so only the columns and row groups a query needs
+   ever cross the network.
+--------------------------------------------------------------------------- */
+
+const statusEl = document.getElementById("status");
+const resultEl = document.getElementById("result");
+let conn = null;
+let lastResult = null;
+
+function setStatus(text, isError = false) {
+  statusEl.textContent = text;
+  statusEl.classList.toggle("error", isError);
+}
+
+async function initDuckDB() {
+  try {
+    const bundles = duckdb.getJsDelivrBundles();
+    const bundle = await duckdb.selectBundle(bundles);
+    const worker = await duckdb.createWorker(bundle.mainWorker);
+    const db = new duckdb.AsyncDuckDB(new duckdb.ConsoleLogger(), worker);
+    await db.instantiate(bundle.mainModule, bundle.pthreadWorker);
+    conn = await db.connect();
+
+    await conn.query("INSTALL spatial; LOAD spatial;");
+
+    // Views over the exports, mirroring duckdb/bootstrap.sql so a query
+    // written here also runs in the desktop DuckDB session unchanged.
+    const views = {
+      region:   "core.admin_region",
+      district: "core.admin_district",
+      building: "core.building",
+      road:     "core.road",
+      facility: "core.facility"
+    };
+    await conn.query("CREATE SCHEMA IF NOT EXISTS ghana;");
+    for (const [view, file] of Object.entries(views)) {
+      await conn.query(
+        `CREATE OR REPLACE VIEW ghana.${view} AS
+         SELECT * FROM read_parquet('${EXPORTS}/${file}.parquet');`
+      );
+    }
+    setStatus("Ready");
+  } catch (err) {
+    // Failing here is normal before the first export has been produced. Say
+    // what to do about it rather than showing a stack trace.
+    setStatus("No exports found. Run: make export", true);
+    console.warn(err);
+  }
+}
+
+async function runQuery() {
+  if (!conn) return setStatus("Engine not ready", true);
+  const sql = document.getElementById("sql").value.trim();
+  if (!sql) return;
+
+  setStatus("Running…");
+  resultEl.innerHTML = "";
+  const started = performance.now();
+
+  try {
+    const table = await conn.query(sql);
+    const rows = table.toArray().map((r) => r.toJSON());
+    lastResult = rows;
+    renderTable(rows);
+    const ms = Math.round(performance.now() - started);
+    setStatus(`${rows.length.toLocaleString()} rows in ${ms} ms`);
+  } catch (err) {
+    setStatus(String(err.message ?? err), true);
+  }
+}
+
+function renderTable(rows) {
+  if (!rows.length) {
+    resultEl.innerHTML = `<p style="color:var(--text-muted);font-size:12.5px">
+      No rows. That is a result, but it is usually a filter that is too tight
+      or a name that did not match.</p>`;
+    return;
+  }
+  const cols = Object.keys(rows[0]).filter((c) => c !== "geom" && c !== "geometry");
+  const head = cols.map((c) => `<th>${c}</th>`).join("");
+  const body = rows.slice(0, 200).map((r) =>
+    `<tr>${cols.map((c) => `<td>${format(r[c])}</td>`).join("")}</tr>`).join("");
+  resultEl.innerHTML = `<table><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table>`
+    + (rows.length > 200 ? `<p style="color:var(--text-muted);font-size:11.5px">
+        Showing the first 200 of ${rows.length.toLocaleString()} rows.</p>` : "");
+}
+
+function format(v) {
+  if (v === null || v === undefined) return "—";
+  if (typeof v === "number") return Number.isInteger(v) ? v.toLocaleString() : v.toFixed(2);
+  return String(v).slice(0, 60);
+}
+
+/* Draw the query result on the map. Requires a geometry column, which is the
+   most common reason this button does nothing useful. */
+async function mapResult() {
+  if (!conn) return setStatus("Engine not ready", true);
+  const sql = document.getElementById("sql").value.trim().replace(/;\s*$/, "");
+
+  setStatus("Building layer…");
+  try {
+    const table = await conn.query(
+      `SELECT ST_AsGeoJSON(geom) AS __geojson, * EXCLUDE (geom) FROM (${sql}) t`);
+    const features = table.toArray().map((r) => {
+      const row = r.toJSON();
+      const geometry = JSON.parse(row.__geojson);
+      delete row.__geojson;
+      return { type: "Feature", geometry, properties: row };
+    });
+
+    const geojson = { type: "FeatureCollection", features };
+
+    if (map.getLayer("query_result")) map.removeLayer("query_result");
+    if (map.getLayer("query_result_line")) map.removeLayer("query_result_line");
+    if (map.getSource("query_result")) map.removeSource("query_result");
+
+    map.addSource("query_result", { type: "geojson", data: geojson });
+    map.addLayer({
+      id: "query_result", type: "fill", source: "query_result",
+      filter: ["in", ["geometry-type"], ["literal", ["Polygon", "MultiPolygon"]]],
+      paint: { "fill-color": "#D8A13A", "fill-opacity": 0.35 }
+    });
+    map.addLayer({
+      id: "query_result_line", type: "line", source: "query_result",
+      paint: { "line-color": "#D8A13A", "line-width": 1.4 }
+    });
+
+    // Fit to the result, because a layer drawn outside the current view looks
+    // exactly like a query that returned nothing.
+    const b = new maplibregl.LngLatBounds();
+    for (const f of features) {
+      const coords = f.geometry.coordinates.flat(Infinity);
+      for (let i = 0; i < coords.length; i += 2) b.extend([coords[i], coords[i + 1]]);
+    }
+    if (!b.isEmpty()) map.fitBounds(b, { padding: 48, duration: 600 });
+
+    setStatus(`${features.length.toLocaleString()} features mapped`);
+  } catch (err) {
+    setStatus("Add a geometry column named geom to map this result", true);
+    console.warn(err);
+  }
+}
+
+document.getElementById("run").addEventListener("click", runQuery);
+document.getElementById("mapit").addEventListener("click", mapResult);
+document.getElementById("sql").addEventListener("keydown", (e) => {
+  if ((e.metaKey || e.ctrlKey) && e.key === "Enter") runQuery();
+});
+for (const btn of document.querySelectorAll(".example")) {
+  btn.addEventListener("click", () => {
+    document.getElementById("sql").value = btn.dataset.sql;
+    runQuery();
+  });
+}
+
+initDuckDB();
+</script>
+</body>
+</html>

@@ -1,0 +1,1 @@
+"""Ghana GeoStack data pipelines."""

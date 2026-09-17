@@ -1,0 +1,27 @@
+[project]
+name = "ghana-geostack"
+version = "0.1.0"
+description = "Open spatial data platform for Ghana: PostGIS, DuckDB, GeoParquet, vector tiles and an agent skill that validates its own SQL."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { file = "LICENSE" }
+
+[tool.ruff]
+line-length = 95
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+ignore = [
+    "E501",    # line length is handled by the formatter
+    "B008",    # function call in argument default, fine for argparse patterns
+]
+
+[tool.ruff.lint.per-file-ignores]
+# Pipeline steps are numbered scripts, so their module names are not importable
+# identifiers and they legitimately run code at module level.
+"pipelines/[0-9]*.py" = ["N999", "E402"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"

@@ -1,0 +1,270 @@
+# sources.yml — the data catalogue.
+#
+# Adding a dataset means adding an entry here first. The pipelines read this
+# file, the metadata registry (meta.dataset) is populated from it, and the
+# agent skill reads it to know what exists before writing any SQL.
+#
+# Fields:
+#   id            stable snake_case key, becomes the table name in raw.*
+#   theme         admin | transport | buildings | population | landcover |
+#                 terrain | hydrology | health | education | energy |
+#                 agriculture | hazard | poi | imagery
+#   access        http | duckdb_remote | osm_pbf | gee | stac | manual
+#   licence       SPDX id where one exists, otherwise a short name
+#   attribution   the exact string that must appear on any map using it
+#   status        ready | planned | needs_agreement
+#
+# `needs_agreement` means the data is real but we do not yet have permission
+# to redistribute it. Fetch it locally, do not commit it, do not publish tiles.
+
+version: 1
+
+sources:
+
+  # ── Administrative boundaries ──────────────────────────────────────────
+
+  - id: admin_gadm
+    theme: admin
+    name: GADM administrative areas, levels 0-2
+    access: http
+    url: https://geodata.ucdavis.edu/gadm/gadm4.1/gpkg/gadm41_GHA.gpkg
+    format: gpkg
+    licence: GADM non-commercial
+    attribution: "Boundaries: GADM 4.1"
+    status: ready
+    notes: >
+      Fast to get going, but non-commercial only and the district set lags
+      the 2018-19 reorganisation. Treat as a bootstrap, not the authority.
+
+  - id: admin_gss
+    theme: admin
+    name: Ghana Statistical Service district boundaries (2021 PHC)
+    access: manual
+    url: https://statsghana.gov.gh
+    format: shp
+    licence: needs confirmation
+    attribution: "Boundaries: Ghana Statistical Service"
+    status: needs_agreement
+    notes: >
+      The authoritative post-2019 set of 16 regions and the current MMDAs.
+      This is the one we actually want as core.admin_district. Requires a
+      data request to GSS. Until then core falls back to GADM + OSM.
+
+  - id: admin_grid3
+    theme: admin
+    name: GRID3 Ghana boundaries and settlement extents
+    access: http
+    url: https://data.grid3.org
+    format: gpkg
+    licence: CC-BY-4.0
+    attribution: "GRID3 (Geo-Referenced Infrastructure and Demographic Data for Development)"
+    status: ready
+
+  # ── OpenStreetMap ──────────────────────────────────────────────────────
+
+  - id: osm_ghana
+    theme: transport
+    name: Geofabrik Ghana extract
+    access: osm_pbf
+    url: https://download.geofabrik.de/africa/ghana-latest.osm.pbf
+    format: pbf
+    licence: ODbL-1.0
+    attribution: "© OpenStreetMap contributors, ODbL"
+    status: ready
+    layers: [roads, railways, waterways, buildings, landuse, places, pois]
+    notes: >
+      ODbL is share-alike. Derived databases published from this must carry
+      the same licence. Keep OSM-derived tables separable from anything we
+      might licence differently.
+
+  # ── Buildings ──────────────────────────────────────────────────────────
+
+  - id: overture_buildings
+    theme: buildings
+    name: Overture Maps buildings
+    access: duckdb_remote
+    url: s3://overturemaps-us-west-2/release/{release}/theme=buildings/type=building/*
+    format: geoparquet
+    licence: ODbL-1.0 / CDLA-Permissive-2.0 (mixed by source)
+    attribution: "© Overture Maps Foundation"
+    status: ready
+    notes: >
+      Queried in place over S3 with DuckDB — no bulk download. Always gate on
+      the bbox struct columns before any spatial predicate.
+
+  - id: google_open_buildings
+    theme: buildings
+    name: Google Open Buildings v3
+    access: http
+    url: https://sites.research.google/open-buildings/
+    format: csv.gz
+    licence: CC-BY-4.0
+    attribution: "Google Open Buildings v3 (CC BY 4.0)"
+    status: ready
+    notes: >
+      Best building coverage for rural Ghana by a wide margin. Includes a
+      per-polygon confidence score — filter on it, do not assume every
+      polygon is a real structure.
+
+  - id: ms_building_footprints
+    theme: buildings
+    name: Microsoft Global ML Building Footprints
+    access: http
+    url: https://github.com/microsoft/GlobalMLBuildingFootprints
+    format: geojsonl
+    licence: ODbL-1.0
+    attribution: "Microsoft Global ML Building Footprints, ODbL"
+    status: planned
+
+  # ── Population ─────────────────────────────────────────────────────────
+
+  - id: worldpop_gha
+    theme: population
+    name: WorldPop Ghana constrained population, 100 m
+    access: http
+    url: https://hub.worldpop.org
+    format: geotiff
+    licence: CC-BY-4.0
+    attribution: "WorldPop (worldpop.org)"
+    status: ready
+
+  - id: hrsl_gha
+    theme: population
+    name: Meta / CIESIN High Resolution Settlement Layer
+    access: http
+    url: https://data.humdata.org
+    format: geotiff
+    licence: CC-BY-4.0
+    attribution: "Meta and CIESIN, High Resolution Settlement Layer"
+    status: planned
+
+  # ── Terrain and land cover ─────────────────────────────────────────────
+
+  - id: dem_copernicus_30
+    theme: terrain
+    name: Copernicus DEM GLO-30
+    access: stac
+    url: https://planetarycomputer.microsoft.com/api/stac/v1
+    collection: cop-dem-glo-30
+    format: cog
+    licence: Copernicus DEM licence (free, attribution)
+    attribution: "© DLR e.V. 2010-2014, © Airbus Defence and Space GmbH"
+    status: ready
+    notes: Preferred over SRTM. Better vertical accuracy, void-filled.
+
+  - id: dem_srtm_30
+    theme: terrain
+    name: SRTM GL1 30 m via OpenTopography
+    access: http
+    url: https://portal.opentopography.org/API/globaldem
+    format: geotiff
+    licence: public domain (NASA)
+    attribution: "NASA SRTM via OpenTopography"
+    status: ready
+    requires_key: OPENTOPO_API_KEY
+
+  - id: esa_worldcover
+    theme: landcover
+    name: ESA WorldCover 10 m, 2021 v200
+    access: stac
+    url: https://planetarycomputer.microsoft.com/api/stac/v1
+    collection: esa-worldcover
+    format: cog
+    licence: CC-BY-4.0
+    attribution: "ESA WorldCover project / Contains modified Copernicus data"
+    status: ready
+
+  - id: sentinel2_l2a
+    theme: imagery
+    name: Sentinel-2 Level-2A surface reflectance
+    access: stac
+    url: https://earth-search.aws.element84.com/v1
+    collection: sentinel-2-l2a
+    format: cog
+    licence: Copernicus open licence
+    attribution: "Contains modified Copernicus Sentinel data"
+    status: ready
+    notes: >
+      STAC over AWS avoids the Earth Engine account requirement entirely.
+      A GEE path is still available for anyone who prefers it.
+
+  # ── Hydrology and hazard ───────────────────────────────────────────────
+
+  - id: hydrosheds_rivers
+    theme: hydrology
+    name: HydroRIVERS and HydroBASINS, Africa
+    access: http
+    url: https://www.hydrosheds.org
+    format: shp
+    licence: HydroSHEDS licence (free, attribution)
+    attribution: "HydroSHEDS (WWF)"
+    status: ready
+
+  - id: jrc_surface_water
+    theme: hydrology
+    name: JRC Global Surface Water occurrence
+    access: stac
+    url: https://planetarycomputer.microsoft.com/api/stac/v1
+    collection: jrc-gsw
+    format: cog
+    licence: CC-BY-4.0
+    attribution: "JRC Global Surface Water, Pekel et al. 2016"
+    status: ready
+    notes: >
+      Occurrence and seasonality bands are a usable proxy for flood-prone
+      land where no engineered flood model exists. Say so on the map — it is
+      an observation of past water, not a modelled hazard.
+
+  - id: firms_fires
+    theme: hazard
+    name: NASA FIRMS active fire detections
+    access: http
+    url: https://firms.modaps.eosdis.nasa.gov/api/
+    format: csv
+    licence: public domain (NASA)
+    attribution: "NASA FIRMS"
+    status: planned
+    requires_key: FIRMS_MAP_KEY
+
+  - id: chirps_rainfall
+    theme: agriculture
+    name: CHIRPS daily and monthly rainfall
+    access: http
+    url: https://data.chc.ucsb.edu/products/CHIRPS-2.0/
+    format: geotiff
+    licence: public domain
+    attribution: "CHIRPS, Climate Hazards Center, UC Santa Barbara"
+    status: planned
+
+  # ── Services ───────────────────────────────────────────────────────────
+
+  - id: healthsites_gha
+    theme: health
+    name: healthsites.io Ghana facilities
+    access: http
+    url: https://healthsites.io/api/
+    format: geojson
+    licence: ODbL-1.0
+    attribution: "healthsites.io, © OpenStreetMap contributors"
+    status: ready
+
+  - id: hdx_ghana
+    theme: admin
+    name: Humanitarian Data Exchange, Ghana collection
+    access: manual
+    url: https://data.humdata.org/group/gha
+    format: mixed
+    licence: varies per dataset
+    attribution: "per dataset — check before publishing"
+    status: ready
+    notes: Always record the per-dataset licence in meta.dataset. Never assume.
+
+  - id: data_gov_gh
+    theme: admin
+    name: Ghana Open Data Initiative
+    access: manual
+    url: https://data.gov.gh
+    format: mixed
+    licence: varies per dataset
+    attribution: "Government of Ghana Open Data Initiative"
+    status: ready

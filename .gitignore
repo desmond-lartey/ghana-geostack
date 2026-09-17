@@ -1,0 +1,44 @@
+# Data never goes in the repository. Exports are published as release
+# artefacts; raw data is reproducible from config/sources.yml.
+data/raw/*
+data/interim/*
+data/processed/*
+data/exports/*
+!data/**/.gitkeep
+
+*.gpkg
+*.tif
+*.tiff
+*.laz
+*.las
+*.pbf
+*.osm
+*.parquet
+*.duckdb
+*.pmtiles
+*.mbtiles
+!tests/fixtures/**
+
+# Secrets
+.env
+*.pem
+*.key
+service-account*.json
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.ipynb_checkpoints/
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+dist/
+build/
+
+# Editors and OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

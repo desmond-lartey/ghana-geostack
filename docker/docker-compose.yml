@@ -1,0 +1,123 @@
+# The whole serving stack. Start with `make up` from the repo root.
+#
+#   postgis      5432  the authoritative store
+#   tileserv     7800  vector tiles (MVT) straight out of Postgres
+#   featureserv  9000  OGC API - Features, GeoJSON over HTTP
+#   titiler      8001  dynamic raster tiles from COGs
+#   minio        9001  S3-compatible object store for the GeoParquet lake
+#   pgadmin      5050  optional, profile "tools"
+
+name: ghana-geostack
+
+services:
+
+  postgis:
+    image: postgis/postgis:16-3.4
+    container_name: gh_postgis
+    environment:
+      POSTGRES_DB: ${PGDATABASE:-ghana}
+      POSTGRES_USER: ${PGUSER:-ghana}
+      POSTGRES_PASSWORD: ${PGPASSWORD:-ghana}
+      # Ghana-sized tuning. Raise these on a real server.
+      POSTGRES_INITDB_ARGS: "--data-checksums"
+    command:
+      - postgres
+      - -c
+      - shared_buffers=1GB
+      - -c
+      - work_mem=64MB
+      - -c
+      - maintenance_work_mem=512MB
+      - -c
+      - max_parallel_workers_per_gather=4
+      - -c
+      - random_page_cost=1.1
+    ports:
+      - "${PGPORT:-5432}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./initdb:/docker-entrypoint-initdb.d:ro
+      - ../data:/data:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${PGUSER:-ghana} -d ${PGDATABASE:-ghana}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  tileserv:
+    image: pramsey/pg_tileserv:latest
+    container_name: gh_tileserv
+    depends_on:
+      postgis:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://${PGUSER:-ghana}:${PGPASSWORD:-ghana}@postgis:5432/${PGDATABASE:-ghana}
+      TS_BASEPATH: /tiles
+      # Only the serve schema is exposed. core and analysis stay private.
+      TS_DEFAULTRESOLUTION: 4096
+      TS_CORSORIGINS: "*"
+    ports:
+      - "7800:7800"
+    restart: unless-stopped
+
+  featureserv:
+    image: pramsey/pg_featureserv:latest
+    container_name: gh_featureserv
+    depends_on:
+      postgis:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://${PGUSER:-ghana}:${PGPASSWORD:-ghana}@postgis:5432/${PGDATABASE:-ghana}
+      PGFS_SERVER_CORSORIGINS: "*"
+    ports:
+      - "9000:9000"
+    restart: unless-stopped
+
+  titiler:
+    image: ghcr.io/developmentseed/titiler:latest
+    container_name: gh_titiler
+    environment:
+      PORT: 8000
+      GDAL_CACHEMAX: 200
+      GDAL_DISABLE_READDIR_ON_OPEN: EMPTY_DIR
+      VSI_CACHE: "TRUE"
+      CPL_VSIL_CURL_ALLOWED_EXTENSIONS: ".tif,.TIF,.tiff"
+    ports:
+      - "8001:8000"
+    restart: unless-stopped
+
+  minio:
+    image: minio/minio:latest
+    container_name: gh_minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_USER:-ghana}
+      MINIO_ROOT_PASSWORD: ${MINIO_PASSWORD:-ghanaghana}
+    ports:
+      - "9002:9000"
+      - "9001:9001"
+    volumes:
+      - miniodata:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: gh_pgadmin
+    profiles: ["tools"]
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@ghana-geostack.local}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-ghana}
+      PGADMIN_CONFIG_SERVER_MODE: "False"
+    ports:
+      - "5050:80"
+    restart: unless-stopped
+
+volumes:
+  pgdata:
+  miniodata:

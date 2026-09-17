@@ -1,0 +1,60 @@
+# The recommended install. conda-forge handles GDAL and its dependents
+# properly, which pip on Windows does not.
+#
+#   conda env create -f environment.yml
+#   conda activate ghana-geostack
+
+name: ghana-geostack
+
+channels:
+  - conda-forge
+
+dependencies:
+  - python=3.12
+
+  # Spatial core — conda-forge builds these against one consistent GDAL
+  - gdal>=3.9
+  - geopandas>=1.0
+  - shapely>=2.0
+  - pyproj>=3.6
+  - rasterio>=1.3
+  - fiona>=1.9
+  - rtree
+  - libpysal
+
+  # Databases
+  - psycopg>=3.2
+  - sqlalchemy>=2.0
+  - geoalchemy2
+  - duckdb>=1.1
+  - postgresql          # gives you psql and raster2pgsql on PATH
+
+  # Data access
+  - requests
+  - pystac-client
+  - planetary-computer
+
+  # Formats and analysis
+  - pyarrow>=17
+  - pandas>=2.2
+  - numpy>=1.26
+  - h3-py>=4.1
+
+  # Configuration
+  - pyyaml
+  - python-dotenv
+
+  # Notebooks and visualisation
+  - jupyter
+  - matplotlib
+  - folium
+  - mapclassify
+
+  # Development
+  - ruff
+  - pytest
+
+  - pip
+  - pip:
+      - pyrosm>=0.6
+      - odc-stac>=0.3

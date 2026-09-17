@@ -1,0 +1,9 @@
+{
+  "name": "ghana-geosql",
+  "description": "Spatial SQL for the Ghana GeoStack. Discovers the schema, resolves Ghanaian place names, writes PostGIS and DuckDB queries, validates every result in SQL before presenting it, and renders maps.",
+  "category": "location",
+  "author": {
+    "name": "Ghana GeoStack",
+    "url": "https://github.com/YOUR-ORG/ghana-geostack"
+  }
+}

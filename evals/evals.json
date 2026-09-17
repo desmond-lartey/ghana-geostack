@@ -1,0 +1,110 @@
+{
+  "skill_name": "ghana-geosql",
+  "note": "Each case asserts specific behaviour, not just whether an answer appeared. Assertions about Ghana's real numbers are the ones that catch a confidently wrong query. Run with: python evals/run.py",
+  "evals": [
+    {
+      "id": "region-count",
+      "prompt": "How many regions does Ghana have, and what is the total land area? Query the database.",
+      "assertions": [
+        "Agent queried core.admin_region rather than answering from general knowledge",
+        "Agent returned 16 regions",
+        "Agent computed area in square kilometres via a transform to EPSG:32630, not from 4326 degrees",
+        "Total area is within 5% of 238,533 km2",
+        "Agent noted the boundary source and its licence"
+      ]
+    },
+    {
+      "id": "accra-ambiguity",
+      "prompt": "Show me all the buildings in Accra.",
+      "assertions": [
+        "Agent recognised that 'Accra' is ambiguous between Greater Accra Region, Accra Metropolitan Assembly and the built-up area",
+        "Agent either asked which was meant or resolved it explicitly and said which it used",
+        "Agent resolved the name against core.admin_region or core.admin_district rather than hardcoding a bounding box",
+        "Query used both the && operator and ST_Intersects"
+      ]
+    },
+    {
+      "id": "road-network-length",
+      "prompt": "What is the total length of trunk and primary roads in the Northern Region?",
+      "assertions": [
+        "Agent discovered the schema before writing the query",
+        "Length computed after ST_Transform to 32630, reported in kilometres",
+        "Agent ran a row-count check before presenting the result",
+        "Result is plausible for a single region: hundreds to low thousands of km, not tens of km and not tens of thousands",
+        "Agent stated that OSM coverage varies and the figure is not the official classified network"
+      ]
+    },
+    {
+      "id": "flood-exposure-framing",
+      "prompt": "Which districts have the most buildings at risk of flooding?",
+      "assertions": [
+        "Agent queried analysis.district_flood_summary or rebuilt the equivalent",
+        "Agent explicitly corrected or qualified 'at risk of flooding' — the layer is observed historical surface water plus low terrain, not a modelled flood risk with a return period",
+        "Agent reported a rate (pct_exposed) alongside or instead of a raw count, because district areas vary by two orders of magnitude",
+        "Agent did not present a district choropleth of a raw count without comment"
+      ]
+    },
+    {
+      "id": "health-access",
+      "prompt": "Map how far people in the Upper West Region are from the nearest health facility.",
+      "assertions": [
+        "Agent used an index-ordered nearest-neighbour scan (<-> with LIMIT), not a cross join",
+        "Distance computed in metres via a transform",
+        "Agent stated the result is straight-line distance, not travel time",
+        "Agent validated row count and checked the maximum distance for plausibility before mapping",
+        "Agent rendered a map and inspected it before describing what it shows",
+        "Map carries a title and the source attribution"
+      ]
+    },
+    {
+      "id": "overture-cost-safety",
+      "prompt": "Count the Overture buildings in Ghana.",
+      "assertions": [
+        "Agent used DuckDB with read_parquet against the Overture S3 path rather than downloading the release",
+        "Agent pinned a specific release string rather than using 'latest'",
+        "bbox filter used the overlap pattern (xmax >= west AND xmin <= east), not containment",
+        "Agent ran a count before any extraction",
+        "Agent did not write a multi-gigabyte file to answer a count question"
+      ]
+    },
+    {
+      "id": "degrees-trap",
+      "prompt": "What is the average building footprint area in Kumasi?",
+      "assertions": [
+        "Area was not computed with ST_Area on a 4326 geometry",
+        "Result is in square metres and is plausible for a building (roughly 50-300 m2 on average, not 0.00001 and not millions)",
+        "Agent used core.gh_area_m2 or an explicit transform"
+      ]
+    },
+    {
+      "id": "licence-gate",
+      "prompt": "Export the district boundaries as a public tileset for our website.",
+      "assertions": [
+        "Agent checked meta.dataset.publishable before exporting",
+        "Agent identified that GADM boundaries are non-commercial and are registered as not publishable",
+        "Agent did not export them anyway",
+        "Agent suggested GRID3 or Ghana Statistical Service boundaries as the licensable alternative"
+      ]
+    },
+    {
+      "id": "missing-data-honesty",
+      "prompt": "Show me which communities are furthest from the electricity grid.",
+      "assertions": [
+        "Agent checked the catalogue and found no grid or transmission line layer",
+        "Agent said the data is not present rather than substituting road distance without saying so",
+        "Agent named a plausible source to add (GRIDFINDER, ECG, or the Energy Commission) and offered to register it in config/sources.yml",
+        "Agent did not fabricate a result"
+      ]
+    },
+    {
+      "id": "empty-database",
+      "prompt": "Show me the tallest buildings in Ghana.",
+      "setup": "Run against a freshly migrated database with no data loaded.",
+      "assertions": [
+        "Agent discovered that meta.dataset is empty or core.building has zero rows",
+        "Agent said the database has not been loaded rather than returning an empty result as if it were an answer",
+        "Agent named the pipeline step that loads buildings"
+      ]
+    }
+  ]
+}

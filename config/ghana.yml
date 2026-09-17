@@ -1,0 +1,99 @@
+# ghana.yml — the single source of truth for country constants.
+# Every pipeline, SQL migration and skill reference reads from here.
+# Change a value once, and the whole stack follows.
+
+country:
+  name: Ghana
+  iso_a2: GH
+  iso_a3: GHA
+  m49: 288
+
+# Generous land + coastal envelope in EPSG:4326 (west, south, east, north).
+# Used as the scan gate on every remote query. Slightly larger than the
+# coastline so nothing on the shore gets clipped.
+bbox:
+  west: -3.30
+  south: 4.50
+  east: 1.25
+  north: 11.20
+
+# Rough country centroid, for default map views.
+center:
+  lon: -1.02
+  lat: 7.95
+  zoom: 6.4
+
+crs:
+  # Everything is STORED in 4326. Web, tiles, GeoParquet and the API all
+  # expect lon/lat, and mixing storage CRS across themes is the single
+  # biggest source of silent join failures.
+  storage: 4326
+
+  # Everything is MEASURED in 32630 (WGS 84 / UTM 30N). Ghana straddles the
+  # prime meridian, so the eastern strip (Volta, Oti; up to ~1.25E) sits just
+  # outside zone 30's nominal half-width. Scale error there stays under ~0.1%,
+  # which is fine for buffers, densities and areas. It is NOT fine for
+  # cadastral survey work.
+  metric: 32630
+
+  # Alternatives, kept here so nobody has to rediscover them:
+  #   32631 — UTM 31N, for analysis confined to east of 0 degrees.
+  #   2136  — Accra / Ghana National Grid (Gold Coast feet, Accra datum).
+  #   2137  — Accra / TM 1 NW (metres, central meridian 1W — a good national fit).
+  # VERIFY the national grid definition and its datum shift with the Lands
+  # Commission Survey and Mapping Division before using it for anything legal.
+  national_grid: 2136
+  national_tm: 2137
+
+# Administrative hierarchy. Counts are the post-2019 configuration and should
+# be re-checked against the Ghana Statistical Service before being quoted.
+admin:
+  level_0: country
+  level_1: region          # 16 regions
+  level_2: district        # MMDAs — metropolitan, municipal, district assemblies
+  level_3: locality        # towns / enumeration-area groupings, where available
+  expected_regions: 16
+  expected_districts: 261  # verify against GSS; sources report 260 or 261
+
+regions:
+  - Ahafo
+  - Ashanti
+  - Bono
+  - Bono East
+  - Central
+  - Eastern
+  - Greater Accra
+  - North East
+  - Northern
+  - Oti
+  - Savannah
+  - Upper East
+  - Upper West
+  - Volta
+  - Western
+  - Western North
+
+# Database schemas. Each one has exactly one job.
+schemas:
+  raw: Untouched loads. Never edited by hand, always reproducible from source.
+  core: Curated, conformed, documented. This is what people query.
+  analysis: Derived results — buffers, scores, clusters, exposure.
+  h3: Hex-grid rollups at several resolutions.
+  serve: Thin, tile-ready views with only the columns a map needs.
+  meta: Dataset registry, QC runs, lineage.
+
+h3:
+  country_resolution: 5    # ~250 km2 cells — national choropleths
+  region_resolution: 7     # ~5 km2 — regional patterns
+  city_resolution: 9       # ~0.1 km2 — urban density
+
+# Cities used for local-scale demos and tests.
+cities:
+  accra:      {lon: -0.187, lat: 5.603, radius_km: 25}
+  kumasi:     {lon: -1.624, lat: 6.700, radius_km: 20}
+  tamale:     {lon: -0.839, lat: 9.403, radius_km: 15}
+  takoradi:   {lon: -1.760, lat: 4.900, radius_km: 15}
+  cape_coast: {lon: -1.246, lat: 5.106, radius_km: 12}
+  ho:         {lon:  0.471, lat: 6.612, radius_km: 12}
+  wa:         {lon: -2.501, lat: 10.060, radius_km: 12}
+  bolgatanga: {lon: -0.851, lat: 10.786, radius_km: 12}
