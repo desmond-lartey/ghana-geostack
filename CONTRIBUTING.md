@@ -15,7 +15,7 @@ make up
 make migrate
 ```
 
-If you are on pip rather than conda, install GDAL first and everything else
+If you are on pip rather than conda, install GDAL first and everything else 
 after it. The C-extension packages (`pyproj`, `shapely`, `fiona`, `rasterio`)
 must come before `geopandas`, and getting the order wrong produces library
 errors that look like something else entirely.
