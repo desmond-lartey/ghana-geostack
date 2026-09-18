@@ -50,7 +50,7 @@ present and what may be republished.
 ### Setup
 
 ```bash
-git clone https://github.com/YOUR-ORG/ghana-geostack
+git clone https://github.com/desmond-lartey/ghana-geostack
 cd ghana-geostack
 cp .env.example .env
 

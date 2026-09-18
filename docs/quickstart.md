@@ -39,7 +39,7 @@ GeoPandas, R and ArcGIS Pro directly.
 ## 3. Run the whole stack — an hour, mostly downloading
 
 ```bash
-git clone https://github.com/YOUR-ORG/ghana-geostack
+git clone https://github.com/desmond-lartey/ghana-geostack
 cd ghana-geostack
 cp .env.example .env
 

@@ -48,7 +48,7 @@
   ],
 
   "redirects": [
-    { "source": "/docs", "destination": "https://YOUR-ORG.github.io/ghana-geostack/", "permanent": false },
-    { "source": "/github", "destination": "https://github.com/YOUR-ORG/ghana-geostack", "permanent": false }
+    { "source": "/docs", "destination": "https://desmond-lartey.github.io/ghana-geostack/", "permanent": false },
+    { "source": "/github", "destination": "https://github.com/desmond-lartey/ghana-geostack", "permanent": false }
   ]
 }

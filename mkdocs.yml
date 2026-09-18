@@ -9,11 +9,11 @@ site_name: Ghana GeoStack
 site_description: >-
   Open spatial data platform for Ghana. PostGIS, DuckDB, GeoParquet and vector
   tiles, with 16 regions and 260 districts included.
-site_author: Ghana GeoStack contributors
-site_url: https://YOUR-ORG.github.io/ghana-geostack/
+site_author: Desmond Lartey
+site_url: https://desmond-lartey.github.io/ghana-geostack/
 
-repo_url: https://github.com/YOUR-ORG/ghana-geostack
-repo_name: YOUR-ORG/ghana-geostack
+repo_url: https://github.com/desmond-lartey/ghana-geostack
+repo_name: desmond-lartey/ghana-geostack
 edit_uri: edit/main/docs/
 
 copyright: >-
@@ -82,7 +82,7 @@ extra_css:
 extra:
   social:
     - icon: fontawesome/brands/github
-      link: https://github.com/YOUR-ORG/ghana-geostack
+      link: https://github.com/desmond-lartey/ghana-geostack
       name: Source on GitHub
     - icon: material/map
       link: https://ghana-geostack.vercel.app

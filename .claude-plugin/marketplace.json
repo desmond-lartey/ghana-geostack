@@ -1,8 +1,8 @@
 {
   "name": "ghana-geostack",
   "owner": {
-    "name": "Ghana GeoStack",
-    "url": "https://github.com/YOUR-ORG/ghana-geostack"
+    "name": "Desmond Lartey",
+    "url": "https://github.com/desmond-lartey/ghana-geostack"
   },
   "plugins": [
     {
@@ -10,7 +10,7 @@
       "source": "./",
       "description": "Spatial SQL for the Ghana GeoStack. Discovers the schema, resolves Ghanaian place names, writes PostGIS and DuckDB queries, validates every result in SQL before presenting it, and renders maps.",
       "category": "location",
-      "homepage": "https://github.com/YOUR-ORG/ghana-geostack",
+      "homepage": "https://github.com/desmond-lartey/ghana-geostack",
       "version": "0.1.0"
     }
   ]

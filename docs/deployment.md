@@ -164,7 +164,7 @@ Add a `CNAME` file containing the domain to `docs/`, set the domain under
 
 ## Checklist before going public
 
-- [ ] Replace `YOUR-ORG` throughout: `mkdocs.yml`, `vercel.json`, `README.md`,
+- [ ] Replace `desmond-lartey` throughout: `mkdocs.yml`, `vercel.json`, `README.md`,
       `.claude-plugin/*.json`, `scripts/sync_docs.py`
 - [ ] Confirm the boundary licence on the
       [HDX dataset page](https://data.humdata.org/dataset/cod-ab-gha)

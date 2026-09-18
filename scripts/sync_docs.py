@@ -44,13 +44,13 @@ LINK_FIXES = [
     (r"\]\(ROADMAP\.md\)",                               r"](roadmap.md)"),
     (r"\]\(LICENSE-DATA\.md\)",                          r"](licensing.md)"),
     (r"\]\(LICENSE\)",
-     r"](https://github.com/YOUR-ORG/ghana-geostack/blob/main/LICENSE)"),
+     r"](https://github.com/desmond-lartey/ghana-geostack/blob/main/LICENSE)"),
     (r"\]\(config/([a-z]+)\.yml\)",
-     r"](https://github.com/YOUR-ORG/ghana-geostack/blob/main/config/\1.yml)"),
+     r"](https://github.com/desmond-lartey/ghana-geostack/blob/main/config/\1.yml)"),
     (r"\]\(evals/evals\.json\)",
-     r"](https://github.com/YOUR-ORG/ghana-geostack/blob/main/evals/evals.json)"),
+     r"](https://github.com/desmond-lartey/ghana-geostack/blob/main/evals/evals.json)"),
     (r"\]\(data/reference/\)",
-     r"](https://github.com/YOUR-ORG/ghana-geostack/tree/main/data/reference)"),
+     r"](https://github.com/desmond-lartey/ghana-geostack/tree/main/data/reference)"),
 ]
 
 BANNER = (
