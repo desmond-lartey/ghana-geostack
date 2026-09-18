@@ -1,6 +1,6 @@
 -- 03_h3_rollups.sql
 -- Hex-grid summaries. Choropleths by district mislead badly in Ghana because
--- districts differ in area by two orders of magnitude - a sparse northern
+-- districts differ in area by two orders of magnitude — a sparse northern
 -- district and a dense Accra sub-metro get the same visual weight. Equal-area
 -- hexes fix that.
 --
@@ -10,7 +10,7 @@
 --   9  ~0.10 km2  urban texture
 --
 -- Requires the h3-pg extension. If it is not installed, run the equivalent
--- in DuckDB instead - see duckdb/h3_rollups.sql, which produces the same
+-- in DuckDB instead — see duckdb/h3_rollups.sql, which produces the same
 -- columns so downstream maps do not care which engine built them.
 
 \set ON_ERROR_STOP on

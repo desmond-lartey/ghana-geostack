@@ -38,7 +38,7 @@ Dialect references, read the one that matches the engine:
 - Coordinate systems: `references/crs.md`
 - Map styling: `references/map-styling.md`
 
-## Step 1 - Discover the schema
+## Step 1 — Discover the schema
 
 Never assume a table or column name. Read the catalogue first:
 
@@ -61,7 +61,7 @@ ORDER BY table_name, ordinal_position;
 If `meta.dataset` is empty the database has not been loaded. Say that plainly
 and point at `make pipeline` rather than writing a query against nothing.
 
-## Step 2 - Resolve the place
+## Step 2 — Resolve the place
 
 Ghanaian place names are ambiguous and inconsistently spelled across sources.
 Resolve them against the database before filtering on them, always.
@@ -104,7 +104,7 @@ SELECT ST_XMin(geom), ST_YMin(geom), ST_XMax(geom), ST_YMax(geom)
 FROM core.admin_region WHERE id = 'GH02';   -- Ashanti
 ```
 
-## Step 3 - Draft the query
+## Step 3 — Draft the query
 
 **Both filters, every time.** The bounding-box operator `&&` is
 index-accelerated and prunes the scan. `ST_Intersects` is the exact test. `&&`
@@ -137,18 +137,18 @@ Other rules that matter here:
 - **Query `core`, not `raw`.** `raw` is unconformed and its columns change with
   the source.
 
-## Step 4 - Validate. Not optional.
+## Step 4 — Validate. Not optional.
 
 Do not show the user a query or a map until every check below has run and the
 numbers are plausible for Ghana.
 
 1. **Row count.** `SELECT count(*)`. Zero means debug, not present. A count
-   equal to a `LIMIT` you set means the result is truncated - say so.
+   equal to a `LIMIT` you set means the result is truncated — say so.
 2. **Magnitude.** For polygons, total area in km². For lines, total length in
    km. In metres, via a transform. A correct row count with wrong geometry is
    invisible to a count and obvious to this check.
 3. **Extent.** Confirm the result sits inside Ghana:
-   `SELECT count(*) FROM (...) t WHERE NOT (geom && core.gh_bbox());` - anything
+   `SELECT count(*) FROM (...) t WHERE NOT (geom && core.gh_bbox());` — anything
    other than zero means a CRS or coordinate-order problem.
 4. **Nulls in the columns you are about to map.** A colour ramp bound to a
    mostly-null column renders as a blank layer and looks like a styling bug.
@@ -192,7 +192,7 @@ If a query says a district is larger than the region containing it, or that
 Ghana's road network is 400 km long, or that elevation reaches 3,000 m, the
 query is wrong. Say so and fix it rather than presenting it with a caveat.
 
-## Step 5 - Map
+## Step 5 — Map
 
 A map catches what a row count cannot: features in the sea, a missing region,
 duplicated geometry, a choropleth that is really a population map.
@@ -218,7 +218,7 @@ Styling rules are in `references/map-styling.md`. The ones people get wrong:
   midpoint, qualitative for eight categories at most. Never rainbow.
 - Dark basemap for point density, light for choropleths.
 - Always label the map with its data source and date. Every layer here carries
-  an attribution string in `meta.dataset` - use it.
+  an attribution string in `meta.dataset` — use it.
 
 ## Governance, which applies to every answer
 

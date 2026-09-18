@@ -134,5 +134,5 @@ SELECT 'negative height above water',
 --   Total zone area far above ~15,000 km2 means the buffer is catching every
 --   drainage ditch in OSM. Tighten the length filter.
 --   A large count of negative heights means the DEM and the waterway
---   geometry disagree - usually a bridge or a culvert mapped as a river, or
+--   geometry disagree — usually a bridge or a culvert mapped as a river, or
 --   a DEM void. Investigate before publishing.

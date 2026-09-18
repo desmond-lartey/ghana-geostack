@@ -21,7 +21,7 @@ Ordered by what unblocks the most, not by what is most interesting to build.
 - [ ] First public export: GeoParquet, the DuckDB file, and PMTiles, with
       attribution.
 
-## Next - make it useful
+## Next — make it useful
 
 - [ ] **Travel-time surface.** Straight-line distance understates real
       journeys badly, especially in the rainy season. Either pgRouting over
@@ -29,7 +29,7 @@ Ordered by what unblocks the most, not by what is most interesting to build.
       accessibility number in the stack.
 - [ ] **Electricity grid layer.** GRIDFINDER, ECG or Energy Commission data,
       which would replace the road-distance proxy in the siting analysis.
-- [ ] Seasonal flood extent from Sentinel-1 SAR, which sees through cloud -
+- [ ] Seasonal flood extent from Sentinel-1 SAR, which sees through cloud —
       relevant given Ghana's rainy season is also its cloudy season.
 - [ ] Agricultural layers: CHIRPS rainfall, cropland masks, growing-season
       NDVI.
@@ -37,7 +37,7 @@ Ordered by what unblocks the most, not by what is most interesting to build.
 - [ ] Time dimension: keep historical snapshots so change can be measured
       rather than inferred.
 
-## Later - make it shared
+## Later — make it shared
 
 - [ ] Public read-only API with rate limiting.
 - [ ] Hosted viewer on a stable URL, with the exports behind a CDN.

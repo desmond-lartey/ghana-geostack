@@ -1,5 +1,5 @@
 /**
- * POST /api/ask - turn a plain-English question into spatial SQL.
+ * POST /api/ask — turn a plain-English question into spatial SQL.
  *
  * Deployed automatically by Vercel from this directory. Set ANTHROPIC_API_KEY
  * in the project's environment variables to enable it; without a key the
@@ -20,49 +20,49 @@ const MAX_QUESTION = 400;
    runtime so the model cannot be talked into referencing a table that does not
    exist, and so the answer is reproducible. */
 const SCHEMA = `
-Tables available in DuckDB (schema "ghana"):
+Tables in DuckDB compiled to WebAssembly, schema "ghana":
 
-ghana.region      16 rows, one per region
-  adm1_pcode  TEXT    'GH01' to 'GH16'
-  adm1_name   TEXT    'Ashanti', 'Greater Accra', ...
-  area_sqkm   DOUBLE
-  geom        GEOMETRY  polygon, EPSG:4326
+ghana.region    16 rows   adm1_pcode ('GH01'..'GH16'), adm1_name, area_sqkm,
+                          lon, lat (centroid), bbox_xmin/ymin/xmax/ymax, geom
+ghana.district  260 rows  adm2_pcode ('GHrrdd'), adm2_name, adm1_name,
+                          adm1_pcode, area_sqkm, lon, lat,
+                          bbox_xmin/ymin/xmax/ymax, geom
+ghana.capital   177 rows  name, adm1_name, adm2_name, adm_p_lvl
+                          (0 national, 1 regional, 2 district), lon, lat, geom
 
-ghana.district    260 rows, one per MMDA
-  adm2_pcode  TEXT    'GHrrdd' - the first four characters are the region p-code
-  adm2_name   TEXT
-  adm1_name   TEXT    parent region name
-  area_sqkm   DOUBLE
-  geom        GEOMETRY  polygon, EPSG:4326
-
-ghana.capital     177 rows, administrative capitals
-  name        TEXT
-  adm1_name   TEXT
-  adm2_name   TEXT
-  adm_p_lvl   INTEGER  0 national, 1 regional, 2 district
-  geom        GEOMETRY  point, EPSG:4326
-
-These may or may not exist, depending on whether the pipeline has been run.
-Do not use them unless the question clearly requires them:
+These exist only once the pipeline has been run and exported. Do not use them
+unless the question clearly requires them:
   ghana.building, ghana.road, ghana.facility
+
+Macros available:
+  gh_distance_km(lat1, lon1, lat2, lon2)          great-circle km
+  gh_within_km(lat1, lon1, lat2, lon2, km)        boolean
+  gh_bbox_overlaps(ax1, ay1, ax2, ay2, bx1, by1, bx2, by2)
+  gh_in_bbox(lon, lat, xmin, ymin, xmax, ymax)
+  gh_bearing(lat1, lon1, lat2, lon2)              degrees from north
+
+Useful coordinates:
+  Accra 5.603, -0.187   Kumasi 6.700, -1.624   Tamale 9.403, -0.839
+  Takoradi 4.900, -1.760   Cape Coast 5.106, -1.246   Ho 6.612, 0.471
+  Wa 10.060, -2.501   Bolgatanga 10.786, -0.851
 `;
 
 const RULES = `
 Rules:
 - Return DuckDB SQL only. No markdown fences, no prose, no explanation.
+- There is NO spatial extension in the browser. Never use ST_ functions of any
+  kind: no ST_Area, ST_Distance, ST_Intersects, ST_Within, ST_Transform.
+- geom is GeoJSON text. Select it through unchanged when the result should be
+  drawn on a map; never compute with it.
+- area_sqkm is already in square kilometres.
+- For distance, proximity or nearest-neighbour questions, use the lon and lat
+  columns with gh_distance_km or gh_within_km. For coarse containment use the
+  bbox columns with gh_in_bbox or gh_bbox_overlaps.
 - Join administrative levels on p-codes, never on names:
   JOIN ghana.region r ON r.adm1_pcode = left(d.adm2_pcode, 4)
 - Ghana has 16 regions and 260 districts. Brong Ahafo no longer exists; it
   became Bono, Bono East and Ahafo in 2019.
-- Match names case-insensitively and allow partial matches:
-  WHERE lower(adm1_name) LIKE '%ashanti%'
-- area_sqkm is already in square kilometres. Never call ST_Area on a 4326
-  geometry to compute area - it would return square degrees.
-- For distances or areas not already in a column, transform first:
-  ST_Distance(ST_Transform(a, 'EPSG:4326', 'EPSG:32630'),
-              ST_Transform(b, 'EPSG:4326', 'EPSG:32630'))
-- If the result is meant to be drawn on a map, include the geometry column
-  and alias it exactly as geom.
+- Match names case-insensitively: WHERE lower(adm1_name) LIKE '%ashanti%'
 - Add LIMIT 200 unless the question implies a complete list or an aggregate.
 - If the question cannot be answered from the schema above, return exactly:
   -- cannot answer: <short reason>

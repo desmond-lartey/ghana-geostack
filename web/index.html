@@ -24,7 +24,7 @@
 
 <style>
 /* ---------------------------------------------------------------------------
-   Ghana GeoStack - viewer
+   Ghana GeoStack — viewer
 
    Typography is the Source superfamily: Source Serif 4 for headings, Source
    Sans 3 for interface text, JetBrains Mono for figures and SQL. The serif
@@ -720,6 +720,12 @@ td { font-family: var(--font-mono); font-size: 12.5px; font-variant-numeric: tab
       <circle cx="7.5" cy="7.5" r="6.2" stroke="currentColor" stroke-width="1.2"/>
     </svg>Ask
   </button>
+  <button class="btn btn-secondary" id="btn-tools" aria-pressed="false">
+    <svg width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden="true">
+      <path d="M9.9 2.3a3 3 0 0 0-3.6 4l-4 4a1.2 1.2 0 0 0 1.7 1.7l4-4a3 3 0 0 0 4-3.6L10.2 6.3 8.7 4.8z"
+            stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/>
+    </svg>Tools
+  </button>
   <button class="btn btn-secondary" id="btn-query" aria-pressed="false">
     <svg width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden="true">
       <path d="M2.5 4h10M2.5 7.5h6.5M2.5 11h4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
@@ -754,6 +760,7 @@ td { font-family: var(--font-mono); font-size: 12.5px; font-variant-numeric: tab
     <div id="tabs" role="tablist">
       <button class="tab" role="tab" id="tab-layers"   aria-selected="true"  aria-controls="pane-layers">Layers</button>
       <button class="tab" role="tab" id="tab-ask"      aria-selected="false" aria-controls="pane-ask">Ask</button>
+      <button class="tab" role="tab" id="tab-tools"    aria-selected="false" aria-controls="pane-tools">Tools</button>
       <button class="tab" role="tab" id="tab-query"    aria-selected="false" aria-controls="pane-query">Query</button>
       <button class="tab" role="tab" id="tab-settings" aria-selected="false" aria-controls="pane-settings">Map</button>
       <button class="tab" role="tab" id="tab-sources"  aria-selected="false" aria-controls="pane-sources">About</button>
@@ -789,6 +796,38 @@ td { font-family: var(--font-mono); font-size: 12.5px; font-variant-numeric: tab
     <div id="ask-examples"></div>
   </div>
 
+  <div class="tabpanel" id="pane-tools" role="tabpanel" aria-labelledby="tab-tools">
+    <h3>Geoprocessing</h3>
+    <p class="legend-note" style="margin:0 0 14px">
+      Runs in this browser on the features you choose. Nothing is uploaded.
+      Results draw on the map and download like any other query result.</p>
+
+    <div class="field">
+      <label for="tool-input">Input</label>
+      <select id="tool-input"></select>
+    </div>
+
+    <div class="field">
+      <label for="tool-name">Tool</label>
+      <select id="tool-name"></select>
+      <p class="legend-note" id="tool-note" style="margin-top:7px"></p>
+    </div>
+
+    <div class="field" id="tool-param-field">
+      <label for="tool-param" id="tool-param-label">Distance, km</label>
+      <input id="tool-param" type="number" step="any" value="5"
+             style="width:100%;height:38px;padding:0 11px;border-radius:var(--radius);border:1px solid var(--border);background:var(--surface-2);color:var(--text);font-family:var(--font-mono);font-size:13px">
+    </div>
+
+    <div class="actions">
+      <button class="btn btn-primary" id="tool-run">Run tool</button>
+      <button class="btn btn-quiet" id="tool-download" style="height:38px">GeoJSON</button>
+      <span id="tool-status">&nbsp;</span>
+    </div>
+
+    <div id="tool-result"></div>
+  </div>
+
   <div class="tabpanel" id="pane-query" role="tabpanel" aria-labelledby="tab-query">
     <h3>Run SQL against the data</h3>
     <textarea id="sql" spellcheck="false" aria-label="SQL query">SELECT adm1_pcode, adm1_name, round(area_sqkm) AS km2
@@ -797,6 +836,8 @@ ORDER BY km2 DESC;</textarea>
     <div class="actions">
       <button class="btn btn-primary" id="run">Run query</button>
       <button class="btn btn-quiet" id="mapit" style="height:38px">Show on map</button>
+      <button class="btn btn-quiet" id="download-geojson" style="height:38px">GeoJSON</button>
+      <button class="btn btn-quiet" id="download-csv" style="height:38px">CSV</button>
       <span id="status">Starting engine</span>
     </div>
     <div id="result"></div>
@@ -815,6 +856,46 @@ ORDER BY km2 DESC;</textarea>
     <div class="segmented" role="group" aria-label="Theme">
       <button data-theme-set="dark"  aria-pressed="true">Dark</button>
       <button data-theme-set="light" aria-pressed="false">Light</button>
+    </div>
+
+    <h3>Asking questions</h3>
+    <div class="field">
+      <label for="provider">Provider</label>
+      <select id="provider">
+        <option value="anthropic">Anthropic</option>
+        <option value="openai">OpenAI</option>
+        <option value="google">Google Gemini</option>
+        <option value="custom">Custom, OpenAI-compatible</option>
+      </select>
+    </div>
+    <div class="field" id="base-url-field" hidden>
+      <label for="base-url">Base URL</label>
+      <input id="base-url" type="url" spellcheck="false"
+             placeholder="https://openrouter.ai/api/v1"
+             style="width:100%;height:38px;padding:0 11px;border-radius:var(--radius);border:1px solid var(--border);background:var(--surface-2);color:var(--text);font-family:var(--font-mono);font-size:12.5px">
+    </div>
+    <div class="field">
+      <label for="model">Model</label>
+      <input id="model" type="text" spellcheck="false"
+             style="width:100%;height:38px;padding:0 11px;border-radius:var(--radius);border:1px solid var(--border);background:var(--surface-2);color:var(--text);font-family:var(--font-mono);font-size:12.5px">
+    </div>
+    <div class="field">
+      <label for="api-key">API key</label>
+      <input id="api-key" type="password" autocomplete="off" spellcheck="false"
+             placeholder="sk-ant-..."
+             style="width:100%;height:38px;padding:0 11px;border-radius:var(--radius);border:1px solid var(--border);background:var(--surface-2);color:var(--text);font-family:var(--font-mono);font-size:12.5px">
+      <div class="actions">
+        <button class="btn btn-quiet" id="key-save" style="height:32px">Save key</button>
+        <button class="btn btn-quiet" id="key-clear" style="height:32px">Remove</button>
+        <span id="key-status" style="flex-basis:100%;font-size:12.5px;color:var(--text-3)"></span>
+      </div>
+      <p class="legend-note">
+        Optional. The key is kept in this browser and sent only to the
+        provider you choose. Leave it empty to use this site's own endpoint if
+        one is configured, or the built-in question patterns if not.
+        A custom base URL must also be allowed by the site's content security
+        policy.
+      </p>
     </div>
 
     <h3>Dimension</h3>
@@ -907,7 +988,7 @@ const store = {
 /* Basemaps.
 
    The default is no basemap at all. The boundaries are the map, they are
-   served from this site, and nothing is requested from a third party - which
+   served from this site, and nothing is requested from a third party — which
    is faster, works offline, and cannot break when somebody else changes their
    terms. The alternatives below are open endpoints that need no API key;
    confirm the terms of whichever you deploy. */
@@ -961,7 +1042,7 @@ const BASEMAPS = {
     } }]
   },
   none: {
-    label: "None - data only",
+    label: "None — data only",
     note: "No third-party requests, and nothing but Ghana on screen. Fastest and most private, but the country floats with no world around it.",
     sources: {},
     layers: []
@@ -1168,7 +1249,7 @@ const STORY = [
    State and map
 --------------------------------------------------------------------------- */
 
-const fmt = (v) => (v === null || v === undefined || v === "" ? "-"
+const fmt = (v) => (v === null || v === undefined || v === "" ? "—"
   : typeof v === "number" ? Math.round(v).toLocaleString() : v);
 
 const state = {
@@ -1177,6 +1258,7 @@ const state = {
   basemap: store.get("basemap", "esri_dark"),
   projection: store.get("projection", "globe"),
   threeD: store.get("threeD", "0") === "1",
+  spatial: false,
   located: null,
   tilesOk: false
 };
@@ -1291,7 +1373,7 @@ function bindPopup(layerId, layer) {
     const props = e.features?.[0]?.properties ?? {};
     const { title, rows } = layer.popup(props);
     const body = Object.entries(rows)
-      .filter(([, v]) => v !== undefined && v !== null && v !== "" && v !== "-")
+      .filter(([, v]) => v !== undefined && v !== null && v !== "" && v !== "—")
       .map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join("");
     new maplibregl.Popup({ closeButton: true, maxWidth: "300px" })
       .setLngLat(e.lngLat).setHTML(`<b>${title ?? layer.name}</b><dl>${body}</dl>`).addTo(map);
@@ -1460,7 +1542,7 @@ function closePanel() {
   scrim.dataset.open = "false";
   hamburger.setAttribute("aria-expanded", "false");
   hamburger.setAttribute("aria-label", "Open menu");
-  for (const id of ["btn-query", "btn-info", "btn-ask"]) {
+  for (const id of ["btn-query", "btn-info", "btn-ask", "btn-tools"]) {
     document.getElementById(id).setAttribute("aria-pressed", "false");
   }
 }
@@ -1491,6 +1573,7 @@ function togglePanelButton(buttonId, tab) {
 }
 
 togglePanelButton("btn-ask", "ask");
+togglePanelButton("btn-tools", "tools");
 togglePanelButton("btn-query", "query");
 togglePanelButton("btn-info", "sources");
 
@@ -1681,7 +1764,11 @@ const EXAMPLES = [
   ["Ten smallest districts",
    "SELECT adm2_pcode, adm2_name, adm1_name,\n       round(area_sqkm, 1) AS km2\nFROM ghana.district ORDER BY area_sqkm LIMIT 10;"],
   ["Greater Accra, on the map",
-   "SELECT adm2_name, geom\nFROM ghana.district\nWHERE left(adm2_pcode, 4) = 'GH07';"]
+   "SELECT adm2_name, geom\nFROM ghana.district\nWHERE left(adm2_pcode, 4) = 'GH07';"],
+  ["Districts within 100 km of Accra",
+   "SELECT adm2_name, adm1_name,\n       round(gh_distance_km(5.603, -0.187, lat, lon), 1) AS km,\n       geom\nFROM ghana.district\nWHERE gh_within_km(5.603, -0.187, lat, lon, 100)\nORDER BY km;"],
+  ["Districts furthest from a regional capital",
+   "SELECT district, capital, km FROM (\n  SELECT d.adm2_name AS district, c.name AS capital,\n         round(gh_distance_km(d.lat, d.lon, c.lat, c.lon), 1) AS km,\n         row_number() OVER (\n           PARTITION BY d.adm2_name\n           ORDER BY gh_distance_km(d.lat, d.lon, c.lat, c.lon)) AS rn\n  FROM ghana.district d\n  CROSS JOIN ghana.capital c\n  WHERE c.adm_p_lvl = 1\n)\nWHERE rn = 1\nORDER BY km DESC\nLIMIT 20;"]
 ];
 
 document.getElementById("examples").innerHTML = EXAMPLES
@@ -1699,51 +1786,173 @@ function setStatus(text, isError = false) {
   statusEl.dataset.error = String(isError);
 }
 
+/* Geometry helpers.
+
+   DuckDB compiled to WebAssembly has no spatial extension, so the page
+   computes a small set of spatial attributes for every feature as it loads.
+   Those columns plus the SQL macros below cover the spatial questions people
+   actually ask — distance, nearest, within a radius, bounding-box overlap —
+   without needing a server, an extension, or a local install. */
+
+function flatten(coordinates, out = []) {
+  if (typeof coordinates[0] === "number") { out.push(coordinates); return out; }
+  for (const part of coordinates) flatten(part, out);
+  return out;
+}
+
+function bboxOf(geometry) {
+  const points = flatten(geometry.coordinates);
+  let xmin = Infinity, ymin = Infinity, xmax = -Infinity, ymax = -Infinity;
+  for (const [x, y] of points) {
+    if (x < xmin) xmin = x;
+    if (y < ymin) ymin = y;
+    if (x > xmax) xmax = x;
+    if (y > ymax) ymax = y;
+  }
+  return [xmin, ymin, xmax, ymax];
+}
+
+/* Area-weighted centroid of the largest ring, which for an L-shaped or
+   crescent district lands inside the polygon far more often than the mean of
+   its vertices does. Points return themselves. */
+function centroidOf(geometry) {
+  if (geometry.type === "Point") return geometry.coordinates;
+
+  const rings = geometry.type === "MultiPolygon"
+    ? geometry.coordinates.map((polygon) => polygon[0])
+    : geometry.type === "Polygon" ? [geometry.coordinates[0]]
+    : [flatten(geometry.coordinates)];
+
+  const ring = rings.reduce((a, b) => (b.length > a.length ? b : a));
+
+  let twiceArea = 0, x = 0, y = 0;
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    const cross = ring[j][0] * ring[i][1] - ring[i][0] * ring[j][1];
+    twiceArea += cross;
+    x += (ring[j][0] + ring[i][0]) * cross;
+    y += (ring[j][1] + ring[i][1]) * cross;
+  }
+
+  if (twiceArea === 0) {
+    const [xmin, ymin, xmax, ymax] = bboxOf(geometry);
+    return [(xmin + xmax) / 2, (ymin + ymax) / 2];
+  }
+  return [x / (3 * twiceArea), y / (3 * twiceArea)];
+}
+
 async function registerLayer(db, conn, name, url) {
   const response = await fetch(url);
-  if (!response.ok) throw new Error(`${url}: ${response.status}`);
+  if (!response.ok) throw new Error(`${url} returned ${response.status}`);
   const collection = await response.json();
 
-  const rows = collection.features.map((f) => ({
-    ...f.properties,
-    geom_json: JSON.stringify(f.geometry)
-  }));
+  const rows = collection.features.map((f) => {
+    const [xmin, ymin, xmax, ymax] = bboxOf(f.geometry);
+    const [lon, lat] = centroidOf(f.geometry);
+    return {
+      ...f.properties,
+      lon: Number(lon.toFixed(6)),
+      lat: Number(lat.toFixed(6)),
+      bbox_xmin: Number(xmin.toFixed(6)),
+      bbox_ymin: Number(ymin.toFixed(6)),
+      bbox_xmax: Number(xmax.toFixed(6)),
+      bbox_ymax: Number(ymax.toFixed(6)),
+      // Geometry travels as GeoJSON text; the page parses it when drawing.
+      geom: JSON.stringify(f.geometry)
+    };
+  });
 
   await db.registerFileText(`${name}.json`, JSON.stringify(rows));
-  await conn.query(`
-    CREATE OR REPLACE VIEW ghana.${name} AS
-    SELECT * EXCLUDE (geom_json), ST_GeomFromGeoJSON(geom_json) AS geom
-    FROM read_json_auto('${name}.json');`);
+
+  // geom is always GeoJSON text, so drawing a result works identically whether
+  // or not the spatial extension loaded. When it did, shape carries the same
+  // geometry as a real GEOMETRY and the full ST_ function set applies to it.
+  const shape = state.spatial
+    ? ", ST_GeomFromGeoJSON(geom) AS shape"
+    : "";
+
+  await conn.query(
+    `CREATE OR REPLACE VIEW ghana.${name} AS SELECT *${shape} FROM read_json_auto('${name}.json');`);
+
+  const count = await conn.query(`SELECT count(*) AS n FROM ghana.${name};`);
+  return Number(count.toArray()[0].toJSON().n);
 }
+
+/* Spatial SQL without a spatial extension. These are plain DuckDB macros, so
+   they work in every browser and in the desktop build alike. */
+const SPATIAL_MACROS = `
+CREATE OR REPLACE MACRO gh_distance_km(lat1, lon1, lat2, lon2) AS
+  2 * 6371.0088 * asin(sqrt(
+    pow(sin(radians(lat2 - lat1) / 2), 2) +
+    cos(radians(lat1)) * cos(radians(lat2)) *
+    pow(sin(radians(lon2 - lon1) / 2), 2)));
+
+CREATE OR REPLACE MACRO gh_within_km(lat1, lon1, lat2, lon2, km) AS
+  gh_distance_km(lat1, lon1, lat2, lon2) <= km;
+
+CREATE OR REPLACE MACRO gh_bbox_overlaps(axmin, aymin, axmax, aymax,
+                                         bxmin, bymin, bxmax, bymax) AS
+  axmax >= bxmin AND axmin <= bxmax AND aymax >= bymin AND aymin <= bymax;
+
+CREATE OR REPLACE MACRO gh_in_bbox(lon, lat, xmin, ymin, xmax, ymax) AS
+  lon BETWEEN xmin AND xmax AND lat BETWEEN ymin AND ymax;
+
+CREATE OR REPLACE MACRO gh_bearing(lat1, lon1, lat2, lon2) AS
+  (degrees(atan2(
+     sin(radians(lon2 - lon1)) * cos(radians(lat2)),
+     cos(radians(lat1)) * sin(radians(lat2)) -
+     sin(radians(lat1)) * cos(radians(lat2)) * cos(radians(lon2 - lon1))
+   )) + 360) % 360;
+`;
 
 async function initDuckDB() {
   try {
-    const duckdb = await import("https://cdn.jsdelivr.net/npm/@duckdb/duckdb-wasm@1.29.0/+esm");
+    // 1.33.x is the first line to publish the spatial extension for the
+    // WebAssembly platforms. Pinned, because an unpinned import would silently
+    // change the engine under a deployment that has been tested.
+    const duckdb = await import("https://cdn.jsdelivr.net/npm/@duckdb/duckdb-wasm@1.33.1-dev57.0/+esm");
     const bundle = await duckdb.selectBundle(duckdb.getJsDelivrBundles());
     const worker = await duckdb.createWorker(bundle.mainWorker);
     const db = new duckdb.AsyncDuckDB(new duckdb.ConsoleLogger(), worker);
     await db.instantiate(bundle.mainModule, bundle.pthreadWorker);
     conn = await db.connect();
-    await conn.query("INSTALL spatial; LOAD spatial;");
+
+    // No spatial extension. DuckDB-WASM does not ship one, and an INSTALL that
+    // throws here would take every view down with it. Geometry is handled as
+    // GeoJSON text instead, which covers everything this console needs:
+    // attribute queries, aggregation, joins, and drawing a result on the map.
+    // The desktop build in duckdb/bootstrap.sql does load spatial and gives
+    // you the full ST_ function set.
     await conn.query("CREATE SCHEMA IF NOT EXISTS ghana;");
+    for (const statement of SPATIAL_MACROS.split(";").map((t) => t.trim()).filter(Boolean)) {
+      await conn.query(statement + ";");
+    }
 
-    // st_read cannot reach an HTTP URL from inside the WebAssembly build, so
-    // each layer is fetched by the page, flattened to plain rows, and handed
-    // to DuckDB as a registered file. The geometry travels as GeoJSON text and
-    // is parsed by the spatial extension on the way into the view.
-    await registerLayer(db, conn, "region", `${REFERENCE}/gha_admin1.geojson`);
-    await registerLayer(db, conn, "district", `${REFERENCE}/gha_admin2.geojson`);
-    await registerLayer(db, conn, "capital", `${REFERENCE}/gha_admincapitals.geojson`);
+    const loaded = [];
+    for (const [view, file] of [["region", "gha_admin1"],
+                                ["district", "gha_admin2"],
+                                ["capital", "gha_admincapitals"]]) {
+      try {
+        const n = await registerLayer(db, conn, view, `${REFERENCE}/${file}.geojson`);
+        loaded.push(`${view} (${n})`);
+      } catch (err) {
+        console.error(`ghana.${view} failed to load`, err);
+      }
+    }
 
+    // Exports, when the pipeline has produced them.
     for (const [view, file] of [["building", "core.building"], ["road", "core.road"],
                                 ["facility", "core.facility"]]) {
       try {
         await conn.query(`CREATE OR REPLACE VIEW ghana.${view} AS
           SELECT * FROM read_parquet('${EXPORTS}/${file}.parquet');`);
+        loaded.push(view);
       } catch { /* export not generated yet */ }
     }
 
-    setStatus("Ready");
+    if (!loaded.length) throw new Error("no tables could be loaded");
+    setStatus(`Ready — ${loaded.join(", ")}`
+      + (state.spatial ? " · spatial functions available on shape"
+                       : " · spatial macros only"));
   } catch (err) {
     setStatus(`Query engine failed to start: ${err.message ?? err}`, true);
     console.error(err);
@@ -1762,6 +1971,7 @@ async function runQuery() {
   try {
     const table = await conn.query(sql);
     const rows = table.toArray().map((r) => r.toJSON());
+    lastRows = rows;
     renderTable(rows);
     setStatus(`${rows.length.toLocaleString()} rows in ${Math.round(performance.now() - started)} ms`);
   } catch (err) {
@@ -1777,7 +1987,8 @@ function renderInto(host, rows) {
       No rows. Usually a filter that is too tight, or a name that did not match.</p>`;
     return;
   }
-  const cols = Object.keys(rows[0]).filter((c) => !["geom", "geometry", "wkb_geometry"].includes(c));
+  const cols = Object.keys(rows[0])
+    .filter((c) => !["geom", "shape", "geometry", "wkb_geometry"].includes(c));
   const head = cols.map((c) => `<th>${c}</th>`).join("");
   const body = rows.slice(0, 200)
     .map((r) => `<tr>${cols.map((c) => `<td>${cell(r[c])}</td>`).join("")}</tr>`).join("");
@@ -1788,7 +1999,7 @@ function renderInto(host, rows) {
 }
 
 function cell(v) {
-  if (v === null || v === undefined) return "-";
+  if (v === null || v === undefined) return "—";
   if (typeof v === "bigint") return v.toLocaleString();
   if (typeof v === "number") return Number.isInteger(v) ? v.toLocaleString() : v.toFixed(2);
   return String(v).slice(0, 48);
@@ -1796,21 +2007,41 @@ function cell(v) {
 
 async function mapResult() {
   if (!conn) return setStatus("Engine not ready", true);
-  const sql = document.getElementById("sql").value.trim().replace(/;\s*$/, "");
+  const sql = document.getElementById("sql").value.trim();
 
   setStatus("Building layer");
   try {
-    const table = await conn.query(
-      `SELECT ST_AsGeoJSON(geom) AS __g, * EXCLUDE (geom) FROM (${sql}) t`);
+    const table = await conn.query(sql);
+    const rows = table.toArray().map((r) => r.toJSON());
 
-    const features = table.toArray().map((r) => {
-      const row = r.toJSON();
-      const geometry = JSON.parse(row.__g);
-      delete row.__g;
-      return { type: "Feature", geometry, properties: row };
-    });
+    if (!rows.length) {
+      setStatus("The query returned no rows, so there is nothing to draw", true);
+      return;
+    }
+    if (!("geom" in rows[0])) {
+      setStatus("Add geom to the SELECT list to draw the result", true);
+      return;
+    }
 
-    for (const id of ["qr-fill", "qr-line"]) if (map.getLayer(id)) map.removeLayer(id);
+    // geom holds GeoJSON text, so the page parses it rather than asking DuckDB
+    // for a spatial function it does not have in the browser.
+    const features = [];
+    for (const row of rows) {
+      const { geom, ...properties } = row;
+      if (!geom) continue;
+      try {
+        features.push({ type: "Feature", geometry: JSON.parse(String(geom)), properties });
+      } catch { /* not a geometry, skip the row */ }
+    }
+
+    if (!features.length) {
+      setStatus("No usable geometry in the result", true);
+      return;
+    }
+
+    for (const id of ["qr-fill", "qr-line", "qr-point"]) {
+      if (map.getLayer(id)) map.removeLayer(id);
+    }
     if (map.getSource("qr")) map.removeSource("qr");
 
     map.addSource("qr", { type: "geojson", data: { type: "FeatureCollection", features } });
@@ -1818,7 +2049,12 @@ async function mapResult() {
       filter: ["in", ["geometry-type"], ["literal", ["Polygon", "MultiPolygon"]]],
       paint: { "fill-color": colours().query, "fill-opacity": 0.3 } });
     map.addLayer({ id: "qr-line", type: "line", source: "qr",
+      filter: ["!", ["in", ["geometry-type"], ["literal", ["Point", "MultiPoint"]]]],
       paint: { "line-color": colours().query, "line-width": 1.6 } });
+    map.addLayer({ id: "qr-point", type: "circle", source: "qr",
+      filter: ["in", ["geometry-type"], ["literal", ["Point", "MultiPoint"]]],
+      paint: { "circle-radius": 5, "circle-color": colours().query,
+               "circle-stroke-width": 1, "circle-stroke-color": colours().ground } });
 
     const bounds = new maplibregl.LngLatBounds();
     for (const f of features) {
@@ -1827,25 +2063,163 @@ async function mapResult() {
     }
     if (!bounds.isEmpty()) map.fitBounds(bounds, { padding: 60, duration: 900 });
 
-    setStatus(`${features.length.toLocaleString()} features mapped`);
+    setStatus(`${features.length.toLocaleString()} features drawn`);
     closePanel();
   } catch (err) {
-    setStatus("Result needs a geometry column named geom", true);
-    console.warn(err);
+    setStatus(String(err.message ?? err), true);
+    console.error(err);
   }
 }
 
-/* ---------------------------------------------------------------------------
-   Ask
+/* The contract given to whichever model answers, restated on the client so a
+   reader with their own key needs nothing from this site. */
+const ASK_SCHEMA = `Tables in DuckDB, schema "ghana":
 
-   A question becomes SQL, the SQL is shown, and only then does anything run.
-   The query executes in this browser against data the browser already has, so
-   nothing from the database leaves the machine - only the question travels,
-   and only when a translation endpoint is configured.
+ghana.region    16 rows   adm1_pcode ('GH01'..'GH16'), adm1_name, area_sqkm,
+                          lon, lat (centroid), bbox_xmin/ymin/xmax/ymax, geom
+ghana.district  260 rows  adm2_pcode ('GHrrdd'), adm2_name, adm1_name,
+                          adm1_pcode, area_sqkm, lon, lat,
+                          bbox_xmin/ymin/xmax/ymax, geom
+ghana.capital   177 rows  name, adm1_name, adm2_name, adm_p_lvl
+                          (0 national, 1 regional, 2 district), lon, lat, geom
 
-   Without an endpoint the patterns below still answer the most common
-   questions offline.
---------------------------------------------------------------------------- */
+Macros, available in every browser:
+  gh_distance_km(lat1, lon1, lat2, lon2)   great-circle km
+  gh_within_km(lat1, lon1, lat2, lon2, km) boolean
+  gh_bbox_overlaps(ax1, ay1, ax2, ay2, bx1, by1, bx2, by2)
+  gh_in_bbox(lon, lat, xmin, ymin, xmax, ymax)
+  gh_bearing(lat1, lon1, lat2, lon2)       degrees from north
+
+Coordinates: Accra 5.603 -0.187, Kumasi 6.700 -1.624, Tamale 9.403 -0.839,
+Takoradi 4.900 -1.760, Cape Coast 5.106 -1.246, Ho 6.612 0.471,
+Wa 10.060 -2.501, Bolgatanga 10.786 -0.851
+
+Rules:
+- Return DuckDB SQL only. No markdown fences, no prose.
+- geom is GeoJSON text. Select it through unchanged when the result should be
+  drawn on a map; never compute with it.
+- area_sqkm is already in square kilometres.
+- Use lon/lat with gh_distance_km for distance, proximity and nearest
+  questions. Use the bbox columns for coarse containment.
+- Only use ST_ functions if the question cannot be answered otherwise, and
+  then on the shape column, which exists only when the spatial extension
+  loaded. Prefer the macros.
+- Join levels on p-codes: r.adm1_pcode = left(d.adm2_pcode, 4)
+- Ghana has 16 regions and 260 districts. Brong Ahafo became Bono, Bono East
+  and Ahafo in 2019.
+- Match names with lower(...) LIKE '%...%'.
+- Return only a SELECT or WITH statement. Never write data.
+- Add LIMIT 200 unless the question implies a full list or an aggregate.
+- If it cannot be answered, return exactly: -- cannot answer: <reason>`;
+
+const PROVIDERS = {
+  anthropic: {
+    label: "Anthropic",
+    model: "claude-sonnet-5",
+    url: () => "https://api.anthropic.com/v1/messages",
+    headers: (key) => ({
+      "content-type": "application/json",
+      "x-api-key": key,
+      "anthropic-version": "2023-06-01",
+      // Required before Anthropic will accept a request made from a page.
+      "anthropic-dangerous-direct-browser-access": "true"
+    }),
+    body: (question, model, system) => ({
+      model, max_tokens: 700, system,
+      messages: [{ role: "user", content: question }]
+    }),
+    text: (payload) => payload.content.filter((b) => b.type === "text")
+                                      .map((b) => b.text).join("\n")
+  },
+  openai: {
+    label: "OpenAI",
+    model: "gpt-5.6",
+    url: () => "https://api.openai.com/v1/chat/completions",
+    headers: (key) => ({ "content-type": "application/json", authorization: `Bearer ${key}` }),
+    body: (question, model, system) => ({
+      model, messages: [{ role: "system", content: system },
+                        { role: "user", content: question }]
+    }),
+    text: (payload) => payload.choices?.[0]?.message?.content ?? ""
+  },
+  google: {
+    label: "Google Gemini",
+    model: "gemini-2.5-pro",
+    url: (model, key) =>
+      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(key)}`,
+    headers: () => ({ "content-type": "application/json" }),
+    body: (question, model, system) => ({
+      systemInstruction: { parts: [{ text: system }] },
+      contents: [{ role: "user", parts: [{ text: question }] }]
+    }),
+    text: (payload) =>
+      payload.candidates?.[0]?.content?.parts?.map((p) => p.text).join("\n") ?? ""
+  },
+  custom: {
+    label: "Custom, OpenAI-compatible",
+    model: "",
+    url: (model, key, baseUrl) => `${(baseUrl || "").replace(/\/$/, "")}/chat/completions`,
+    headers: (key) => ({ "content-type": "application/json", authorization: `Bearer ${key}` }),
+    body: (question, model, system) => ({
+      model, messages: [{ role: "system", content: system },
+                        { role: "user", content: question }]
+    }),
+    text: (payload) => payload.choices?.[0]?.message?.content ?? ""
+  }
+};
+
+async function askProvider(question, { provider, key, model, baseUrl }) {
+  const spec = PROVIDERS[provider] ?? PROVIDERS.anthropic;
+  const system = `You write SQL for the Ghana GeoStack, a spatial database of Ghana.\n${ASK_SCHEMA}`;
+  const chosenModel = model || spec.model;
+
+  if (provider === "custom" && !baseUrl) throw new Error("A custom provider needs a base URL.");
+
+  const response = await fetch(spec.url(chosenModel, key, baseUrl), {
+    method: "POST",
+    headers: spec.headers(key),
+    body: JSON.stringify(spec.body(question, chosenModel, system))
+  });
+
+  if (!response.ok) {
+    const detail = await response.text();
+    throw new Error(response.status === 401 || response.status === 403
+      ? `${spec.label} rejected that key.`
+      : `${spec.label} returned ${response.status}. ${detail.slice(0, 160)}`);
+  }
+
+  const payload = await response.json();
+  const sql = spec.text(payload).trim();
+  return sql.replace(/^```(?:sql)?\s*/i, "").replace(/\s*```$/, "").trim();
+}
+
+/* SQL the reader did not write is checked before it runs.
+
+   Adapted from GeoLibre's assistant guard: mask string and comment literals
+   first so a keyword inside a quoted value does not trip the test, then require
+   the statement to open with SELECT or WITH and hold no side-effecting keyword
+   anywhere — which is what catches a data-modifying CTE such as
+   WITH x AS (DELETE ...) SELECT ...
+
+   SQL typed by hand in the Query tab is not checked. That database lives in the
+   reader's own browser and is discarded on reload. */
+
+const SQL_WRITE_KEYWORDS =
+  /\b(INSERT|UPDATE|DELETE|MERGE|CREATE|DROP|ALTER|TRUNCATE|REPLACE|ATTACH|DETACH|COPY|EXPORT|IMPORT|INSTALL|LOAD|PRAGMA|VACUUM|CHECKPOINT|CALL)\b/;
+
+function maskSqlLiterals(sql) {
+  return sql
+    .replace(/--[^\n]*/g, " ")
+    .replace(/\/\*[\s\S]*?\*\//g, " ")
+    .replace(/'(?:[^']|'')*'/g, "''")
+    .replace(/"(?:[^"]|"")*"/g, '""');
+}
+
+function isReadOnlySql(sql) {
+  const masked = maskSqlLiterals(sql).trim().toUpperCase();
+  if (!masked.startsWith("SELECT") && !masked.startsWith("WITH")) return false;
+  return !SQL_WRITE_KEYWORDS.test(masked);
+}
 
 const ASK_PATTERNS = [
   {
@@ -1943,7 +2317,25 @@ async function askQuestion() {
   let sql = null;
   let message = null;
 
-  if (ASK_URL) {
+  const ownKey = store.get("apiKey", "");
+  if (ownKey) {
+    try {
+      sql = await askProvider(question, {
+        provider: store.get("provider", "anthropic"),
+        key: ownKey,
+        model: store.get("model", ""),
+        baseUrl: store.get("baseUrl", "")
+      });
+      if (sql.startsWith("-- cannot answer")) {
+        message = sql.replace(/^--\s*/, "");
+        sql = null;
+      }
+    } catch (err) {
+      message = String(err.message ?? err);
+    }
+  }
+
+  if (!sql && !message && ASK_URL) {
     try {
       const response = await fetch(ASK_URL, {
         method: "POST",
@@ -1986,6 +2378,13 @@ async function askExecute(toMap = false) {
   const sql = askSql.value.trim();
   if (!sql || !conn) return;
 
+  if (!isReadOnlySql(sql)) {
+    askStatus.dataset.error = "true";
+    askStatus.textContent =
+      "That is not a read-only query, so it will not be run. Open it in the Query tab if you meant it.";
+    return;
+  }
+
   askStatus.dataset.error = "false";
   askStatus.textContent = "Running";
 
@@ -2006,6 +2405,63 @@ async function askExecute(toMap = false) {
   }
 }
 
+/* Provider settings. The key lives in this browser and is sent only to the
+   provider the reader picked — never to this site. */
+
+const keyInput = document.getElementById("api-key");
+const keyStatus = document.getElementById("key-status");
+const providerSelect = document.getElementById("provider");
+const modelInput = document.getElementById("model");
+const baseUrlInput = document.getElementById("base-url");
+const baseUrlField = document.getElementById("base-url-field");
+
+function syncProviderFields() {
+  const provider = providerSelect.value;
+  baseUrlField.hidden = provider !== "custom";
+  modelInput.placeholder = PROVIDERS[provider].model || "model name";
+}
+
+function refreshKeyStatus() {
+  const key = store.get("apiKey", "");
+  const providerLabel = PROVIDERS[store.get("provider", "anthropic")]?.label ?? "the provider";
+  keyStatus.textContent = key
+    ? `Key saved in this browser, ending ${key.slice(-4)}. Questions go to ${providerLabel}.`
+    : ASK_URL ? "No key. Questions use this site's endpoint."
+              : "No key. Questions use the built-in patterns.";
+}
+
+providerSelect.value = store.get("provider", "anthropic");
+modelInput.value = store.get("model", "");
+baseUrlInput.value = store.get("baseUrl", "");
+syncProviderFields();
+refreshKeyStatus();
+
+providerSelect.addEventListener("change", () => {
+  store.set("provider", providerSelect.value);
+  // A model name belongs to one provider, so it does not survive a switch.
+  store.set("model", "");
+  modelInput.value = "";
+  syncProviderFields();
+  refreshKeyStatus();
+});
+
+modelInput.addEventListener("change", () => store.set("model", modelInput.value.trim()));
+baseUrlInput.addEventListener("change", () => store.set("baseUrl", baseUrlInput.value.trim()));
+
+document.getElementById("key-save").addEventListener("click", () => {
+  const key = keyInput.value.trim();
+  if (!key) return;
+  store.set("apiKey", key);
+  keyInput.value = "";
+  refreshKeyStatus();
+});
+
+document.getElementById("key-clear").addEventListener("click", () => {
+  store.set("apiKey", "");
+  keyInput.value = "";
+  refreshKeyStatus();
+});
+
 document.getElementById("ask-run").addEventListener("click", askQuestion);
 document.getElementById("ask-execute").addEventListener("click", () => askExecute(false));
 document.getElementById("ask-map").addEventListener("click", () => askExecute(true));
@@ -2015,6 +2471,281 @@ document.getElementById("ask-edit").addEventListener("click", () => {
 });
 document.getElementById("question").addEventListener("keydown", (e) => {
   if ((e.metaKey || e.ctrlKey) && e.key === "Enter") askQuestion();
+});
+
+/* Download the result. A platform whose answers cannot leave the page is a
+   demo; these two formats cover what almost anyone does next, in a spreadsheet
+   or in a desktop GIS. */
+
+let lastRows = [];
+
+function download(filename, text, mimeType) {
+  const url = URL.createObjectURL(new Blob([text], { type: mimeType }));
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  link.click();
+  // Revoked on a later tick: revoking immediately races the download in Firefox
+  // and produces an empty file.
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function toCsv(rows) {
+  if (!rows.length) return "";
+  const columns = Object.keys(rows[0]).filter((c) => c !== "shape");
+  const escape = (v) => {
+    if (v === null || v === undefined) return "";
+    const text = String(v);
+    return /[",\n]/.test(text) ? `"${text.replaceAll('"', '""')}"` : text;
+  };
+  return [columns.join(","),
+          ...rows.map((r) => columns.map((c) => escape(r[c])).join(","))].join("\n");
+}
+
+function toGeoJson(rows) {
+  const features = [];
+  for (const row of rows) {
+    const { geom, shape, ...properties } = row;
+    if (!geom) continue;
+    try {
+      features.push({ type: "Feature", geometry: JSON.parse(String(geom)), properties });
+    } catch { /* not geometry */ }
+  }
+  return JSON.stringify({ type: "FeatureCollection", features }, null, 1);
+}
+
+document.getElementById("download-csv").addEventListener("click", () => {
+  if (!lastRows.length) return setStatus("Run a query first", true);
+  download("ghana-geostack.csv", toCsv(lastRows), "text/csv;charset=utf-8");
+});
+
+document.getElementById("download-geojson").addEventListener("click", () => {
+  if (!lastRows.length) return setStatus("Run a query first", true);
+  const geojson = toGeoJson(lastRows);
+  if (JSON.parse(geojson).features.length === 0) {
+    return setStatus("Add geom to the SELECT list to download geometry", true);
+  }
+  download("ghana-geostack.geojson", geojson, "application/geo+json");
+});
+
+/* ---------------------------------------------------------------------------
+   Geoprocessing
+
+   Turf runs the vector operations in this page, on the features already in the
+   browser. It is loaded on first use rather than up front, because most
+   visitors never open this tab and the bundle is not small.
+
+   These results are for exploration. Turf works on the sphere and its buffers
+   and unions are approximations; PostGIS remains the authority for anything
+   that has to be defensible. The note under each tool says where that matters.
+--------------------------------------------------------------------------- */
+
+let turf = null;
+let toolOutput = null;
+
+async function loadTurf() {
+  if (!turf) {
+    setToolStatus("Loading the geoprocessing library");
+    turf = await import("https://cdn.jsdelivr.net/npm/@turf/turf@7.2.0/+esm");
+  }
+  return turf;
+}
+
+const TOOLS = {
+  buffer: {
+    label: "Buffer",
+    note: "A zone of the given radius around each feature. Useful for catchments — 5 km is the CHPS planning distance.",
+    param: "Radius, km",
+    value: 5,
+    run: (t, fc, km) => t.buffer(fc, km, { units: "kilometers" })
+  },
+  centroid: {
+    label: "Centroids",
+    note: "One point per feature, at its centre of mass.",
+    param: null,
+    run: (t, fc) => t.featureCollection(
+      fc.features.map((f) => {
+        const point = t.centroid(f);
+        point.properties = { ...f.properties };
+        return point;
+      }))
+  },
+  dissolve: {
+    label: "Dissolve into one",
+    note: "Merges every feature into a single polygon, dropping internal boundaries. Districts become their region; regions become the country.",
+    param: null,
+    run: (t, fc) => {
+      const polygons = fc.features.filter((f) =>
+        f.geometry.type === "Polygon" || f.geometry.type === "MultiPolygon");
+      if (!polygons.length) throw new Error("Dissolve needs polygons.");
+      return t.featureCollection([polygons.reduce((a, b) => t.union(t.featureCollection([a, b])))]);
+    }
+  },
+  convex: {
+    label: "Convex hull",
+    note: "The tightest convex polygon containing every feature. A quick way to see the extent of a selection.",
+    param: null,
+    run: (t, fc) => t.featureCollection([t.convex(fc)])
+  },
+  envelope: {
+    label: "Bounding box",
+    note: "One rectangle around the whole input.",
+    param: null,
+    run: (t, fc) => t.featureCollection([t.envelope(fc)])
+  },
+  simplify: {
+    label: "Simplify",
+    note: "Removes vertices while keeping the shape recognisable. Lower the tolerance for more detail. Simplified boundaries are for display, never for measurement.",
+    param: "Tolerance, degrees",
+    value: 0.01,
+    run: (t, fc, tolerance) => t.simplify(fc, { tolerance, highQuality: true })
+  },
+  voronoi: {
+    label: "Voronoi catchments",
+    note: "Divides the country into the area closest to each input point. A first approximation of service catchments — it ignores roads, rivers and travel time.",
+    param: null,
+    run: (t, fc) => {
+      const points = t.featureCollection(fc.features.map((f) =>
+        f.geometry.type === "Point" ? f : t.centroid(f)));
+      return t.voronoi(points, { bbox: [-3.30, 4.50, 1.25, 11.20] });
+    }
+  },
+  measure: {
+    label: "Measure",
+    note: "Area in square kilometres and perimeter in kilometres for each feature. No new geometry — the input is returned with the measurements attached.",
+    param: null,
+    run: (t, fc) => t.featureCollection(fc.features.map((f) => ({
+      ...f,
+      properties: {
+        ...f.properties,
+        area_km2: Math.round(t.area(f) / 1e4) / 100,
+        perimeter_km: Math.round(t.length(t.polygonToLine(f), { units: "kilometers" }) * 100) / 100
+      }
+    })))
+  }
+};
+
+const toolInput = document.getElementById("tool-input");
+const toolName = document.getElementById("tool-name");
+const toolParam = document.getElementById("tool-param");
+const toolParamField = document.getElementById("tool-param-field");
+const toolParamLabel = document.getElementById("tool-param-label");
+const toolNote = document.getElementById("tool-note");
+const toolStatus = document.getElementById("tool-status");
+const toolResult = document.getElementById("tool-result");
+
+function setToolStatus(text, isError = false) {
+  toolStatus.textContent = text;
+  toolStatus.dataset.error = String(isError);
+}
+
+toolName.innerHTML = Object.entries(TOOLS)
+  .map(([key, tool]) => `<option value="${key}">${tool.label}</option>`).join("");
+
+toolInput.innerHTML = [
+  ["result", "Current query result"],
+  ["region", "Regions (16)"],
+  ["district", "Districts (260)"],
+  ["capital", "Administrative capitals (177)"]
+].map(([value, label]) => `<option value="${value}">${label}</option>`).join("");
+
+function syncToolFields() {
+  const tool = TOOLS[toolName.value];
+  toolNote.textContent = tool.note;
+  toolParamField.hidden = !tool.param;
+  if (tool.param) {
+    toolParamLabel.textContent = tool.param;
+    toolParam.value = tool.value;
+  }
+}
+
+toolName.addEventListener("change", syncToolFields);
+syncToolFields();
+
+/* The input features, as GeoJSON. Either the rows the last query returned, or
+   a whole layer read back out of DuckDB. */
+async function toolInputFeatures() {
+  if (toolInput.value === "result") {
+    if (!lastRows.length) throw new Error("Run a query first, or pick a layer.");
+    const collection = JSON.parse(toGeoJson(lastRows));
+    if (!collection.features.length) {
+      throw new Error("The last result has no geometry. Include geom in the SELECT list.");
+    }
+    return collection;
+  }
+
+  if (!conn) throw new Error("The query engine is not ready.");
+  const table = await conn.query(`SELECT * FROM ghana.${toolInput.value};`);
+  return JSON.parse(toGeoJson(table.toArray().map((r) => r.toJSON())));
+}
+
+async function runTool() {
+  try {
+    const t = await loadTurf();
+    setToolStatus("Reading input");
+    const input = await toolInputFeatures();
+
+    const tool = TOOLS[toolName.value];
+    setToolStatus(`Running ${tool.label.toLowerCase()} on ${input.features.length.toLocaleString()} features`);
+
+    // Yield once so the status paints before a long synchronous run.
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    const output = tool.run(t, input, Number(toolParam.value));
+    if (!output || !output.features?.length) throw new Error("The tool returned nothing.");
+
+    // Voronoi emits nulls for points it cannot cell; drop them.
+    output.features = output.features.filter((f) => f && f.geometry);
+    toolOutput = output;
+
+    drawToolOutput(output);
+
+    // Make the result downloadable and queryable like any other.
+    lastRows = output.features.map((f) => ({ ...f.properties, geom: JSON.stringify(f.geometry) }));
+
+    const preview = output.features.slice(0, 50).map((f) => f.properties ?? {});
+    if (preview.length && Object.keys(preview[0]).length) renderInto(toolResult, preview);
+    else toolResult.innerHTML = "";
+
+    setToolStatus(`${output.features.length.toLocaleString()} features produced and drawn`);
+    closePanel();
+  } catch (err) {
+    setToolStatus(String(err.message ?? err), true);
+    console.error(err);
+  }
+}
+
+function drawToolOutput(collection) {
+  for (const id of ["tool-fill", "tool-line", "tool-point"]) {
+    if (map.getLayer(id)) map.removeLayer(id);
+  }
+  if (map.getSource("tool")) map.removeSource("tool");
+
+  map.addSource("tool", { type: "geojson", data: collection });
+  map.addLayer({ id: "tool-fill", type: "fill", source: "tool",
+    filter: ["in", ["geometry-type"], ["literal", ["Polygon", "MultiPolygon"]]],
+    paint: { "fill-color": colours().query, "fill-opacity": 0.22 } });
+  map.addLayer({ id: "tool-line", type: "line", source: "tool",
+    filter: ["!", ["in", ["geometry-type"], ["literal", ["Point", "MultiPoint"]]]],
+    paint: { "line-color": colours().query, "line-width": 1.4 } });
+  map.addLayer({ id: "tool-point", type: "circle", source: "tool",
+    filter: ["in", ["geometry-type"], ["literal", ["Point", "MultiPoint"]]],
+    paint: { "circle-radius": 4, "circle-color": colours().query,
+             "circle-stroke-width": 1, "circle-stroke-color": colours().ground } });
+
+  const bounds = new maplibregl.LngLatBounds();
+  for (const f of collection.features) {
+    const flat = f.geometry.coordinates.flat(Infinity);
+    for (let i = 0; i < flat.length; i += 2) bounds.extend([flat[i], flat[i + 1]]);
+  }
+  if (!bounds.isEmpty()) map.fitBounds(bounds, { padding: 60, duration: 900 });
+}
+
+document.getElementById("tool-run").addEventListener("click", runTool);
+document.getElementById("tool-download").addEventListener("click", () => {
+  if (!toolOutput) return setToolStatus("Run a tool first", true);
+  download("ghana-geostack-tool.geojson", JSON.stringify(toolOutput, null, 1),
+           "application/geo+json");
 });
 
 document.getElementById("run").addEventListener("click", runQuery);
