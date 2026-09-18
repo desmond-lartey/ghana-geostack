@@ -1,4 +1,4 @@
--- bootstrap.sql — open Ghana GeoStack in DuckDB with no server at all.
+-- bootstrap.sql - open Ghana GeoStack in DuckDB with no server at all.
 --
 --   duckdb -init duckdb/bootstrap.sql
 --

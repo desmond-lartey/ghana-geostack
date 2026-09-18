@@ -1,4 +1,4 @@
-# Map Styling — Ghana GeoStack
+# Map Styling - Ghana GeoStack
 
 Adapted from the GeoSQL styling reference, with the choices that matter for
 Ghanaian data called out.
@@ -7,7 +7,7 @@ Ghanaian data called out.
 
 | Question | Layer | Avoid |
 | --- | --- | --- |
-| Where are things? | Point | Heatmap — it hides position |
+| Where are things? | Point | Heatmap - it hides position |
 | How dense? | H3 hexes, or tuned points | District choropleth of a raw count |
 | Comparison across regions | Polygon choropleth of a **rate** | Choropleth of a count |
 | Vertical magnitude | 3D polygon height | Colour alone |
@@ -55,7 +55,7 @@ colour encoding the same value.
 ## Palettes
 
 - **Sequential** (Viridis, Sunset, YlOrRd) for magnitude
-- **Diverging** (RdBu) only where there is a real midpoint — change since
+- **Diverging** (RdBu) only where there is a real midpoint - change since
   2010, above or below the national average
 - **Qualitative** (Set2, Tableau10) for up to 8 categories
 - **Never rainbow or jet.** It invents boundaries that are not in the data
@@ -67,7 +67,7 @@ already reads as vegetation on a land-cover map.
 ## Basemap
 
 Dark for point clouds and flows. Light for choropleths and anything going to
-print. Ghana's north is sparse — a dark basemap makes a national point map of
+print. Ghana's north is sparse - a dark basemap makes a national point map of
 facilities look like a coastal-only dataset, so check the render at national
 zoom before choosing.
 
@@ -93,7 +93,7 @@ Useful views:
 
 ## Every map carries its sources
 
-Non-negotiable, and not only for legal reasons — a map without provenance
+Non-negotiable, and not only for legal reasons - a map without provenance
 cannot be checked.
 
 - Title saying what is shown and for when
@@ -106,6 +106,6 @@ cannot be checked.
 
 Do not narrate visual insight from row counts. If you have not seen the
 rendered image, report what the numbers show and say the map has not been
-inspected. A snapshot showing only basemap means the layer binding is wrong —
+inspected. A snapshot showing only basemap means the layer binding is wrong -
 check the geometry column name, the data id and the column types before
 blaming the renderer.

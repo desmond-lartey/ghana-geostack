@@ -3,7 +3,7 @@
 -- rather than a scrollback buffer. Severity 'error' fails the build.
 --
 -- The rule this enforces: a map is not publishable until the SQL underneath
--- it has been checked. Not eyeballed — checked, with a number and an
+-- it has been checked. Not eyeballed - checked, with a number and an
 -- expectation next to it.
 --
 -- Run: make qc
@@ -206,7 +206,7 @@ INSERT INTO meta.qc_result (run_id, check_name, target, severity, passed, observ
 SELECT :RUN, 'building_height_plausible', 'core.building', 'warning',
        count(*) = 0, count(*), '0',
        'Heights above 120 m. Ghana''s tallest buildings are around 100 m, so '
-       'anything higher is a units error — feet parsed as metres, most likely.'
+       'anything higher is a units error - feet parsed as metres, most likely.'
 FROM core.building WHERE height_m > 120;
 
 INSERT INTO meta.qc_result (run_id, check_name, target, severity, passed, observed, expected, detail)

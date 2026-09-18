@@ -23,7 +23,7 @@
 
 <style>
 /* ---------------------------------------------------------------------------
-   Ghana GeoStack — viewer
+   Ghana GeoStack - viewer
 
    Typography is the Source superfamily: Source Serif 4 for headings, Source
    Sans 3 for interface text, JetBrains Mono for figures and SQL. The serif
@@ -788,9 +788,9 @@ ORDER BY km2 DESC;</textarea>
     </div>
 
     <div class="hint">
-      Basemaps are optional. The boundaries are served from this site, so the
-      map works with no basemap at all — which is also the fastest and most
-      private option.
+      The basemap supplies world context: coastlines, neighbouring countries
+      and place names. Choosing <em>None</em> removes every third-party
+      request and leaves only the boundaries published with this site.
     </div>
   </div>
 
@@ -859,20 +859,14 @@ const store = {
 /* Basemaps.
 
    The default is no basemap at all. The boundaries are the map, they are
-   served from this site, and nothing is requested from a third party — which
+   served from this site, and nothing is requested from a third party - which
    is faster, works offline, and cannot break when somebody else changes their
    terms. The alternatives below are open endpoints that need no API key;
    confirm the terms of whichever you deploy. */
 const BASEMAPS = {
-  none: {
-    label: "None — data only",
-    note: "No third-party requests. The boundaries carry the map.",
-    sources: {},
-    layers: []
-  },
   esri_dark: {
-    label: "Esri dark grey canvas",
-    note: "Neutral dark cartography. Attribution to Esri is required.",
+    label: "World, dark",
+    note: "Neutral dark cartography with coastlines and country borders. Attribution to Esri is required.",
     sources: {
       base: {
         type: "raster",
@@ -882,10 +876,10 @@ const BASEMAPS = {
         attribution: "Esri, HERE, Garmin, © OpenStreetMap contributors"
       }
     },
-    layers: [{ id: "basemap", type: "raster", source: "base", paint: { "raster-opacity": 0.8 } }]
+    layers: [{ id: "basemap", type: "raster", source: "base", paint: { "raster-opacity": 0.85 } }]
   },
   esri_light: {
-    label: "Esri light grey canvas",
+    label: "World, light",
     note: "Pairs with the light theme. Attribution to Esri is required.",
     sources: {
       base: {
@@ -896,11 +890,11 @@ const BASEMAPS = {
         attribution: "Esri, HERE, Garmin, © OpenStreetMap contributors"
       }
     },
-    layers: [{ id: "basemap", type: "raster", source: "base", paint: { "raster-opacity": 0.85 } }]
+    layers: [{ id: "basemap", type: "raster", source: "base", paint: { "raster-opacity": 0.9 } }]
   },
   osm: {
-    label: "OpenStreetMap standard",
-    note: "Full detail. Heavy use should run from your own tile server.",
+    label: "OpenStreetMap, full detail",
+    note: "Streets, place names and buildings. Desaturated to sit under the data. Heavy use should run from your own tile server.",
     sources: {
       base: {
         type: "raster",
@@ -910,7 +904,19 @@ const BASEMAPS = {
         attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
       }
     },
-    layers: [{ id: "basemap", type: "raster", source: "base", paint: { "raster-opacity": 0.75 } }]
+    // Desaturated and darkened in the renderer rather than by a styled tile
+    // service, so no API key is involved.
+    layers: [{ id: "basemap", type: "raster", source: "base", paint: {
+      "raster-opacity": 0.6,
+      "raster-saturation": -0.75,
+      "raster-contrast": -0.1
+    } }]
+  },
+  none: {
+    label: "None - data only",
+    note: "No third-party requests, and nothing but Ghana on screen. Fastest and most private, but the country floats with no world around it.",
+    sources: {},
+    layers: []
   }
 };
 
@@ -1075,13 +1081,13 @@ const STORY = [
    State and map
 --------------------------------------------------------------------------- */
 
-const fmt = (v) => (v === null || v === undefined || v === "" ? "—"
+const fmt = (v) => (v === null || v === undefined || v === "" ? "-"
   : typeof v === "number" ? Math.round(v).toLocaleString() : v);
 
 const state = {
   active: new Set(),
   theme: store.get("theme", "dark"),
-  basemap: store.get("basemap", "none"),
+  basemap: store.get("basemap", "esri_dark"),
   projection: store.get("projection", "globe"),
   located: null,
   tilesOk: false
@@ -1180,7 +1186,7 @@ function bindPopup(layerId, layer) {
     const props = e.features?.[0]?.properties ?? {};
     const { title, rows } = layer.popup(props);
     const body = Object.entries(rows)
-      .filter(([, v]) => v !== undefined && v !== null && v !== "" && v !== "—")
+      .filter(([, v]) => v !== undefined && v !== null && v !== "" && v !== "-")
       .map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join("");
     new maplibregl.Popup({ closeButton: true, maxWidth: "300px" })
       .setLngLat(e.lngLat).setHTML(`<b>${title ?? layer.name}</b><dl>${body}</dl>`).addTo(map);
@@ -1407,6 +1413,20 @@ function setTheme(theme) {
   repaintLayers();
   renderLayerList();
   renderLegend();
+
+  // Follow the theme with the matching basemap unless one was chosen by hand.
+  if (!store.get("basemap:chosen", "")) {
+    const paired = theme === "dark" ? "esri_dark" : "esri_light";
+    if (state.basemap !== paired && BASEMAPS[paired]) {
+      state.basemap = paired;
+      const select = document.getElementById("basemap-select");
+      if (select) {
+        select.value = paired;
+        document.getElementById("basemap-note").textContent = BASEMAPS[paired].note;
+      }
+      if (map.isStyleLoaded()) rebuildStyle();
+    }
+  }
 }
 
 document.getElementById("theme-toggle").addEventListener("click", () =>
@@ -1426,6 +1446,7 @@ document.getElementById("basemap-note").textContent = BASEMAPS[state.basemap].no
 basemapSelect.addEventListener("change", async () => {
   state.basemap = basemapSelect.value;
   store.set("basemap", state.basemap);
+  store.set("basemap:chosen", "1");
   document.getElementById("basemap-note").textContent = BASEMAPS[state.basemap].note;
   await rebuildStyle();
 });
@@ -1598,7 +1619,7 @@ function renderTable(rows) {
 }
 
 function cell(v) {
-  if (v === null || v === undefined) return "—";
+  if (v === null || v === undefined) return "-";
   if (typeof v === "bigint") return v.toLocaleString();
   if (typeof v === "number") return Number.isInteger(v) ? v.toLocaleString() : v.toFixed(2);
   return String(v).slice(0, 48);

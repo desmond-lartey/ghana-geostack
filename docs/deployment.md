@@ -22,9 +22,9 @@ boundaries and disables the layers that require one.
 3. Deploy.
 
 The build runs `python3 scripts/build_web.py`, which assembles `public/` from
-`web/index.html` and `data/reference/`. No dependencies are installed —
+`web/index.html` and `data/reference/`. No dependencies are installed -
 the script uses the Python standard library only, and `installCommand` is a
-no-op — so a deployment takes a few seconds.
+no-op - so a deployment takes a few seconds.
 
 ### Environment variables
 
@@ -83,15 +83,15 @@ A boundaries-only deployment needs no backend. To enable buildings, roads and
 the analysis layers, run pg_tileserv somewhere reachable over HTTPS and set
 `TILES_URL`.
 
-Vercel cannot host pg_tileserv itself — it needs a persistent connection to
+Vercel cannot host pg_tileserv itself - it needs a persistent connection to
 PostGIS. Run it on a VM, Fly.io, Railway or Cloud Run, alongside a managed
 PostGIS instance such as Neon, Supabase or Crunchy Bridge.
 
 Two things to configure on that host:
 
-- **CORS** — allow the Vercel origin. The compose file sets
+- **CORS** - allow the Vercel origin. The compose file sets
   `TS_CORSORIGINS` to `*` for development; narrow it in production.
-- **Exposure** — pg_tileserv should connect as `ghana_read`, the read-only
+- **Exposure** - pg_tileserv should connect as `ghana_read`, the read-only
   role created in `db/migrations/001_schemas.sql`, and should see only the
   `serve` schema.
 
@@ -168,7 +168,7 @@ make docs-serve          # syncs, then serves on http://localhost:8000
 ```
 
 `make docs-serve` runs `sync_docs.py` first. MkDocs is configured to watch
-`skills/` as well as `docs/`, so editing a skill reference reloads the browser —
+`skills/` as well as `docs/`, so editing a skill reference reloads the browser -
 though the sync must be rerun to pick up a newly added file.
 
 ### Custom domain
