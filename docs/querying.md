@@ -341,3 +341,45 @@ The side panel is a dock, not a modal. On a wide screen the map gives up the
 panel's width rather than sliding underneath it, so panning and zooming
 continue to work with the panel open - which matters when setting up a live
 fetch, where the view decides what gets fetched.
+
+## Terrain
+
+Elevation comes from Terrarium tiles on AWS Open Data - SRTM and other public
+sources encoded into RGB. Free, keyless, and available everywhere, so it works
+on a plain deployment with no pipeline.
+
+Switch it on in **Map → Terrain**:
+
+| Control | Effect |
+| --- | --- |
+| Hillshade under the data | Shaded relief beneath every layer, above the basemap |
+| 3D relief, and elevation on click | Real terrain, and a ground height in every popup |
+| Vertical exaggeration | 1× to 120× |
+
+Ghana rises from sea level to about 885 m at Mount Afadja. Across a country
+670 km deep that is almost invisible at true scale, which is why the default
+exaggeration is high. Read the relief as shape, never as height, and say so on
+any map published from it.
+
+### Elevation as data
+
+**Tools → Sample elevation** reads ground height at each feature's centre and
+attaches it as `elevation_m`. Combined with the rest of the page that gives a
+full terrain workflow with no database:
+
+1. **Map → Terrain**, switch on 3D relief, and zoom to the area so the tiles load
+2. **Query**: `SELECT adm2_name, adm1_name, lon, lat, geom FROM ghana.district WHERE left(adm2_pcode, 4) = 'GH11';`
+3. **Show on map**
+4. **Tools → Sample elevation → Run**
+5. **Style → Graduate by `elevation_m` → 3D**
+
+Savannah Region's districts, coloured and raised by their ground height.
+Download it as GeoJSON or CSV from the Query tab.
+
+The sampler only reads tiles that have loaded, so it works on the area in view
+rather than on the whole country. It says so plainly rather than returning
+zeros for everything off screen.
+
+For elevation across all 260 districts at once, or for slope, aspect and
+watersheds, use the pipeline: `core.dem` holds Copernicus GLO-30 at 30 m and
+PostGIS computes the rest properly.

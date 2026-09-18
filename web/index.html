@@ -11,7 +11,7 @@
 <meta name="gh:data-root" content="../data">
 <meta name="gh:tiles-url" content="">
 <meta name="gh:ask-url" content="/api/ask">
-<meta name="gh:overpass-url" content="https://overpass-api.de/api/interpreter">
+<meta name="gh:overpass-url" content="https://overpass-api.de/api/interpreter,https://overpass.kumi.systems/api/interpreter,https://overpass.private.coffee/api/interpreter">
 
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="icon" href="favicon-32.png" sizes="32x32">
@@ -203,19 +203,48 @@ button { cursor: pointer; border: none; background: none; }
   z-index: 20;
 }
 
+/* The wordmark is a plate rather than floating text: a mark, the name, and a
+   line saying what the thing is. It reads as a published map at a glance, and
+   it survives being dropped on any basemap. */
 #wordmark {
-  font-family: var(--font-display);
-  font-size: 19px;
-  font-weight: 700;
-  letter-spacing: -0.015em;
-  padding: 7px 14px;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 9px 15px 9px 12px;
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: var(--radius);
+  border-radius: var(--radius-lg);
   box-shadow: var(--shadow);
 }
 
-#wordmark span { color: var(--accent); }
+#wordmark .mark {
+  width: 26px; height: 26px;
+  flex: none;
+  display: block;
+}
+
+#wordmark .text { line-height: 1.1; }
+
+#wordmark .name {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+#wordmark .name em { font-style: normal; color: var(--accent); }
+
+#wordmark .tag {
+  display: block;
+  margin-top: 3px;
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  font-weight: 500;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
 
 @media (max-width: 620px) { #wordmark { display: none; } }
 
@@ -682,7 +711,15 @@ td { font-family: var(--font-mono); font-size: 12.5px; font-variant-numeric: tab
 </section>
 
 <div id="header">
-  <span id="wordmark">Ghana<span>Geo</span>Stack</span>
+  <span id="wordmark">
+    <svg class="mark" viewBox="0 0 32 32" aria-hidden="true">
+      <path fill="var(--accent)" d="M19.25 2.92 19.04 2.88 19 2.98 19.06 3.08 18.82 3.14 18.71 3.3 18.66 3.08 18.44 3.12 18.39 3.46 18.25 3.44 17.97 3.68 17.87 3.62 17.77 3.89 17.63 3.83 17.46 3.75 17.38 3.59 16.82 3.56 16.58 3.73 16.46 3.67 16.12 3.55 15.66 3.57 15.2 3.72 14.6 3.62 14.1 3.8 13.5 3.7 12.9 3.85 12.3 3.75 11.7 3.95 11.1 3.9 10.5 4.1 10 4.4 9.6 4.9 9.3 5.5 9.1 6.2 9 7 8.9 8 8.8 9 8.7 10 8.5 11 8.3 12 8 13 7.7 14 7.4 15 7.2 16 7.1 17 7.2 18 7.4 19 7.7 20 8.1 21 8.6 22 9.2 23 9.9 24 10.7 25 11.6 26 12.6 27 13.7 28 14.9 28.8 16.2 29.4 17.6 29.7 19 29.6 20.4 29.2 21.7 28.5 22.9 27.5 23.9 26.3 24.6 24.9 25 23.4 25.1 21.8 24.9 20.2 24.4 18.7 23.7 17.3 22.8 16.1 21.8 15 20.7 14 19.6 13.1 18.5 12.3 17.4 11.6 16.4 11 15.5 10.4 14.7 9.9 14 9.4 13.4 9 12.9 8.6 12.5 8.2 12.2 7.8 12 7.4 11.9 7 11.9 6.6 12 6.2 12.2 5.8 12.5 5.4 12.9 5 13.4 4.6 14 4.3 14.7 4 15.5 3.8 16.4 3.6 17.4 3.5 18.5 3.4 19.6Z"/>
+    </svg>
+    <span class="text">
+      <span class="name">Ghana<em>Geo</em>Stack</span>
+      <span class="tag">Open spatial data</span>
+    </span>
+  </span>
   <button id="theme-toggle" class="btn-icon" aria-label="Switch to light theme" title="Switch theme">
     <svg id="icon-theme" width="17" height="17" viewBox="0 0 17 17" fill="none" aria-hidden="true">
       <path d="M13.5 9.6A5.4 5.4 0 0 1 7 3.2a5.6 5.6 0 1 0 6.5 6.4z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>
@@ -862,6 +899,31 @@ ORDER BY km2 DESC;</textarea>
       <button data-theme-set="light" aria-pressed="false">Light</button>
     </div>
 
+    <h3>Terrain</h3>
+    <div class="field">
+      <label style="display:flex;align-items:center;gap:9px;font-weight:400">
+        <input type="checkbox" id="hillshade-toggle" style="accent-color:var(--accent)">
+        Hillshade under the data
+      </label>
+    </div>
+    <div class="field">
+      <label style="display:flex;align-items:center;gap:9px;font-weight:400">
+        <input type="checkbox" id="terrain-toggle" style="accent-color:var(--accent)">
+        3D relief, and elevation on click
+      </label>
+    </div>
+    <div class="field" id="exaggeration-field" hidden>
+      <label for="exaggeration">Vertical exaggeration
+        <span id="exaggeration-out" style="color:var(--accent)"></span></label>
+      <input type="range" id="exaggeration" min="1" max="120" step="1"
+             style="width:100%;accent-color:var(--accent)">
+      <p class="legend-note">
+        Ghana rises from sea level to about 885 m at Mount Afadja. At true
+        scale that is almost invisible across a country 670 km deep, so relief
+        here is deliberately overstated. Read it as shape, never as height.
+      </p>
+    </div>
+
     <h3>Asking questions</h3>
     <div class="field">
       <label for="provider">Provider</label>
@@ -946,8 +1008,10 @@ ORDER BY km2 DESC;</textarea>
       <dd>© OpenStreetMap contributors, ODbL. Fetched from the Overpass API
           on request, for the view you are looking at.</dd>
       <dt>Terrain</dt>
-      <dd>Copernicus DEM GLO-30. © DLR e.V. 2010–2014,
-          © Airbus Defence and Space GmbH.</dd>
+      <dd>Hillshade, 3D relief and elevation readings come from Terrarium
+          tiles on AWS Open Data, built from SRTM, NED and other public
+          sources. The pipeline uses Copernicus DEM GLO-30:
+          © DLR e.V. 2010–2014, © Airbus Defence and Space GmbH.</dd>
     </dl>
 
     <h3>Reading the data</h3>
@@ -978,7 +1042,10 @@ const meta = (name, fallback) =>
 const DATA_ROOT = meta("gh:data-root", "../data");
 const TILES     = meta("gh:tiles-url", "") || null;
 const ASK_URL   = meta("gh:ask-url", "") || null;
-const OVERPASS  = meta("gh:overpass-url", "") || null;
+// Several public instances, tried in order. Any one of them can be down,
+// rate-limiting, or refusing a browser request on a given day, and a single
+// hard-coded endpoint turns that into "the feature is broken".
+const OVERPASS  = meta("gh:overpass-url", "").split(",").map((u) => u.trim()).filter(Boolean);
 const EXPORTS   = `${DATA_ROOT}/exports`;
 const REFERENCE = `${DATA_ROOT}/reference`;
 
@@ -1267,6 +1334,9 @@ const state = {
   projection: store.get("projection", "globe"),
   threeD: store.get("threeD", "0") === "1",
   spatial: false,
+  terrain: store.get("terrain", "0") === "1",
+  hillshade: store.get("hillshade", "0") === "1",
+  exaggeration: Number(store.get("exaggeration", "40")),
   located: null,
   tilesOk: false
 };
@@ -1307,6 +1377,7 @@ map.on("load", async () => {
   document.getElementById("boot").dataset.done = "true";
   map.flyTo({ ...HOME, duration: 2400, essential: true });
   for (const layer of LAYERS) setLayerVisible(layer.id, layer.on, false);
+  applyTerrain();
   setDimension(state.threeD);
   renderLayerList(); renderLegend();
 });
@@ -1376,19 +1447,71 @@ async function addLayer(layer) {
   if (!layer.style(colours()).some((p) => p.type !== "line")) bindPopup(layer.sublayers[0], layer);
 }
 
+/* One popup for the whole map.
+
+   Binding a click handler per layer meant a point sitting inside a district
+   inside a region opened three popups stacked on top of each other. A single
+   handler queries everything under the cursor at once and shows one card,
+   with the smallest feature first - which is almost always the one the reader
+   meant to click. */
+
+let popup = null;
+const popupLayers = new Map();   // map layer id -> { title, rows } builder
+
 function bindPopup(layerId, layer) {
-  map.on("click", layerId, (e) => {
-    const props = e.features?.[0]?.properties ?? {};
-    const { title, rows } = layer.popup(props);
-    const body = Object.entries(rows)
-      .filter(([, v]) => v !== undefined && v !== null && v !== "" && v !== "-")
-      .map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join("");
-    new maplibregl.Popup({ closeButton: true, maxWidth: "300px" })
-      .setLngLat(e.lngLat).setHTML(`<b>${title ?? layer.name}</b><dl>${body}</dl>`).addTo(map);
-  });
+  popupLayers.set(layerId, layer);
   map.on("mouseenter", layerId, () => { map.getCanvas().style.cursor = "pointer"; });
   map.on("mouseleave", layerId, () => { map.getCanvas().style.cursor = ""; });
 }
+
+function popupSection(title, rows) {
+  const body = Object.entries(rows)
+    .filter(([, v]) => v !== undefined && v !== null && v !== "" && v !== "-")
+    .map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join("");
+  return `<b>${title}</b><dl>${body}</dl>`;
+}
+
+map.on("click", (e) => {
+  const interactive = [...popupLayers.keys()].filter((id) => map.getLayer(id));
+  const hits = interactive.length
+    ? map.queryRenderedFeatures(e.point, { layers: interactive })
+    : [];
+
+  popup?.remove();
+  popup = null;
+
+  if (!hits.length) return;
+
+  // Points before lines before polygons, so the precise thing wins over the
+  // large thing it happens to sit inside.
+  const rank = { Point: 0, MultiPoint: 0, LineString: 1, MultiLineString: 1 };
+  hits.sort((a, b) => (rank[a.geometry.type] ?? 2) - (rank[b.geometry.type] ?? 2));
+
+  const seen = new Set();
+  const sections = [];
+
+  for (const hit of hits) {
+    const layer = popupLayers.get(hit.layer.id);
+    if (!layer || seen.has(layer.name ?? hit.layer.id)) continue;
+    seen.add(layer.name ?? hit.layer.id);
+
+    const { title, rows } = layer.popup(hit.properties ?? {});
+    sections.push(popupSection(title ?? layer.name, rows));
+    if (sections.length === 3) break;   // three is already a lot to read
+  }
+
+  // Elevation is about the place, not about any one feature, so it is appended
+  // once rather than repeated in each section.
+  const elevation = terrainElevationAt(e.lngLat);
+  if (elevation !== null) {
+    sections.push(`<b>Ground</b><dl><dt>Elevation</dt><dd>${Math.round(elevation)} m</dd></dl>`);
+  }
+
+  popup = new maplibregl.Popup({ closeButton: true, maxWidth: "300px" })
+    .setLngLat(e.lngLat)
+    .setHTML(sections.join('<hr style="border:none;border-top:1px solid var(--border);margin:10px 0">'))
+    .addTo(map);
+});
 
 function setLayerVisible(id, visible, redraw = true) {
   const layer = LAYERS.find((l) => l.id === id);
@@ -1451,8 +1574,74 @@ async function rebuildStyle() {
   applyProjection();
 
   for (const layer of LAYERS) setLayerVisible(layer.id, visible.has(layer.id), false);
+  applyTerrain();
   map.jumpTo(camera);
   renderLayerList(); renderLegend();
+}
+
+/* ---------------------------------------------------------------------------
+   Terrain
+
+   Elevation comes from the Terrarium tiles on AWS Open Data - SRTM and other
+   public sources encoded into RGB, free, keyless and CORS-enabled. That gives
+   three things at once: hillshade under the data, real 3D relief, and an
+   elevation reading anywhere the reader clicks.
+
+   Ghana runs from sea level to about 885 m at Mount Afadja, so the default
+   exaggeration is high; at true scale the country looks flat because it very
+   nearly is.
+--------------------------------------------------------------------------- */
+
+const TERRAIN_SOURCE = {
+  type: "raster-dem",
+  tiles: ["https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png"],
+  encoding: "terrarium",
+  tileSize: 256,
+  maxzoom: 13,
+  attribution: "Elevation: Terrarium tiles, AWS Open Data · SRTM, NED and others"
+};
+
+function addTerrainSource() {
+  if (!map.getSource("dem")) map.addSource("dem", TERRAIN_SOURCE);
+}
+
+function applyTerrain() {
+  addTerrainSource();
+
+  if (map.getLayer("hillshade")) map.removeLayer("hillshade");
+  if (state.hillshade) {
+    // Inserted above the basemap but below everything else, so it shades the
+    // ground rather than washing out the data drawn on it.
+    const firstDataLayer = map.getStyle().layers
+      .find((l) => l.id !== "ground" && l.id !== "basemap")?.id;
+    map.addLayer({
+      id: "hillshade", type: "hillshade", source: "dem",
+      paint: {
+        "hillshade-exaggeration": 0.5,
+        "hillshade-shadow-color": state.theme === "dark" ? "#000000" : "#4A4036",
+        "hillshade-highlight-color": state.theme === "dark" ? "#6E7B82" : "#FFFFFF"
+      }
+    }, firstDataLayer);
+  }
+
+  try {
+    map.setTerrain(state.terrain ? { source: "dem", exaggeration: state.exaggeration } : null);
+  } catch (err) {
+    console.warn("3D terrain unavailable", err);
+  }
+}
+
+/* Elevation under a point, in metres. Returns null when terrain is off or the
+   tile for that spot has not loaded - which is honest, rather than reporting a
+   confident zero. */
+function terrainElevationAt(lngLat) {
+  if (!state.terrain) return null;
+  try {
+    const value = map.queryTerrainElevation(lngLat);
+    return Number.isFinite(value) ? value : null;
+  } catch {
+    return null;
+  }
 }
 
 /* ---------------------------------------------------------------------------
@@ -1664,6 +1853,45 @@ document.getElementById("theme-toggle").addEventListener("click", () =>
 for (const b of document.querySelectorAll("[data-theme-set]")) {
   b.addEventListener("click", () => setTheme(b.dataset.themeSet));
 }
+
+// Terrain
+const hillshadeToggle = document.getElementById("hillshade-toggle");
+const terrainToggle = document.getElementById("terrain-toggle");
+const exaggeration = document.getElementById("exaggeration");
+const exaggerationField = document.getElementById("exaggeration-field");
+const exaggerationOut = document.getElementById("exaggeration-out");
+
+function syncTerrainControls() {
+  hillshadeToggle.checked = state.hillshade;
+  terrainToggle.checked = state.terrain;
+  exaggerationField.hidden = !state.terrain;
+  exaggeration.value = state.exaggeration;
+  exaggerationOut.textContent = `${state.exaggeration}×`;
+}
+
+hillshadeToggle.addEventListener("change", () => {
+  state.hillshade = hillshadeToggle.checked;
+  store.set("hillshade", state.hillshade ? "1" : "0");
+  applyTerrain();
+});
+
+terrainToggle.addEventListener("change", () => {
+  state.terrain = terrainToggle.checked;
+  store.set("terrain", state.terrain ? "1" : "0");
+  syncTerrainControls();
+  applyTerrain();
+  // Relief is invisible from directly overhead.
+  if (state.terrain && map.getPitch() < 25) map.easeTo({ pitch: 55, duration: 900 });
+});
+
+exaggeration.addEventListener("input", () => {
+  state.exaggeration = Number(exaggeration.value);
+  exaggerationOut.textContent = `${state.exaggeration}×`;
+  store.set("exaggeration", String(state.exaggeration));
+  if (state.terrain) map.setTerrain({ source: "dem", exaggeration: state.exaggeration });
+});
+
+syncTerrainControls();
 
 // Basemap
 const basemapSelect = document.getElementById("basemap-select");
@@ -2963,6 +3191,36 @@ const TOOLS = {
       return t.voronoi(points, { bbox: [-3.30, 4.50, 1.25, 11.20] });
     }
   },
+  elevation: {
+    label: "Sample elevation",
+    note: "Reads ground height from the terrain tiles at each feature's centre and attaches it as elevation_m. Needs 3D relief switched on in the Map tab, and only samples where the tiles have loaded - so zoom to the area first.",
+    param: null,
+    run: (t, fc) => {
+      if (!state.terrain) {
+        throw new Error("Switch on 3D relief in the Map tab first - elevation is read from the loaded terrain tiles.");
+      }
+
+      let sampled = 0;
+      const features = fc.features.map((f) => {
+        const point = f.geometry.type === "Point" ? f.geometry.coordinates
+                                                  : t.centroid(f).geometry.coordinates;
+        const metres = terrainElevationAt({ lng: point[0], lat: point[1] });
+        if (metres !== null) sampled += 1;
+        return {
+          ...f,
+          properties: {
+            ...f.properties,
+            elevation_m: metres === null ? null : Math.round(metres)
+          }
+        };
+      });
+
+      if (!sampled) {
+        throw new Error("No terrain tiles loaded for this area yet. Zoom to it, wait for the relief to render, then run again.");
+      }
+      return t.featureCollection(features);
+    }
+  },
   measure: {
     label: "Measure",
     note: "Area in square kilometres and perimeter in kilometres for each feature. No new geometry - the input is returned with the measurements attached.",
@@ -3265,7 +3523,7 @@ function viewAreaKm2() {
 async function fetchLive(id) {
   const source = LIVE_SOURCES[id];
   const host = document.getElementById(`live-status-${id}`);
-  if (!OVERPASS) {
+  if (!OVERPASS.length) {
     host.textContent = "No endpoint configured.";
     return;
   }
@@ -3287,20 +3545,49 @@ async function fetchLive(id) {
 
   host.textContent = "Fetching from OpenStreetMap…";
 
-  try {
-    const response = await fetch(OVERPASS, {
-      method: "POST",
-      headers: { "content-type": "application/x-www-form-urlencoded" },
-      body: "data=" + encodeURIComponent(source.query(bbox))
-    });
+  const body = "data=" + encodeURIComponent(source.query(bbox));
+  const problems = [];
+  let payload = null;
 
-    if (response.status === 429 || response.status === 504) {
-      host.textContent = "The public endpoint is busy. Try again shortly.";
-      return;
+  for (const [index, endpoint] of OVERPASS.entries()) {
+    const shortName = new URL(endpoint).hostname;
+    host.textContent = index === 0
+      ? `Fetching from ${shortName}…`
+      : `${shortName} (attempt ${index + 1} of ${OVERPASS.length})…`;
+
+    try {
+      const response = await fetch(endpoint, {
+        method: "POST",
+        headers: { "content-type": "application/x-www-form-urlencoded" },
+        body,
+        signal: AbortSignal.timeout(90000)
+      });
+
+      if (response.status === 429 || response.status === 504) {
+        problems.push(`${shortName}: busy`);
+        continue;
+      }
+      if (!response.ok) {
+        problems.push(`${shortName}: HTTP ${response.status}`);
+        continue;
+      }
+
+      payload = await response.json();
+      break;
+    } catch (err) {
+      // A bare "Failed to fetch" means the request never left, or never came
+      // back: the instance is down, blocked, or the policy refused it.
+      problems.push(`${shortName}: ${err.name === "TimeoutError" ? "timed out" : (err.message ?? err)}`);
     }
-    if (!response.ok) throw new Error(`Overpass returned ${response.status}`);
+  }
 
-    const payload = await response.json();
+  if (!payload) {
+    host.textContent = `Could not reach OpenStreetMap. ${problems.join(" · ")}`;
+    console.error("Overpass attempts failed:", problems);
+    return;
+  }
+
+  try {
     const collection = overpassToGeoJson(payload.elements ?? [], source.geometry);
 
     if (!collection.features.length) {
@@ -3371,17 +3658,16 @@ function drawLive(id, source, collection) {
 
   const popupLayer = `${sourceId}-${source.geometry === "polygon" ? "fill"
                       : source.geometry === "line" ? "line" : "circle"}`;
-  map.on("click", popupLayer, (e) => {
-    const props = e.features?.[0]?.properties ?? {};
-    const rows = Object.entries(props)
-      .filter(([k, v]) => v && !["osm_id", "osm_type"].includes(k))
-      .slice(0, 10)
-      .map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join("");
-    new maplibregl.Popup().setLngLat(e.lngLat)
-      .setHTML(`<b>${props.name || source.label}</b><dl>${rows}</dl>`).addTo(map);
+  bindPopup(popupLayer, {
+    name: source.label,
+    popup: (props) => ({
+      title: props.name || source.label,
+      rows: Object.fromEntries(
+        Object.entries(props)
+          .filter(([k, v]) => v && !["osm_id", "osm_type"].includes(k))
+          .slice(0, 8))
+    })
   });
-  map.on("mouseenter", popupLayer, () => { map.getCanvas().style.cursor = "pointer"; });
-  map.on("mouseleave", popupLayer, () => { map.getCanvas().style.cursor = ""; });
 }
 
 /* Fetched features become a table, so everything the rest of the page can do
