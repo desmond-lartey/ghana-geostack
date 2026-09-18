@@ -1,8 +1,8 @@
-# AGENTS.md — instructions for coding agents working in this repo
+# AGENTS.md - instructions for coding agents working in this repo
 
 ## Skills
 
-- **ghana-geosql** — spatial SQL against the Ghana GeoStack, with mandatory
+- **ghana-geosql** - spatial SQL against the Ghana GeoStack, with mandatory
   validation before any result is presented. File: `skills/ghana-geosql/SKILL.md`.
 
 Load it when the request involves querying, mapping or analysing Ghanaian

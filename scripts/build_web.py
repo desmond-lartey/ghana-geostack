@@ -8,7 +8,7 @@ Configuration comes from the environment, which is how it is set in the Vercel
 project settings:
 
     TILES_URL     public pg_tileserv endpoint. Leave unset for a
-                  boundaries-only deployment, which is the safe default —
+                  boundaries-only deployment, which is the safe default -
                   the viewer detects the absence and disables the layers that
                   need a database rather than failing.
     SITE_URL      canonical URL, used in the sitemap.
@@ -130,7 +130,7 @@ def write_metadata() -> None:
 def report() -> None:
     total = sum(p.stat().st_size for p in OUT.rglob("*") if p.is_file())
     count = sum(1 for p in OUT.rglob("*") if p.is_file())
-    print(f"\nBuilt public/ — {count} files, {total / 1e6:.1f} MB")
+    print(f"\nBuilt public/ - {count} files, {total / 1e6:.1f} MB")
 
 
 def main() -> None:

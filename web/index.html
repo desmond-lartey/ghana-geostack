@@ -25,7 +25,7 @@
 
 <style>
 /* ---------------------------------------------------------------------------
-   Ghana GeoStack — viewer
+   Ghana GeoStack - viewer
 
    Typography is the Source superfamily: Source Serif 4 for headings, Source
    Sans 3 for interface text, JetBrains Mono for figures and SQL. The serif
@@ -993,7 +993,7 @@ const store = {
 /* Basemaps.
 
    The default is no basemap at all. The boundaries are the map, they are
-   served from this site, and nothing is requested from a third party — which
+   served from this site, and nothing is requested from a third party - which
    is faster, works offline, and cannot break when somebody else changes their
    terms. The alternatives below are open endpoints that need no API key;
    confirm the terms of whichever you deploy. */
@@ -1047,7 +1047,7 @@ const BASEMAPS = {
     } }]
   },
   none: {
-    label: "None — data only",
+    label: "None - data only",
     note: "No third-party requests, and nothing but Ghana on screen. Fastest and most private, but the country floats with no world around it.",
     sources: {},
     layers: []
@@ -1254,7 +1254,7 @@ const STORY = [
    State and map
 --------------------------------------------------------------------------- */
 
-const fmt = (v) => (v === null || v === undefined || v === "" ? "—"
+const fmt = (v) => (v === null || v === undefined || v === "" ? "-"
   : typeof v === "number" ? Math.round(v).toLocaleString() : v);
 
 const state = {
@@ -1378,7 +1378,7 @@ function bindPopup(layerId, layer) {
     const props = e.features?.[0]?.properties ?? {};
     const { title, rows } = layer.popup(props);
     const body = Object.entries(rows)
-      .filter(([, v]) => v !== undefined && v !== null && v !== "" && v !== "—")
+      .filter(([, v]) => v !== undefined && v !== null && v !== "" && v !== "-")
       .map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join("");
     new maplibregl.Popup({ closeButton: true, maxWidth: "300px" })
       .setLngLat(e.lngLat).setHTML(`<b>${title ?? layer.name}</b><dl>${body}</dl>`).addTo(map);
@@ -1680,6 +1680,16 @@ function setDimension(threeD) {
   }
 
   for (const layer of LAYERS) setLayerVisible(layer.id, state.active.has(layer.id), false);
+
+  // Live layers are not in LAYERS, so they are switched here.
+  for (const [id, source] of Object.entries(LIVE_SOURCES)) {
+    if (!source.extrude) continue;
+    const flat = `live-${id}-fill`;
+    const solid = `live-${id}-3d`;
+    if (map.getLayer(flat)) map.setLayoutProperty(flat, "visibility", threeD ? "none" : "visible");
+    if (map.getLayer(solid)) map.setLayoutProperty(solid, "visibility", threeD ? "visible" : "none");
+  }
+
   renderLayerList(); renderLegend();
 
   // A flat camera over an extruded map shows nothing but the tops of the
@@ -1803,7 +1813,7 @@ function setStatus(text, isError = false) {
    DuckDB compiled to WebAssembly has no spatial extension, so the page
    computes a small set of spatial attributes for every feature as it loads.
    Those columns plus the SQL macros below cover the spatial questions people
-   actually ask — distance, nearest, within a radius, bounding-box overlap —
+   actually ask - distance, nearest, within a radius, bounding-box overlap -
    without needing a server, an extension, or a local install. */
 
 function flatten(coordinates, out = []) {
@@ -1856,7 +1866,7 @@ function centroidOf(geometry) {
 
    Data is handed over as CSV, not JSON. read_csv_auto is part of the core
    engine, while read_json_auto needs the json extension, which is not
-   guaranteed to be present in every WebAssembly build — and when it is
+   guaranteed to be present in every WebAssembly build - and when it is
    missing, every view fails to create and the console reports only that no
    table exists.
 
@@ -2004,7 +2014,7 @@ async function initDuckDB() {
       throw new Error(failures.join(" · ") || "no tables could be loaded");
     }
     if (failures.length) console.warn("Some layers did not load:", failures);
-    setStatus(`Ready — ${loaded.join(", ")}`
+    setStatus(`Ready - ${loaded.join(", ")}`
       + (state.spatial ? " · spatial functions available on shape"
                        : " · spatial macros only"));
   } catch (err) {
@@ -2053,35 +2063,84 @@ function renderInto(host, rows) {
 }
 
 function cell(v) {
-  if (v === null || v === undefined) return "—";
+  if (v === null || v === undefined) return "-";
   if (typeof v === "bigint") return v.toLocaleString();
   if (typeof v === "number") return Number.isInteger(v) ? v.toLocaleString() : v.toFixed(2);
   return String(v).slice(0, 48);
 }
 
+/* Keys a result can be joined back to a geometry on, when the query did not
+   select one. Checked in order, so a district p-code wins over a region name
+   in a result that carries both. */
+const GEOMETRY_JOINS = [
+  { column: "adm2_pcode", table: "district", on: "adm2_pcode" },
+  { column: "adm1_pcode", table: "region",   on: "adm1_pcode" },
+  { column: "adm2_name",  table: "district", on: "adm2_name" },
+  { column: "adm1_name",  table: "region",   on: "adm1_name" },
+  { column: "district_name", table: "district", on: "adm2_name" },
+  { column: "region_name",   table: "region",   on: "adm1_name" }
+];
+
+/* Draw a query result.
+
+   Three ways a result can yield geometry, tried in order:
+     1. it selected geom
+     2. it has lon and lat, so the rows are points
+     3. it carries a key that identifies a region or a district, in which case
+        the geometry is joined back on automatically
+
+   Only when none of those hold does the reader get asked to change the query.
+   Telling somebody to rewrite a working query is a poor answer when the
+   geometry they want is one join away. */
 async function mapResult() {
   if (!conn) return setStatus("Engine not ready", true);
   const sql = document.getElementById("sql").value.trim();
 
   setStatus("Building layer");
   try {
-    const table = await conn.query(sql);
-    const rows = table.toArray().map((r) => r.toJSON());
+    let rows = (await conn.query(sql)).toArray().map((r) => r.toJSON());
 
     if (!rows.length) {
       setStatus("The query returned no rows, so there is nothing to draw", true);
       return;
     }
+
+    let joinedOn = null;
+
     if (!("geom" in rows[0])) {
-      setStatus("Add geom to the SELECT list to draw the result", true);
+      const columns = Object.keys(rows[0]);
+
+      if (columns.includes("lon") && columns.includes("lat")) {
+        // Coordinate pair: the rows are points already.
+        rows = rows.map((r) => ({
+          ...r,
+          geom: JSON.stringify({ type: "Point", coordinates: [Number(r.lon), Number(r.lat)] })
+        }));
+        joinedOn = "the lon and lat columns";
+      } else {
+        const join = GEOMETRY_JOINS.find((candidate) => columns.includes(candidate.column));
+        if (join) {
+          const inner = sql.replace(/;\s*$/, "");
+          rows = (await conn.query(
+            `SELECT t.*, g.geom
+             FROM (${inner}) t
+             JOIN ghana.${join.table} g ON g.${join.on} = t.${join.column};`
+          )).toArray().map((r) => r.toJSON());
+          joinedOn = `${join.column}, joined to ghana.${join.table}`;
+        }
+      }
+    }
+
+    if (!rows.length || !("geom" in rows[0])) {
+      setStatus("No geometry, and no column to join one on. Add geom to the SELECT list.", true);
       return;
     }
 
     // geom holds GeoJSON text, so the page parses it rather than asking DuckDB
-    // for a spatial function it does not have in the browser.
+    // for a spatial function it may not have.
     const features = [];
     for (const row of rows) {
-      const { geom, ...properties } = row;
+      const { geom, shape, ...properties } = row;
       if (!geom) continue;
       try {
         features.push({ type: "Feature", geometry: JSON.parse(String(geom)), properties });
@@ -2092,6 +2151,8 @@ async function mapResult() {
       setStatus("No usable geometry in the result", true);
       return;
     }
+
+    lastRows = rows;   // so the downloads carry the geometry too
 
     for (const id of ["qr-fill", "qr-line", "qr-point"]) {
       if (map.getLayer(id)) map.removeLayer(id);
@@ -2117,13 +2178,16 @@ async function mapResult() {
     }
     if (!bounds.isEmpty()) map.fitBounds(bounds, { padding: 60, duration: 900 });
 
-    setStatus(`${features.length.toLocaleString()} features drawn`);
+    setStatus(`${features.length.toLocaleString()} features drawn`
+      + (joinedOn ? ` · geometry from ${joinedOn}` : ""));
     closePanel();
   } catch (err) {
     setStatus(String(err.message ?? err), true);
     console.error(err);
   }
 }
+
+
 
 /* The contract given to whichever model answers, restated on the client so a
    reader with their own key needs nothing from this site. */
@@ -2252,7 +2316,7 @@ async function askProvider(question, { provider, key, model, baseUrl }) {
    Adapted from GeoLibre's assistant guard: mask string and comment literals
    first so a keyword inside a quoted value does not trip the test, then require
    the statement to open with SELECT or WITH and hold no side-effecting keyword
-   anywhere — which is what catches a data-modifying CTE such as
+   anywhere - which is what catches a data-modifying CTE such as
    WITH x AS (DELETE ...) SELECT ...
 
    SQL typed by hand in the Query tab is not checked. That database lives in the
@@ -2460,7 +2524,7 @@ async function askExecute(toMap = false) {
 }
 
 /* Provider settings. The key lives in this browser and is sent only to the
-   provider the reader picked — never to this site. */
+   provider the reader picked - never to this site. */
 
 const keyInput = document.getElementById("api-key");
 const keyStatus = document.getElementById("key-status");
@@ -2608,7 +2672,7 @@ async function loadTurf() {
 const TOOLS = {
   buffer: {
     label: "Buffer",
-    note: "A zone of the given radius around each feature. Useful for catchments — 5 km is the CHPS planning distance.",
+    note: "A zone of the given radius around each feature. Useful for catchments - 5 km is the CHPS planning distance.",
     param: "Radius, km",
     value: 5,
     run: (t, fc, km) => t.buffer(fc, km, { units: "kilometers" })
@@ -2656,7 +2720,7 @@ const TOOLS = {
   },
   voronoi: {
     label: "Voronoi catchments",
-    note: "Divides the country into the area closest to each input point. A first approximation of service catchments — it ignores roads, rivers and travel time.",
+    note: "Divides the country into the area closest to each input point. A first approximation of service catchments - it ignores roads, rivers and travel time.",
     param: null,
     run: (t, fc) => {
       const points = t.featureCollection(fc.features.map((f) =>
@@ -2666,7 +2730,7 @@ const TOOLS = {
   },
   measure: {
     label: "Measure",
-    note: "Area in square kilometres and perimeter in kilometres for each feature. No new geometry — the input is returned with the measurements attached.",
+    note: "Area in square kilometres and perimeter in kilometres for each feature. No new geometry - the input is returned with the measurements attached.",
     param: null,
     run: (t, fc) => t.featureCollection(fc.features.map((f) => ({
       ...f,
@@ -2893,7 +2957,10 @@ out geom tags;`
     colour: "#E8C67A",
     geometry: "polygon",
     maxAreaKm2: 120,
-    note: "Building footprints. A town-sized view at most — zoom in first.",
+    // Heights come from the height tag, or from building:levels at 3.2 m a
+    // storey. Switch the Map tab to 3D and the result is a skyline.
+    extrude: true,
+    note: "Footprints with height where OSM has it. Switch to 3D for a skyline. Zoom to a town first.",
     query: (bbox) => `[out:json][timeout:90];
 way["building"](${bbox});
 out geom tags;`
@@ -2902,11 +2969,29 @@ out geom tags;`
 
 /* Overpass returns OSM elements, not GeoJSON. Nodes are points; ways come back
    either with full geometry or with a centre, depending on what was asked for. */
+/* A usable height from OSM tags.
+
+   `height` is free text and arrives as "12", "12 m", sometimes "12.5m". Where
+   it is absent, `building:levels` is the next best thing; 3.2 m per storey is
+   the conventional assumption and is stated on the map rather than hidden.
+   Anything unparseable returns null, which is honest, rather than a guess. */
+function osmHeight(tags) {
+  const direct = parseFloat(String(tags.height ?? "").replace(/[^0-9.]/g, ""));
+  if (Number.isFinite(direct) && direct > 0 && direct < 400) return direct;
+
+  const levels = parseFloat(String(tags["building:levels"] ?? "").replace(/[^0-9.]/g, ""));
+  if (Number.isFinite(levels) && levels > 0 && levels < 120) return Math.round(levels * 3.2 * 10) / 10;
+
+  return null;
+}
+
 function overpassToGeoJson(elements, wantGeometry) {
   const features = [];
 
   for (const element of elements) {
-    const properties = { osm_id: element.id, osm_type: element.type, ...(element.tags ?? {}) };
+    const tags = element.tags ?? {};
+    const properties = { osm_id: element.id, osm_type: element.type, ...tags };
+    if (tags.building) properties.height_m = osmHeight(tags);
     let geometry = null;
 
     if (element.type === "node" && element.lat !== undefined) {
@@ -2956,7 +3041,7 @@ async function fetchLive(id) {
   }
 
   const b = map.getBounds();
-  // Overpass wants south,west,north,east — the opposite order to almost
+  // Overpass wants south,west,north,east - the opposite order to almost
   // everything else, and the commonest mistake when querying it.
   const bbox = [b.getSouth(), b.getWest(), b.getNorth(), b.getEast()]
     .map((v) => v.toFixed(5)).join(",");
@@ -2987,8 +3072,16 @@ async function fetchLive(id) {
     drawLive(id, source, collection);
     const registered = await registerLiveTable(source, collection);
 
-    host.textContent = `${collection.features.length.toLocaleString()} features` +
-      (registered ? ` · queryable as ghana.${source.table}` : "");
+    let summary = `${collection.features.length.toLocaleString()} features`;
+
+    if (source.extrude) {
+      const withHeight = collection.features.filter((f) => f.properties.height_m != null).length;
+      const share = Math.round(withHeight / collection.features.length * 100);
+      summary += ` · ${share}% have a height in OSM`;
+      if (share < 20) summary += " - a 3D view here will be mostly flat";
+    }
+
+    host.textContent = summary + (registered ? ` · ghana.${source.table}` : "");
   } catch (err) {
     host.textContent = `Could not fetch: ${err.message ?? err}`;
     console.error(err);
@@ -2997,7 +3090,7 @@ async function fetchLive(id) {
 
 function drawLive(id, source, collection) {
   const sourceId = `live-${id}`;
-  for (const suffix of ["fill", "line", "circle"]) {
+  for (const suffix of ["fill", "line", "circle", "3d"]) {
     const layerId = `${sourceId}-${suffix}`;
     if (map.getLayer(layerId)) map.removeLayer(layerId);
   }
@@ -3007,7 +3100,24 @@ function drawLive(id, source, collection) {
 
   if (source.geometry === "polygon") {
     map.addLayer({ id: `${sourceId}-fill`, type: "fill", source: sourceId,
-      paint: { "fill-color": source.colour, "fill-opacity": 0.55 } });
+      paint: { "fill-color": source.colour, "fill-opacity": 0.55 },
+      layout: { visibility: source.extrude && state.threeD ? "none" : "visible" } });
+
+    if (source.extrude) {
+      // Coloured and raised by the same variable, so height and hue agree.
+      // Buildings with no height tag stand at 4 m in a muted colour rather than
+      // being dropped, which would misrepresent the density of the place.
+      map.addLayer({ id: `${sourceId}-3d`, type: "fill-extrusion", source: sourceId,
+        paint: {
+          "fill-extrusion-color": ["interpolate", ["linear"], ["coalesce", ["get", "height_m"], 0],
+            0, "#4E5A62", 4, colours().district, 12, source.colour,
+            30, colours().region, 60, "#F2683C"],
+          "fill-extrusion-height": ["coalesce", ["get", "height_m"], 4],
+          "fill-extrusion-base": 0,
+          "fill-extrusion-opacity": 0.92
+        },
+        layout: { visibility: state.threeD ? "visible" : "none" } });
+    }
   } else if (source.geometry === "line") {
     map.addLayer({ id: `${sourceId}-line`, type: "line", source: sourceId,
       paint: { "line-color": source.colour, "line-width": 1.4, "line-opacity": 0.9 } });
@@ -3043,7 +3153,8 @@ async function registerLiveTable(source, collection) {
       const properties = {};
       // Keep the handful of tags worth querying; OSM objects can carry dozens.
       for (const key of ["osm_id", "name", "amenity", "healthcare", "shop",
-                         "highway", "building", "operator", "man_made"]) {
+                         "highway", "building", "operator", "man_made",
+                         "height_m", "building:levels"]) {
         if (f.properties[key] !== undefined) properties[key] = f.properties[key];
       }
       return {

@@ -1,5 +1,5 @@
 /**
- * POST /api/ask — turn a plain-English question into spatial SQL.
+ * POST /api/ask - turn a plain-English question into spatial SQL.
  *
  * Deployed automatically by Vercel from this directory. Set ANTHROPIC_API_KEY
  * in the project's environment variables to enable it; without a key the

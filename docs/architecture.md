@@ -3,7 +3,7 @@
 ## The shape of it
 
 ```
-                    config/sources.yml — nothing enters without a licence
+                    config/sources.yml - nothing enters without a licence
                               │
    ┌──────────────────────────┼──────────────────────────┐
    │                          │                          │
@@ -77,7 +77,7 @@ This is the idea worth borrowing, and it comes from GeoSQL:
 1. **Discover** the schema instead of assuming it
 2. **Resolve** the place against the database instead of guessing coordinates
 3. **Draft** the query with both the index gate and the exact predicate
-4. **Validate in SQL** — row counts, total area or length in metres, extent
+4. **Validate in SQL** - row counts, total area or length in metres, extent
    inside Ghana, nulls in mapped columns, plausibility against known figures
 5. **Then** render, and look at the render before describing it
 
