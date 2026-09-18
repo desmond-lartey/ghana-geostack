@@ -218,6 +218,12 @@ own API key saved in their browser, the site's `api/ask.js` endpoint when
 with no key at all. The query always runs in the browser, so only the question
 ever travels.
 
+The **Layers** tab can fetch health facilities, schools, markets, water points,
+roads and buildings straight from OpenStreetMap for the current view — no
+account, no key — and registers each result as a queryable table. So the whole
+chain works before any database exists: fetch clinics for a district, buffer
+them by 5 km, download the catchments.
+
 The **Tools** tab runs vector geoprocessing in the page — buffer, dissolve,
 centroids, convex hull, simplify, Voronoi catchments and measurement — on the
 current query result or a whole layer. Results draw on the map and download as

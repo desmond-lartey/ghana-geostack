@@ -106,11 +106,13 @@ reload both from the same bundle.
 `core.gh_area_m2()`.
 
 **The Query tab reports "Table with name region does not exist".** The browser
-engine failed to load the boundaries. Open the developer console for the real
-cause. Note that DuckDB compiled to WebAssembly has no spatial extension, so
-`ST_` functions are unavailable in the browser; `geom` is GeoJSON text there.
-The desktop DuckDB in `duckdb/bootstrap.sql` does load spatial and gives the
-full function set.
+engine failed to load the boundaries. The status line under the query box now
+carries the reason for each layer that failed; the console has the full error.
+
+Nothing needs to be registered or configured for querying to work — no key, no
+account, no Vercel setting. The engine and the data both come from the same
+site. An API key is only needed for the **Ask** tab, and only if you want
+plain-English questions.
 
 **The map shows only a basemap.** The layer binding is wrong. Check the
 geometry column name, that the `serve` view exists, and that pg_tileserv can

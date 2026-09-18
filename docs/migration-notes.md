@@ -77,6 +77,12 @@ browser**, built on the same Turf library GeoLibre uses for its vector tools.
 Buffer, dissolve, centroid, convex hull, simplify, Voronoi and measurement now
 run in the page on features already downloaded.
 
+A sixth followed the same principle GeoLibre is built on — that a browser can
+stream open data directly, with no server in between. **Live layers** fetch
+facilities, roads and buildings from the Overpass API for the current view and
+register each result as a table, which fills the layers that would otherwise
+sit empty for anyone without the pipeline.
+
 Not taken:
 
 - **The WebAssembly toolbox.** GeoLibre's 1,000-plus tools are WhiteboxTools

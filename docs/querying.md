@@ -201,3 +201,68 @@ and the result passes the quality-control suite.
 Voronoi catchments deserve that caveat twice over: they divide space by
 straight-line proximity alone, ignoring roads, rivers and the rainy season. In
 Ghana that is a large simplification, and the map should say so.
+
+## Live data from OpenStreetMap
+
+The layers marked *needs database* come from the full pipeline. A visitor who
+has no database can still fill the same ground: the **Layers** tab has a *Live
+from OpenStreetMap* section that fetches features for the current view from the
+Overpass API. No account, no key.
+
+| Layer | Contents | View must be under |
+| --- | --- | ---: |
+| Health facilities | Hospitals, clinics, doctors, pharmacies, health posts | 60,000 km² |
+| Schools | Schools, colleges, universities, kindergartens | 60,000 km² |
+| Markets and shops | Marketplaces, supermarkets, fuel stations | 30,000 km² |
+| Water points | Boreholes, wells, taps, pumps | 30,000 km² |
+| Roads | Motorway to tertiary | 4,000 km² |
+| Buildings | Footprints | 120 km² |
+
+The area limits exist because Overpass is a free public service run on donated
+hardware. A national building query would be refused by it and would deserve to
+be. Zoom to the area you care about first.
+
+### Fetched data becomes a table
+
+A fetch does not only draw. Each result is registered as a table, so the Query
+tab and the Tools tab treat it exactly like a published layer:
+
+```sql
+SELECT name, amenity, lon, lat, geom
+FROM ghana.osm_health
+ORDER BY name;
+```
+
+Which means the full chain works with no database at all — fetch health
+facilities for a district, buffer them by 5 km in the Tools tab, and download
+the catchments as GeoJSON.
+
+Tables created this way: `ghana.osm_health`, `ghana.osm_education`,
+`ghana.osm_market`, `ghana.osm_water`, `ghana.osm_road`, `ghana.osm_building`.
+They last for the session and are gone on reload.
+
+### Licence
+
+OpenStreetMap data is ODbL. A derived database published from it must also be
+ODbL, and attribution is required either way:
+
+> © OpenStreetMap contributors, ODbL
+
+### Coverage is uneven
+
+OSM coverage in Ghana is good in Accra and Kumasi and thinner elsewhere. The
+absence of a clinic from a fetched result means nobody has mapped one there,
+not that none exists. Where a result looks sparse, say so on the map rather
+than letting a reader infer a gap in provision from a gap in the data.
+
+### Running your own endpoint
+
+The public instance is rate-limited and occasionally busy. Point the viewer at
+another by changing one meta tag:
+
+```html
+<meta name="gh:overpass-url" content="https://your-overpass.example.org/api/interpreter">
+```
+
+A self-hosted Overpass instance loaded with the Geofabrik Ghana extract removes
+the rate limit and the area caps entirely.

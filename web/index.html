@@ -11,6 +11,7 @@
 <meta name="gh:data-root" content="../data">
 <meta name="gh:tiles-url" content="">
 <meta name="gh:ask-url" content="/api/ask">
+<meta name="gh:overpass-url" content="https://overpass-api.de/api/interpreter">
 
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="icon" href="favicon-32.png" sizes="32x32">
@@ -938,6 +939,9 @@ ORDER BY km2 DESC;</textarea>
       <dt>Buildings and roads</dt>
       <dd>© OpenStreetMap contributors (ODbL), Overture Maps Foundation,
           Google Open Buildings (CC BY 4.0).</dd>
+      <dt>Live layers</dt>
+      <dd>© OpenStreetMap contributors, ODbL. Fetched from the Overpass API
+          on request, for the view you are looking at.</dd>
       <dt>Terrain</dt>
       <dd>Copernicus DEM GLO-30. © DLR e.V. 2010–2014,
           © Airbus Defence and Space GmbH.</dd>
@@ -971,6 +975,7 @@ const meta = (name, fallback) =>
 const DATA_ROOT = meta("gh:data-root", "../data");
 const TILES     = meta("gh:tiles-url", "") || null;
 const ASK_URL   = meta("gh:ask-url", "") || null;
+const OVERPASS  = meta("gh:overpass-url", "") || null;
 const EXPORTS   = `${DATA_ROOT}/exports`;
 const REFERENCE = `${DATA_ROOT}/reference`;
 
@@ -1506,11 +1511,17 @@ function renderLayerList() {
     return `<h3>${group}</h3>${rows}`;
   }).join("");
 
+  host.insertAdjacentHTML("beforeend", renderLiveSection());
+
+  for (const btn of host.querySelectorAll("[data-live]")) {
+    btn.addEventListener("click", () => fetchLive(btn.dataset.live));
+  }
+
   if (!state.tilesOk) {
     host.insertAdjacentHTML("beforeend", `
-      <div class="hint">Showing the boundaries published with this site.
-        Connect a tile server to enable buildings, roads, facilities and the
-        analysis layers.</div>`);
+      <div class="hint">The layers above marked <em>needs database</em> come
+        from the full pipeline. Until one is connected, the live layers fetch
+        the same kinds of feature straight from OpenStreetMap.</div>`);
   }
 
   for (const btn of host.querySelectorAll("[data-layer]")) {
@@ -1755,6 +1766,7 @@ document.getElementById("story-next").addEventListener("click", () => {
 const statusEl = document.getElementById("status");
 const resultEl = document.getElementById("result");
 let conn = null;
+let duckDb = null;   // the AsyncDuckDB itself, needed to register new files later
 
 const EXAMPLES = [
   ["Regions by area",
@@ -1840,10 +1852,36 @@ function centroidOf(geometry) {
   return [x / (3 * twiceArea), y / (3 * twiceArea)];
 }
 
+/* Loading a layer into DuckDB.
+
+   Data is handed over as CSV, not JSON. read_csv_auto is part of the core
+   engine, while read_json_auto needs the json extension, which is not
+   guaranteed to be present in every WebAssembly build — and when it is
+   missing, every view fails to create and the console reports only that no
+   table exists.
+
+   Geometry travels as a quoted GeoJSON string in a column called geom.
+*/
+
+function csvEscape(value) {
+  if (value === null || value === undefined) return "";
+  const text = String(value);
+  return /[",\n\r]/.test(text) ? `"${text.replaceAll('"', '""')}"` : text;
+}
+
+function rowsToCsv(rows) {
+  const columns = Object.keys(rows[0]);
+  const lines = [columns.join(",")];
+  for (const row of rows) lines.push(columns.map((c) => csvEscape(row[c])).join(","));
+  return lines.join("\n");
+}
+
 async function registerLayer(db, conn, name, url) {
   const response = await fetch(url);
   if (!response.ok) throw new Error(`${url} returned ${response.status}`);
   const collection = await response.json();
+
+  if (!collection.features?.length) throw new Error("no features");
 
   const rows = collection.features.map((f) => {
     const [xmin, ymin, xmax, ymax] = bboxOf(f.geometry);
@@ -1856,22 +1894,30 @@ async function registerLayer(db, conn, name, url) {
       bbox_ymin: Number(ymin.toFixed(6)),
       bbox_xmax: Number(xmax.toFixed(6)),
       bbox_ymax: Number(ymax.toFixed(6)),
-      // Geometry travels as GeoJSON text; the page parses it when drawing.
       geom: JSON.stringify(f.geometry)
     };
   });
 
-  await db.registerFileText(`${name}.json`, JSON.stringify(rows));
+  await db.registerFileText(`${name}.csv`, rowsToCsv(rows));
 
-  // geom is always GeoJSON text, so drawing a result works identically whether
-  // or not the spatial extension loaded. When it did, shape carries the same
-  // geometry as a real GEOMETRY and the full ST_ function set applies to it.
-  const shape = state.spatial
-    ? ", ST_GeomFromGeoJSON(geom) AS shape"
-    : "";
-
+  // A table rather than a view: the CSV is parsed once, and a later query
+  // cannot fail because the registered file went away.
   await conn.query(
-    `CREATE OR REPLACE VIEW ghana.${name} AS SELECT *${shape} FROM read_json_auto('${name}.json');`);
+    `CREATE OR REPLACE TABLE ghana.${name} AS
+     SELECT * FROM read_csv_auto('${name}.csv', header = true);`);
+
+  // The real geometry column is added separately, so that a spatial extension
+  // which loaded but cannot parse the input does not take the whole layer with
+  // it. Losing shape costs the ST_ functions; losing the table costs everything.
+  if (state.spatial) {
+    try {
+      await conn.query(`ALTER TABLE ghana.${name} ADD COLUMN shape GEOMETRY;`);
+      await conn.query(`UPDATE ghana.${name} SET shape = ST_GeomFromGeoJSON(geom);`);
+    } catch (err) {
+      console.warn(`ghana.${name}: geometry column unavailable`, err);
+      try { await conn.query(`ALTER TABLE ghana.${name} DROP COLUMN shape;`); } catch { /* never added */ }
+    }
+  }
 
   const count = await conn.query(`SELECT count(*) AS n FROM ghana.${name};`);
   return Number(count.toArray()[0].toJSON().n);
@@ -1914,6 +1960,7 @@ async function initDuckDB() {
     const worker = await duckdb.createWorker(bundle.mainWorker);
     const db = new duckdb.AsyncDuckDB(new duckdb.ConsoleLogger(), worker);
     await db.instantiate(bundle.mainModule, bundle.pthreadWorker);
+    duckDb = db;
     conn = await db.connect();
 
     // No spatial extension. DuckDB-WASM does not ship one, and an INSTALL that
@@ -1928,6 +1975,7 @@ async function initDuckDB() {
     }
 
     const loaded = [];
+    const failures = [];
     for (const [view, file] of [["region", "gha_admin1"],
                                 ["district", "gha_admin2"],
                                 ["capital", "gha_admincapitals"]]) {
@@ -1935,6 +1983,9 @@ async function initDuckDB() {
         const n = await registerLayer(db, conn, view, `${REFERENCE}/${file}.geojson`);
         loaded.push(`${view} (${n})`);
       } catch (err) {
+        // Carry the reason to the status line. A message saying only that no
+        // table exists sends the next person debugging in the wrong direction.
+        failures.push(`${view}: ${err.message ?? err}`);
         console.error(`ghana.${view} failed to load`, err);
       }
     }
@@ -1949,7 +2000,10 @@ async function initDuckDB() {
       } catch { /* export not generated yet */ }
     }
 
-    if (!loaded.length) throw new Error("no tables could be loaded");
+    if (!loaded.length) {
+      throw new Error(failures.join(" · ") || "no tables could be loaded");
+    }
+    if (failures.length) console.warn("Some layers did not load:", failures);
     setStatus(`Ready — ${loaded.join(", ")}`
       + (state.spatial ? " · spatial functions available on shape"
                        : " · spatial macros only"));
@@ -2747,6 +2801,293 @@ document.getElementById("tool-download").addEventListener("click", () => {
   download("ghana-geostack-tool.geojson", JSON.stringify(toolOutput, null, 1),
            "application/geo+json");
 });
+
+/* ---------------------------------------------------------------------------
+   Live data from OpenStreetMap
+
+   The layers that need a database stay empty for a visitor who has none. This
+   fills them from Overpass instead: no key, no account, and the result is not
+   only drawn but registered as a table, so the Query tab and the Tools tab can
+   use it like any other layer.
+
+   Fetches are bounded by the current view and refuse to run over an area large
+   enough to be unkind to a free public endpoint. Data is ODbL: anything
+   published from it carries the same licence and the same attribution.
+--------------------------------------------------------------------------- */
+
+const LIVE_SOURCES = {
+  health: {
+    label: "Health facilities",
+    table: "osm_health",
+    colour: "#D2694A",
+    geometry: "point",
+    maxAreaKm2: 60000,
+    note: "Hospitals, clinics, doctors, pharmacies and health posts.",
+    query: (bbox) => `[out:json][timeout:60];
+(
+  node["amenity"~"^(hospital|clinic|doctors|pharmacy|health_post)$"](${bbox});
+  way["amenity"~"^(hospital|clinic|doctors|pharmacy|health_post)$"](${bbox});
+  node["healthcare"](${bbox});
+  way["healthcare"](${bbox});
+);
+out center tags;`
+  },
+  education: {
+    label: "Schools",
+    table: "osm_education",
+    colour: "#3E8E7E",
+    geometry: "point",
+    maxAreaKm2: 60000,
+    note: "Schools, colleges, universities and kindergartens.",
+    query: (bbox) => `[out:json][timeout:60];
+(
+  node["amenity"~"^(school|college|university|kindergarten)$"](${bbox});
+  way["amenity"~"^(school|college|university|kindergarten)$"](${bbox});
+);
+out center tags;`
+  },
+  market: {
+    label: "Markets and shops",
+    table: "osm_market",
+    colour: "#D9A63C",
+    geometry: "point",
+    maxAreaKm2: 30000,
+    note: "Marketplaces, supermarkets and fuel stations.",
+    query: (bbox) => `[out:json][timeout:60];
+(
+  node["amenity"~"^(marketplace|fuel)$"](${bbox});
+  way["amenity"~"^(marketplace|fuel)$"](${bbox});
+  node["shop"="supermarket"](${bbox});
+  way["shop"="supermarket"](${bbox});
+);
+out center tags;`
+  },
+  water: {
+    label: "Water points",
+    table: "osm_water",
+    colour: "#3184B5",
+    geometry: "point",
+    maxAreaKm2: 30000,
+    note: "Boreholes, wells, water taps and pumps.",
+    query: (bbox) => `[out:json][timeout:60];
+(
+  node["amenity"~"^(drinking_water|water_point)$"](${bbox});
+  node["man_made"~"^(water_well|water_tap|borehole)$"](${bbox});
+);
+out tags;`
+  },
+  road: {
+    label: "Roads",
+    table: "osm_road",
+    colour: "#9DAAB2",
+    geometry: "line",
+    maxAreaKm2: 4000,
+    note: "Classified roads. Zoom to a district or a town before fetching.",
+    query: (bbox) => `[out:json][timeout:90];
+way["highway"~"^(motorway|trunk|primary|secondary|tertiary)$"](${bbox});
+out geom tags;`
+  },
+  building: {
+    label: "Buildings",
+    table: "osm_building",
+    colour: "#E8C67A",
+    geometry: "polygon",
+    maxAreaKm2: 120,
+    note: "Building footprints. A town-sized view at most — zoom in first.",
+    query: (bbox) => `[out:json][timeout:90];
+way["building"](${bbox});
+out geom tags;`
+  }
+};
+
+/* Overpass returns OSM elements, not GeoJSON. Nodes are points; ways come back
+   either with full geometry or with a centre, depending on what was asked for. */
+function overpassToGeoJson(elements, wantGeometry) {
+  const features = [];
+
+  for (const element of elements) {
+    const properties = { osm_id: element.id, osm_type: element.type, ...(element.tags ?? {}) };
+    let geometry = null;
+
+    if (element.type === "node" && element.lat !== undefined) {
+      geometry = { type: "Point", coordinates: [element.lon, element.lat] };
+    } else if (element.geometry?.length) {
+      const coordinates = element.geometry.map((p) => [p.lon, p.lat]);
+      const closed = coordinates.length > 3 &&
+        coordinates[0][0] === coordinates.at(-1)[0] &&
+        coordinates[0][1] === coordinates.at(-1)[1];
+      geometry = (wantGeometry === "polygon" && closed)
+        ? { type: "Polygon", coordinates: [coordinates] }
+        : { type: "LineString", coordinates };
+    } else if (element.center) {
+      geometry = { type: "Point", coordinates: [element.center.lon, element.center.lat] };
+    }
+
+    if (geometry) features.push({ type: "Feature", geometry, properties });
+  }
+
+  return { type: "FeatureCollection", features };
+}
+
+/* Area of the current view in square kilometres, so a fetch can be refused
+   before it is sent rather than after it times out. */
+function viewAreaKm2() {
+  const b = map.getBounds();
+  const width = (b.getEast() - b.getWest()) * 111.32 *
+                Math.cos((b.getNorth() + b.getSouth()) / 2 * Math.PI / 180);
+  const height = (b.getNorth() - b.getSouth()) * 110.57;
+  return Math.abs(width * height);
+}
+
+async function fetchLive(id) {
+  const source = LIVE_SOURCES[id];
+  const host = document.getElementById(`live-status-${id}`);
+  if (!OVERPASS) {
+    host.textContent = "No endpoint configured.";
+    return;
+  }
+
+  const area = viewAreaKm2();
+  if (area > source.maxAreaKm2) {
+    host.textContent =
+      `View covers ${Math.round(area).toLocaleString()} km². Zoom in below ` +
+      `${source.maxAreaKm2.toLocaleString()} km² first.`;
+    return;
+  }
+
+  const b = map.getBounds();
+  // Overpass wants south,west,north,east — the opposite order to almost
+  // everything else, and the commonest mistake when querying it.
+  const bbox = [b.getSouth(), b.getWest(), b.getNorth(), b.getEast()]
+    .map((v) => v.toFixed(5)).join(",");
+
+  host.textContent = "Fetching from OpenStreetMap…";
+
+  try {
+    const response = await fetch(OVERPASS, {
+      method: "POST",
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+      body: "data=" + encodeURIComponent(source.query(bbox))
+    });
+
+    if (response.status === 429 || response.status === 504) {
+      host.textContent = "The public endpoint is busy. Try again shortly.";
+      return;
+    }
+    if (!response.ok) throw new Error(`Overpass returned ${response.status}`);
+
+    const payload = await response.json();
+    const collection = overpassToGeoJson(payload.elements ?? [], source.geometry);
+
+    if (!collection.features.length) {
+      host.textContent = "Nothing mapped here yet.";
+      return;
+    }
+
+    drawLive(id, source, collection);
+    const registered = await registerLiveTable(source, collection);
+
+    host.textContent = `${collection.features.length.toLocaleString()} features` +
+      (registered ? ` · queryable as ghana.${source.table}` : "");
+  } catch (err) {
+    host.textContent = `Could not fetch: ${err.message ?? err}`;
+    console.error(err);
+  }
+}
+
+function drawLive(id, source, collection) {
+  const sourceId = `live-${id}`;
+  for (const suffix of ["fill", "line", "circle"]) {
+    const layerId = `${sourceId}-${suffix}`;
+    if (map.getLayer(layerId)) map.removeLayer(layerId);
+  }
+  if (map.getSource(sourceId)) map.removeSource(sourceId);
+
+  map.addSource(sourceId, { type: "geojson", data: collection });
+
+  if (source.geometry === "polygon") {
+    map.addLayer({ id: `${sourceId}-fill`, type: "fill", source: sourceId,
+      paint: { "fill-color": source.colour, "fill-opacity": 0.55 } });
+  } else if (source.geometry === "line") {
+    map.addLayer({ id: `${sourceId}-line`, type: "line", source: sourceId,
+      paint: { "line-color": source.colour, "line-width": 1.4, "line-opacity": 0.9 } });
+  } else {
+    map.addLayer({ id: `${sourceId}-circle`, type: "circle", source: sourceId,
+      paint: { "circle-radius": 4, "circle-color": source.colour,
+               "circle-stroke-width": 1, "circle-stroke-color": colours().ground } });
+  }
+
+  const popupLayer = `${sourceId}-${source.geometry === "polygon" ? "fill"
+                      : source.geometry === "line" ? "line" : "circle"}`;
+  map.on("click", popupLayer, (e) => {
+    const props = e.features?.[0]?.properties ?? {};
+    const rows = Object.entries(props)
+      .filter(([k, v]) => v && !["osm_id", "osm_type"].includes(k))
+      .slice(0, 10)
+      .map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join("");
+    new maplibregl.Popup().setLngLat(e.lngLat)
+      .setHTML(`<b>${props.name || source.label}</b><dl>${rows}</dl>`).addTo(map);
+  });
+  map.on("mouseenter", popupLayer, () => { map.getCanvas().style.cursor = "pointer"; });
+  map.on("mouseleave", popupLayer, () => { map.getCanvas().style.cursor = ""; });
+}
+
+/* Fetched features become a table, so everything the rest of the page can do
+   with a layer it can also do with this one. */
+async function registerLiveTable(source, collection) {
+  if (!conn) return false;
+  try {
+    const rows = collection.features.map((f) => {
+      const [xmin, ymin, xmax, ymax] = bboxOf(f.geometry);
+      const [lon, lat] = centroidOf(f.geometry);
+      const properties = {};
+      // Keep the handful of tags worth querying; OSM objects can carry dozens.
+      for (const key of ["osm_id", "name", "amenity", "healthcare", "shop",
+                         "highway", "building", "operator", "man_made"]) {
+        if (f.properties[key] !== undefined) properties[key] = f.properties[key];
+      }
+      return {
+        ...properties,
+        lon: Number(lon.toFixed(6)), lat: Number(lat.toFixed(6)),
+        bbox_xmin: Number(xmin.toFixed(6)), bbox_ymin: Number(ymin.toFixed(6)),
+        bbox_xmax: Number(xmax.toFixed(6)), bbox_ymax: Number(ymax.toFixed(6)),
+        geom: JSON.stringify(f.geometry)
+      };
+    });
+
+    // Columns must be uniform for the CSV reader, so every row gets every key.
+    const columns = [...new Set(rows.flatMap((r) => Object.keys(r)))];
+    const uniform = rows.map((r) =>
+      Object.fromEntries(columns.map((c) => [c, r[c] ?? null])));
+
+    await duckDb.registerFileText(`${source.table}.csv`, rowsToCsv(uniform));
+    await conn.query(
+      `CREATE OR REPLACE TABLE ghana.${source.table} AS
+       SELECT * FROM read_csv_auto('${source.table}.csv', header = true);`);
+    return true;
+  } catch (err) {
+    console.warn(`ghana.${source.table} could not be registered`, err);
+    return false;
+  }
+}
+
+function renderLiveSection() {
+  return `
+    <h3>Live from OpenStreetMap</h3>
+    <p class="legend-note" style="margin:-4px 0 12px">
+      Fetched for the current view. No account needed. Results draw on the map
+      and become queryable tables. © OpenStreetMap contributors, ODbL.</p>
+    ${Object.entries(LIVE_SOURCES).map(([id, source]) => `
+      <div style="padding:9px 0;border-bottom:1px solid var(--border)">
+        <div style="display:flex;align-items:center;gap:10px">
+          <span style="width:13px;height:13px;border-radius:3px;background:${source.colour};flex:none"></span>
+          <span style="flex:1;font-size:14.5px">${source.label}</span>
+          <button class="btn btn-quiet" data-live="${id}" style="height:30px">Fetch</button>
+        </div>
+        <p class="legend-note" style="margin:5px 0 0 23px">${source.note}</p>
+        <p class="legend-note" id="live-status-${id}" style="margin:3px 0 0 23px;color:var(--text-2)"></p>
+      </div>`).join("")}`;
+}
 
 document.getElementById("run").addEventListener("click", runQuery);
 document.getElementById("mapit").addEventListener("click", mapResult);
