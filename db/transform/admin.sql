@@ -1,4 +1,4 @@
--- transform/admin.sql — raw COD boundaries into core.admin_*
+-- transform/admin.sql - raw COD boundaries into core.admin_*
 --
 -- Source: Ghana Common Operational Dataset, administrative boundaries
 -- (COD-AB), valid from 2021-03-08, version v01.

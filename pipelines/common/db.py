@@ -1,6 +1,6 @@
 """Database access for both engines.
 
-PostGIS is the authoritative store. DuckDB is the portable analytics engine —
+PostGIS is the authoritative store. DuckDB is the portable analytics engine -
 same data, no server, reads the GeoParquet exports directly. Any query that
 can run in both should produce identical numbers, and the QC suite checks that.
 """
@@ -149,7 +149,7 @@ def duckdb_connect(database: str | Path | None = None, read_only: bool = False):
     """Open DuckDB with the spatial stack loaded.
 
     Passing None gives an in-memory database, which is the right default for
-    remote GeoParquet queries — nothing needs to be persisted.
+    remote GeoParquet queries - nothing needs to be persisted.
     """
     import duckdb
 
@@ -158,14 +158,14 @@ def duckdb_connect(database: str | Path | None = None, read_only: bool = False):
         try:
             con.execute(f"INSTALL {ext};")
         except Exception:
-            pass  # already installed, or no network — LOAD will tell us
+            pass  # already installed, or no network - LOAD will tell us
         con.execute(f"LOAD {ext};")
 
     # H3 is a community extension, so it is optional rather than assumed.
     try:
         con.execute("INSTALL h3 FROM community; LOAD h3;")
     except Exception:
-        log.warning("DuckDB h3 extension unavailable — hex rollups will be skipped")
+        log.warning("DuckDB h3 extension unavailable - hex rollups will be skipped")
 
     con.execute("SET s3_region='us-west-2';")
     return con
@@ -175,7 +175,7 @@ def duckdb_lakehouse(read_only: bool = True):
     """Open the local DuckDB file with views over every GeoParquet export.
 
     This is the zero-install path: clone the repo, pull the exports, query.
-    No Postgres, no Docker, works on a laptop with patchy connectivity — which
+    No Postgres, no Docker, works on a laptop with patchy connectivity - which
     is the realistic condition for a lot of fieldwork in Ghana.
     """
     con = duckdb_connect(EXPORTS / "ghana.duckdb", read_only=read_only)

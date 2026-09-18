@@ -1,4 +1,4 @@
-# PostGIS Reference — Ghana GeoStack
+# PostGIS Reference - Ghana GeoStack
 
 ## Connect
 
@@ -113,7 +113,7 @@ transaction:
 SELECT UpdateGeometrySRID('analysis', 'my_table', 'geom', 4326);
 ```
 
-Better: declare the column type in the SELECT — `geom::geometry(Polygon, 4326)`.
+Better: declare the column type in the SELECT - `geom::geometry(Polygon, 4326)`.
 
 ## Performance
 

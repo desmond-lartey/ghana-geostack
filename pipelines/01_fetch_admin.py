@@ -1,4 +1,4 @@
-"""Step 01 — administrative boundaries.
+"""Step 01 - administrative boundaries.
 
 Loads the Ghana Common Operational Dataset (COD-AB): 16 regions and 260
 districts, each carrying an OCHA p-code. P-codes are the join key used

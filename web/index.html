@@ -19,7 +19,7 @@
    Structure:
      top left      legend for the active layer, collapsible
      top right     wordmark and the menu toggle
-     right panel   layers, query, sources — hidden until the menu is opened
+     right panel   layers, query, sources - hidden until the menu is opened
      bottom left   pill controls
      bottom right  guided story
 
@@ -890,7 +890,7 @@ const STORY = [
    Map
 --------------------------------------------------------------------------- */
 
-const fmt = (v) => (v === null || v === undefined || v === "" ? "—"
+const fmt = (v) => (v === null || v === undefined || v === "" ? "-"
   : typeof v === "number" ? Math.round(v).toLocaleString() : v);
 
 const map = new maplibregl.Map({
@@ -974,7 +974,7 @@ function bindPopup(layerId, layer) {
     const props = e.features?.[0]?.properties ?? {};
     const { title, rows } = layer.popup(props);
     const body = Object.entries(rows)
-      .filter(([, v]) => v !== undefined && v !== null && v !== "" && v !== "—")
+      .filter(([, v]) => v !== undefined && v !== null && v !== "" && v !== "-")
       .map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join("");
     new maplibregl.Popup({ closeButton: true, maxWidth: "280px" })
       .setLngLat(e.lngLat)
@@ -996,7 +996,7 @@ function setLayerVisible(id, visible, redraw = true) {
 }
 
 /* ---------------------------------------------------------------------------
-   Legend — describes the topmost active layer that has something to say
+   Legend - describes the topmost active layer that has something to say
 --------------------------------------------------------------------------- */
 
 function renderLegend() {
@@ -1317,7 +1317,7 @@ function renderTable(rows) {
 }
 
 function cell(v) {
-  if (v === null || v === undefined) return "—";
+  if (v === null || v === undefined) return "-";
   if (typeof v === "bigint") return v.toLocaleString();
   if (typeof v === "number") return Number.isInteger(v) ? v.toLocaleString() : v.toFixed(2);
   return String(v).slice(0, 48);

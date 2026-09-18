@@ -1,4 +1,4 @@
--- overture_ghana.sql — query Overture Maps for Ghana without downloading it.
+-- overture_ghana.sql - query Overture Maps for Ghana without downloading it.
 --
 -- Run these against a plain DuckDB session with spatial and httpfs loaded.
 -- Each query reads remote GeoParquet on S3 and prunes on the bbox struct
