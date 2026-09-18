@@ -46,6 +46,41 @@ def test_sixteen_regions(ghana):
         assert new in ghana["regions"], f"{new} missing — this is a pre-2019 region list"
 
 
+def test_admin_counts(ghana):
+    """Ghana has 16 regions and 260 districts in the current configuration."""
+    assert ghana["admin"]["expected_regions"] == 16
+    assert ghana["admin"]["expected_districts"] == 260
+
+
+def test_reference_boundaries_present(ghana):
+    """The committed boundaries are what makes the repository usable on clone."""
+    import json
+
+    reference = ROOT / "data" / "reference"
+    counts = {"gha_admin0": 1, "gha_admin1": 16, "gha_admin2": 260}
+    for layer, expected in counts.items():
+        path = reference / f"{layer}.geojson"
+        assert path.exists(), f"missing {path}"
+        data = json.loads(path.read_text(encoding="utf-8"))
+        assert len(data["features"]) == expected, \
+            f"{layer}: {len(data['features'])} features, expected {expected}"
+
+
+def test_district_pcodes_nest_in_regions():
+    """P-codes carry the hierarchy; a mismatch breaks every downstream join."""
+    import json
+
+    reference = ROOT / "data" / "reference"
+    regions = {f["properties"]["adm1_pcode"]
+               for f in json.loads((reference / "gha_admin1.geojson").read_text())["features"]}
+    districts = json.loads((reference / "gha_admin2.geojson").read_text())["features"]
+
+    assert all(len(p) == 4 and p.startswith("GH") for p in regions)
+    orphans = [d["properties"]["adm2_pcode"] for d in districts
+               if d["properties"]["adm2_pcode"][:4] not in regions]
+    assert not orphans, f"districts with no parent region: {orphans[:5]}"
+
+
 def test_crs_choices(ghana):
     assert ghana["crs"]["storage"] == 4326, "storage CRS must be lon/lat"
     assert ghana["crs"]["metric"] in (32630, 32631, 2137), "metric CRS must be projected"
@@ -64,7 +99,7 @@ def test_every_source_has_a_licence(sources):
         assert s.get("licence"), f"{s['id']} has no licence"
         assert s.get("attribution"), f"{s['id']} has no attribution string"
         assert s.get("theme"), f"{s['id']} has no theme"
-        assert s.get("status") in {"ready", "planned", "needs_agreement"}, \
+        assert s.get("status") in {"ready", "planned", "needs_agreement", "superseded"}, \
             f"{s['id']} has an invalid status"
 
 

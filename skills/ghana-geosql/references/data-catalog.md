@@ -18,8 +18,10 @@ FROM meta.dataset ORDER BY theme, title;
 | Table | What it is | Watch out for |
 | --- | --- | --- |
 | `core.admin_country` | National boundary | One row |
-| `core.admin_region` | 16 regions | 10 regions means a pre-2019 source |
-| `core.admin_district` | ~261 MMDAs | `assembly_type` distinguishes metropolitan, municipal and district — that difference carries real administrative weight |
+| `core.admin_region` | 16 regions, p-coded GH01–GH16 | A result containing Brong Ahafo is a superseded boundary set |
+| `core.admin_district` | 260 MMDAs, p-coded GHrrdd | `assembly_type` is derived from the published name, not the legal instrument |
+| `core.admin_alias` | Alternative and superseded names | Search resolves through this as well as the primary name |
+| `core.gazetteer` | Flat searchable place list across all levels | Match on `place_norm` with trigram similarity, not equality |
 | `core.building` | Footprints, partitioned by region | `confidence` is NULL for OSM and surveyed data, which is not the same as low confidence. Filter ML sources at ≥ 0.7 |
 | `core.road` | Road network, OSM-derived | `class` is normalised: `primary` includes `primary_link`. OSM includes tracks and footpaths, so total length exceeds the classified network |
 | `core.facility` | Health, education, market, water, energy, government points | Coverage is uneven. Absence of a facility in the data is not evidence of absence on the ground |
@@ -49,7 +51,8 @@ whoever reads it next.
 | OpenStreetMap | ODbL 1.0 | Share-alike. A published derived database must also be ODbL. Attribution required |
 | Overture | ODbL / CDLA mixed | Varies by contributing source |
 | Google Open Buildings | CC BY 4.0 | Attribution required |
-| GADM | Non-commercial | **Cannot be republished commercially.** Loaded with `publishable = false` |
+| Ghana COD-AB | CC BY 3.0 IGO (confirm per dataset) | Attribution required. The authoritative boundary source |
+| GADM | Non-commercial | Superseded by COD-AB. Retained as a fallback only |
 | WorldPop, ESA WorldCover, GRID3 | CC BY 4.0 | Attribution required |
 | Copernicus DEM | Copernicus licence | Attribution required |
 

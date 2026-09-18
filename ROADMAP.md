@@ -2,12 +2,17 @@
 
 Ordered by what unblocks the most, not by what is most interesting to build.
 
-## Now — make it real
+## Complete
 
-- [ ] **Authoritative boundaries.** Request the 2021 PHC district boundaries
-      from the Ghana Statistical Service, or use GRID3's CC BY set. This is the
-      single biggest blocker: GADM is non-commercial and its districts predate
-      the 2018-19 reorganisation, so nothing admin-related can be published.
+- [x] **Authoritative boundaries.** Ghana COD-AB v01, valid from 8 March 2021:
+      16 regions, 260 districts, 177 capitals, p-coded at every level and
+      openly licensed.
+- [x] Vintage-aware boundary schema with archive tables and a lineage
+      crosswalk covering the 2019 reorganisation.
+- [x] Dependency-free shapefile converter, so boundaries load without GDAL.
+
+## Now
+
 - [ ] Load the full national building set (Google Open Buildings v3 plus
       Overture) and validate the count against known figures.
 - [ ] Load WorldPop and join population to districts.

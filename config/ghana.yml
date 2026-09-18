@@ -53,8 +53,20 @@ admin:
   level_2: district        # MMDAs — metropolitan, municipal, district assemblies
   level_3: locality        # towns / enumeration-area groupings, where available
   expected_regions: 16
-  expected_districts: 261  # verify against GSS; sources report 260 or 261
+  expected_districts: 260
 
+  # Every unit carries an OCHA p-code, and p-codes are the join key throughout
+  # this project. Names change spelling between sources; p-codes do not.
+  #   GH          country
+  #   GH01..GH16  regions
+  #   GHrrdd      districts, where rr is the parent region number
+  pcode_country: GH
+  pcode_region_pattern: '^GH[0-9]{2}$'
+  pcode_district_pattern: '^GH[0-9]{4}$'
+
+# Region names as published in the COD boundaries. The source spells the
+# North East Region as "Northern East"; the transform corrects it to the
+# official name and records the variant as a search alias.
 regions:
   - Ahafo
   - Ashanti

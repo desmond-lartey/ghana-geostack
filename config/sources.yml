@@ -23,6 +23,39 @@ sources:
 
   # ── Administrative boundaries ──────────────────────────────────────────
 
+  - id: cod_ab_ghana
+    theme: admin
+    name: Ghana Common Operational Dataset — administrative boundaries
+    access: manual
+    url: https://data.humdata.org/dataset/cod-ab-gha
+    format: shp
+    licence: CC-BY-3.0-IGO
+    attribution: "Administrative boundaries: OCHA Ghana Common Operational Dataset (COD-AB)"
+    status: ready
+    vintage: "2021-03-08"
+    version: v01
+    verify_licence: true
+    layers:
+      - gha_admin0        # national boundary
+      - gha_admin1        # 16 regions
+      - gha_admin2        # 260 districts (MMDAs)
+      - gha_admincapitals # 177 administrative capitals
+      - gha_adminlines    # boundary lines, including disputed segments
+      - gha_adminpoints   # 277 settlement points
+    notes: >
+      The authoritative boundary set for this project. Published as Common
+      Operational Datasets, which are the reference boundaries used for
+      humanitarian coordination in Ghana and are maintained with the national
+      statistical authority. Carries OCHA p-codes at every level, which are
+      the join key used throughout this database.
+
+      Converted to GeoJSON and committed under data/reference/, so the
+      repository is usable without a download step.
+
+      Licence: CODs are normally released under CC BY 3.0 IGO, but the terms
+      are set per dataset. Confirm on the HDX dataset page above before
+      redistributing.
+
   - id: admin_gadm
     theme: admin
     name: GADM administrative areas, levels 0-2
@@ -31,24 +64,11 @@ sources:
     format: gpkg
     licence: GADM non-commercial
     attribution: "Boundaries: GADM 4.1"
-    status: ready
+    status: superseded
     notes: >
-      Fast to get going, but non-commercial only and the district set lags
-      the 2018-19 reorganisation. Treat as a bootstrap, not the authority.
-
-  - id: admin_gss
-    theme: admin
-    name: Ghana Statistical Service district boundaries (2021 PHC)
-    access: manual
-    url: https://statsghana.gov.gh
-    format: shp
-    licence: needs confirmation
-    attribution: "Boundaries: Ghana Statistical Service"
-    status: needs_agreement
-    notes: >
-      The authoritative post-2019 set of 16 regions and the current MMDAs.
-      This is the one we actually want as core.admin_district. Requires a
-      data request to GSS. Until then core falls back to GADM + OSM.
+      Superseded by cod_ab_ghana. Retained only as a fallback. Non-commercial
+      licence, and its district set predates the 2018-19 regional
+      reorganisation.
 
   - id: admin_grid3
     theme: admin

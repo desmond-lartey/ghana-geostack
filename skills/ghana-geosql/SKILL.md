@@ -66,31 +66,34 @@ and point at `make pipeline` rather than writing a query against nothing.
 Ghanaian place names are ambiguous and inconsistently spelled across sources.
 Resolve them against the database before filtering on them, always.
 
+**Join on p-codes, never on names.** Every unit carries one, they are stable
+across releases, and the hierarchy is encoded in the code: `GH07` is Greater
+Accra, and `GH0701` is a district within it. A district's parent is
+`left(id, 4)`, so the hierarchy needs no spatial join.
+
 **The traps, in order of how often they bite:**
 
-- **Region names collide with district names.** There is a Western Region and
-  there are districts inside it with similar names. Filter on
-  `core.admin_region` for regions, `core.admin_district` for districts, and say
-  which you used.
-- **Accra is not a district.** "Accra" usually means Greater Accra Region, or
-  Accra Metropolitan Assembly, or the built-up area, and these differ by a
-  factor of ten in area. Ask, or resolve to the metropolitan assembly and say
-  so explicitly.
-- **The 2019 reorganisation.** Six regions were created in 2018-19. A query
-  returning 10 regions is reading a pre-2019 source; there should be 16.
-- **Spelling.** Sekondi-Takoradi, Sekondi Takoradi. Cape Coast, Cape-Coast.
-  Ashanti, Asante. Always match through `core.gh_normalise_name()`.
+- **Accra is not a district.** It may mean Greater Accra Region (`GH07`,
+  ~3,699 km²), Accra Metropolitan Assembly (~140 km²), or the built-up area.
+  These differ by more than an order of magnitude. Ask, or resolve explicitly
+  and state which was used.
+- **Region names collide with district names.** Filter `core.admin_region` for
+  regions and `core.admin_district` for districts, and say which was used.
+- **The 2019 reorganisation.** Six regions were created in 2018-19. A result
+  containing Brong Ahafo, or returning 10 regions, is reading a superseded
+  boundary set. The current configuration is 16 regions and 260 districts.
+- **Spelling.** Sekondi-Takoradi or Sekondi Takoradi; Ashanti or Asante. The
+  boundary source spells North East as "Northern East". Match through
+  `core.gh_normalise_name()` and check `core.admin_alias`.
 
 ```sql
--- Resolve a name to a real unit before using it
-SELECT 'region' AS level, id, name, round(area_km2) AS area_km2
-FROM core.admin_region
-WHERE name_norm LIKE '%' || core.gh_normalise_name('ashanti') || '%'
-UNION ALL
-SELECT 'district', id, name, round(area_km2)
-FROM core.admin_district
-WHERE name_norm LIKE '%' || core.gh_normalise_name('ashanti') || '%'
-ORDER BY 1, 4 DESC;
+-- Resolve a name to a unit, including aliases and superseded names
+SELECT g.level, g.place_id, g.place_name, g.parent_name, g.area_km2
+FROM core.gazetteer g
+WHERE g.place_norm LIKE '%' || core.gh_normalise_name('ashanti') || '%'
+   OR g.place_id IN (SELECT pcode FROM core.admin_alias
+                     WHERE alias_norm LIKE '%' || core.gh_normalise_name('ashanti') || '%')
+ORDER BY g.level, g.area_km2 DESC;
 ```
 
 Take the exact bbox from the resolved geometry and use full precision. Do not
@@ -98,7 +101,7 @@ round it, and do not type coordinates from memory:
 
 ```sql
 SELECT ST_XMin(geom), ST_YMin(geom), ST_XMax(geom), ST_YMax(geom)
-FROM core.admin_region WHERE id = 'GH-AH';
+FROM core.admin_region WHERE id = 'GH02';   -- Ashanti
 ```
 
 ## Step 3 — Draft the query
@@ -109,7 +112,7 @@ alone over-selects, because a bounding box is a rectangle and a region is not.
 
 ```sql
 WITH area AS (
-    SELECT geom FROM core.admin_region WHERE id = 'GH-AH'
+    SELECT geom FROM core.admin_region WHERE id = 'GH02'   -- Ashanti
 )
 SELECT b.id, b.height_m, b.geom
 FROM core.building b, area a
@@ -174,14 +177,15 @@ truth, and should be cited as approximate.
 | --- | --- |
 | Land area | 238,533 km² |
 | Coastline | ~539 km |
-| Regions | 16 (since 2019) |
-| Districts / MMDAs | ~261 |
+| Regions | 16 (since 2019), p-coded GH01–GH16 |
+| Districts / MMDAs | 260, p-coded GHrrdd |
+| Boundary area, COD set | 239,473 km² across regions and districts alike |
 | Population (2021 PHC) | ~30.8 million |
 | Highest point | Mount Afadja, ~885 m |
-| Largest region by area | Northern |
+| Largest region by area | Savannah, ~35,863 km² |
 | Most populous region | Greater Accra, ~5.4 million |
 | Accra Metropolitan Assembly | ~140 km² |
-| Greater Accra Region | ~3,245 km² |
+| Greater Accra Region | ~3,699 km² |
 | Lake Volta surface | ~8,500 km² |
 
 If a query says a district is larger than the region containing it, or that

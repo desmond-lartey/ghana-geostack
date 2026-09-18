@@ -6,6 +6,11 @@ data/processed/*
 data/exports/*
 !data/**/.gitkeep
 
+# Reference boundaries ARE committed. Every other table joins to them, so the
+# repository must be usable without a download step.
+!data/reference/
+!data/reference/*.geojson
+
 *.gpkg
 *.tif
 *.tiff
@@ -42,3 +47,4 @@ build/
 .idea/
 .DS_Store
 Thumbs.db
+.gha_admin_boundaries.shp

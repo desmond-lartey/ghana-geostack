@@ -20,12 +20,14 @@ and the detail lives there.
    degrees. Use the `core.gh_*` helpers.
 4. **Both filters on a spatial join**: `&&` for the index gate, `ST_Intersects`
    for correctness.
-5. **Every load ends with validation and registration.** `check_table()`, then
+5. **Join administrative units on p-codes, never on names.** A district's
+   parent region is `left(id, 4)`.
+6. **Every load ends with validation and registration.** `check_table()`, then
    `db.register()`. An unregistered table fails QC.
-6. **`publishable` defaults to false.** Flip it only after reading the licence.
-7. **Analysis SQL is idempotent.** Drop and rebuild its own tables, end with a
+7. **`publishable` defaults to false.** Flip it only after reading the licence.
+8. **Analysis SQL is idempotent.** Drop and rebuild its own tables, end with a
    validation block, and be safe to run twice.
-8. **Say what the data is.** Observed surface water is not modelled flood risk.
+9. **Say what the data is.** Observed surface water is not modelled flood risk.
    Straight-line distance is not travel time.
 
 ## Layout

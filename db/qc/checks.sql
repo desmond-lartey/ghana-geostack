@@ -131,11 +131,26 @@ SELECT :RUN, 'region_count', 'core.admin_region', 'error',
 FROM core.admin_region;
 
 INSERT INTO meta.qc_result (run_id, check_name, target, severity, passed, observed, expected, detail)
-SELECT :RUN, 'district_count', 'core.admin_district', 'warning',
-       count(*) BETWEEN 250 AND 270, count(*), '~261',
-       'Sources disagree between 260 and 261 MMDAs. Outside 250-270 means the '
-       'wrong admin level was loaded.'
+SELECT :RUN, 'district_count', 'core.admin_district', 'error',
+       count(*) = 260, count(*), '260',
+       'The COD-AB boundary set defines 260 MMDAs. A different count means a '
+       'superseded boundary set, or the wrong admin level.'
 FROM core.admin_district;
+
+INSERT INTO meta.qc_result (run_id, check_name, target, severity, passed, observed, expected, detail)
+SELECT :RUN, 'pcode_format', 'core.admin_district', 'error',
+       count(*) = 0, count(*), '0',
+       'District p-codes must match GHrrdd. P-codes are the join key across '
+       'the database; a malformed one breaks the hierarchy silently.'
+FROM core.admin_district WHERE id !~ '^GH[0-9]{4}$';
+
+INSERT INTO meta.qc_result (run_id, check_name, target, severity, passed, observed, expected, detail)
+SELECT :RUN, 'pcode_hierarchy', 'core.admin_district', 'error',
+       count(*) = 0, count(*), '0',
+       'Every district p-code must begin with its region p-code.'
+FROM core.admin_district d
+LEFT JOIN core.admin_region r ON r.id = left(d.id, 4)
+WHERE r.id IS NULL;
 
 INSERT INTO meta.qc_result (run_id, check_name, target, severity, passed, observed, expected, detail)
 SELECT :RUN, 'districts_nest_in_regions', 'core.admin_district', 'error',
@@ -147,9 +162,11 @@ WHERE NOT ST_Contains(r.geom, ST_PointOnSurface(d.geom));
 
 INSERT INTO meta.qc_result (run_id, check_name, target, severity, passed, observed, expected, detail)
 SELECT :RUN, 'country_area_km2', 'core.admin_country', 'warning',
-       abs(sum(area_km2) - 238533) < 5000, round(sum(area_km2)), '238,533 km2 +/- 5,000',
-       'Ghana''s land area is about 238,533 km2. A large deviation means '
-       'simplified boundaries or a missing region.'
+       abs(sum(area_km2) - 239473) < 4000, round(sum(area_km2)), '239,473 km2 +/- 4,000',
+       'The COD boundary set reports 239,473 km2, slightly above the commonly '
+       'cited land area of 238,533 km2 because it includes coastal and inland '
+       'water extent. A large deviation means simplified boundaries or a '
+       'missing region.'
 FROM core.admin_region;
 
 -- ─────────────────────────────────────────────────────────────────────────

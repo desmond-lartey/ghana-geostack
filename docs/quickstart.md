@@ -2,7 +2,20 @@
 
 Three paths, depending on what you have. Pick one.
 
-## 1. Just look at the data — five minutes, no install
+## 1. Boundaries only — no install
+
+All 16 regions and 260 districts are committed as GeoJSON under
+`data/reference/`. They open directly in QGIS, or:
+
+```python
+import json
+regions = json.load(open("data/reference/gha_admin1.geojson"))
+for f in regions["features"]:
+    p = f["properties"]
+    print(p["adm1_pcode"], p["adm1_name"], round(p["area_sqkm"]))
+```
+
+## 2. The full dataset — no database
 
 Download `ghana.duckdb` and the GeoParquet files from the latest release, then:
 
@@ -23,7 +36,7 @@ FROM ghana.road GROUP BY 1 ORDER BY km DESC;
 Everything works offline once downloaded. The Parquet files open in QGIS,
 GeoPandas, R and ArcGIS Pro directly.
 
-## 2. Run the whole stack — an hour, mostly downloading
+## 3. Run the whole stack — an hour, mostly downloading
 
 ```bash
 git clone https://github.com/YOUR-ORG/ghana-geostack
@@ -52,7 +65,7 @@ make load analysis qc
 make serve
 ```
 
-## 3. Use it with Claude
+## 4. Use it with Claude
 
 ```bash
 cp -r skills/ghana-geosql ~/.claude/skills/
@@ -79,9 +92,15 @@ still works; terrain and flood exposure do not.
 **`ST_Value` errors about GDAL drivers.** Raster access is off:
 `SET postgis.gdal_enabled_drivers = 'ENABLE_ALL';`
 
-**QC fails on `region_count`.** Your boundary source has 10 regions, so it
-predates 2019. GADM 4.1 is patchy on the new regions — this is a known gap,
-see ROADMAP.
+**QC fails on `region_count` or `district_count`.** The loaded boundary set is
+not the current one. Expected: 16 regions, 260 districts. A result containing
+Brong Ahafo is a pre-2019 set. Reload with
+`python pipelines/01_fetch_admin.py --verify` followed by
+`python pipelines/20_load_postgis.py --only admin`.
+
+**QC fails on `pcode_hierarchy`.** A district p-code does not begin with a
+region p-code. This means the two admin levels came from different releases;
+reload both from the same bundle.
 
 **Areas come out around 0.0001.** You measured in square degrees. Use
 `core.gh_area_m2()`.

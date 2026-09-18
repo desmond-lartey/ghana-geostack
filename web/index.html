@@ -2,301 +2,717 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Ghana GeoStack — query and map</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5">
+<title>Ghana GeoStack</title>
+<meta name="description" content="Open spatial data for Ghana. 16 regions, 260 districts, buildings, roads and terrain.">
 
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maplibre-gl@5.6.0/dist/maplibre-gl.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;450;600&display=swap" rel="stylesheet">
 
 <style>
 /* ---------------------------------------------------------------------------
-   Design notes, so the next person does not undo these on purpose.
+   The map is the interface. Everything else is a small piece of glass resting
+   on top of it, closed until asked for.
 
-   The map is the subject; the interface is a instrument panel around it and
-   should recede. Dark petrol green rather than the usual near-black: it reads
-   as a field instrument, and it keeps the ochre accent legible without the
-   acid-on-black look every dashboard has.
+   Structure:
+     top left      legend for the active layer, collapsible
+     top right     wordmark and the menu toggle
+     right panel   layers, query, sources — hidden until the menu is opened
+     bottom left   pill controls
+     bottom right  guided story
 
-   One typeface family in two cuts. Plex Sans for interface, Plex Mono for SQL
-   and for numbers, where column alignment is doing real work.
-
-   Colour is reserved for data. The interface uses exactly one accent, and it
-   only ever marks the thing you are currently acting on.
+   Chrome is translucent and blurred so the map stays continuous underneath.
+   Colour is spent on data; the interface gets one ochre accent and nothing
+   more, used only to mark what is currently active.
 --------------------------------------------------------------------------- */
 
 :root {
-  --ink:        #0C1A17;   /* panel background, deep petrol */
-  --panel:      #132925;
-  --line:       #23423C;
-  --text:       #D9E4E0;
-  --text-muted: #7E9791;
-  --accent:     #D8A13A;   /* ochre: the only accent, used sparingly */
-  --accent-dim: #8A6621;
-  --warn:       #D2694A;
-  --radius:     3px;
+  --ink:        #070B0A;
+  --glass:      rgba(10, 16, 15, 0.78);
+  --glass-hi:   rgba(22, 32, 30, 0.86);
+  --line:       rgba(232, 237, 234, 0.13);
+  --line-hot:   rgba(224, 169, 60, 0.45);
+  --text:       #E8EDEA;
+  --muted:      #8C9B95;
+  --accent:     #E0A93C;
+  --accent-ink: #1A1204;
+  --r:          2px;
+
+  --pad: 16px;
+  --ease: cubic-bezier(0.22, 0.61, 0.36, 1);
 }
+
+@media (min-width: 900px) { :root { --pad: 22px; } }
 
 * { box-sizing: border-box; }
 
 html, body {
   margin: 0;
   height: 100%;
-  font-family: "IBM Plex Sans", system-ui, -apple-system, sans-serif;
+  overflow: hidden;
   background: var(--ink);
   color: var(--text);
+  font-family: "IBM Plex Sans", system-ui, -apple-system, sans-serif;
   font-size: 14px;
-  line-height: 1.5;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
 }
 
-/* Layout: a fixed instrument rail on the left, map filling the rest. On a
-   phone the rail becomes a sheet over the bottom of the map. */
-#app {
-  display: grid;
-  grid-template-columns: 340px 1fr;
-  height: 100%;
+#map { position: absolute; inset: 0; }
+
+/* Labels, pills and legend headings share one treatment: mono, uppercase,
+   widely tracked. It reads as instrumentation rather than as an app. */
+.label {
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
 }
 
-@media (max-width: 760px) {
-  #app { grid-template-columns: 1fr; grid-template-rows: 1fr 45vh; }
-  #rail { order: 2; border-right: none; border-top: 1px solid var(--line); }
+.glass {
+  background: var(--glass);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  backdrop-filter: blur(14px) saturate(1.1);
+  -webkit-backdrop-filter: blur(14px) saturate(1.1);
 }
 
-/* --- Rail ---------------------------------------------------------------- */
+button {
+  font-family: inherit;
+  color: inherit;
+  cursor: pointer;
+  border: none;
+  background: none;
+}
 
-#rail {
-  background: var(--panel);
-  border-right: 1px solid var(--line);
-  overflow-y: auto;
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* --- Wordmark and menu ---------------------------------------------------- */
+
+#brand {
+  position: absolute;
+  top: var(--pad);
+  right: var(--pad);
   display: flex;
-  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  z-index: 20;
 }
 
-header {
-  padding: 18px 18px 14px;
-  border-bottom: 1px solid var(--line);
+#brand .name {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  text-shadow: 0 1px 12px rgba(0, 0, 0, 0.9);
 }
 
-header h1 {
-  margin: 0;
+@media (max-width: 560px) { #brand .name { display: none; } }
+
+#menu-toggle {
+  width: 38px; height: 38px;
+  display: grid;
+  place-items: center;
+  gap: 4px;
+}
+
+#menu-toggle span {
+  display: block;
+  width: 18px; height: 1.5px;
+  background: var(--text);
+  transition: transform 0.25s var(--ease), opacity 0.2s;
+}
+
+#menu-toggle span:nth-child(1) { transform: translateY(-5px); }
+#menu-toggle span:nth-child(3) { transform: translateY(5px); }
+#menu-toggle[aria-expanded="true"] span:nth-child(1) { transform: rotate(45deg); }
+#menu-toggle[aria-expanded="true"] span:nth-child(2) { opacity: 0; }
+#menu-toggle[aria-expanded="true"] span:nth-child(3) { transform: rotate(-45deg); }
+
+#menu-toggle span:nth-child(n) { grid-area: 1 / 1; }
+
+/* --- Legend --------------------------------------------------------------- */
+
+#legend {
+  position: absolute;
+  top: var(--pad);
+  left: var(--pad);
+  width: 232px;
+  z-index: 20;
+  overflow: hidden;
+}
+
+#legend-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  padding: 12px 13px;
+  text-align: left;
+}
+
+#legend-title { color: var(--text); }
+#legend-sub {
+  margin-top: 3px;
+  font-family: "IBM Plex Sans", sans-serif;
+  font-size: 11.5px;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--muted);
+}
+
+#legend-chev {
+  flex: none;
+  color: var(--muted);
+  transition: transform 0.25s var(--ease);
+  margin-top: 2px;
+}
+
+#legend[data-open="false"] #legend-chev { transform: rotate(-90deg); }
+#legend[data-open="false"] #legend-body { display: none; }
+
+#legend-body { padding: 0 13px 13px; }
+
+.ramp {
+  height: 7px;
+  border-radius: 1px;
+  margin-bottom: 6px;
+}
+
+.ramp-ticks {
+  display: flex;
+  justify-content: space-between;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 10px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.swatches { display: grid; gap: 5px; }
+
+.swatch {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11.5px;
+  color: var(--muted);
+}
+
+.swatch i {
+  width: 11px; height: 11px;
+  border-radius: 1px;
+  flex: none;
+}
+
+/* --- Pill controls -------------------------------------------------------- */
+
+#controls {
+  position: absolute;
+  left: var(--pad);
+  bottom: var(--pad);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  z-index: 20;
+  max-width: calc(100vw - var(--pad) * 2 - 90px);
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 13px;
+  border-radius: 100px;
+  color: var(--muted);
+  transition: color 0.18s, border-color 0.18s, background 0.18s;
+}
+
+.pill:hover { color: var(--text); border-color: var(--line-hot); }
+
+.pill[aria-pressed="true"] {
+  color: var(--accent);
+  border-color: var(--line-hot);
+  background: var(--glass-hi);
+}
+
+.pill svg { flex: none; }
+
+/* --- Story ---------------------------------------------------------------- */
+
+#story-launch {
+  position: absolute;
+  right: var(--pad);
+  bottom: var(--pad);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  z-index: 20;
+}
+
+#story-launch .cap { text-align: right; line-height: 1.35; }
+#story-launch .cap span { display: block; color: var(--muted); }
+#story-launch .cap strong {
+  display: block;
+  font-family: "IBM Plex Sans", sans-serif;
   font-size: 17px;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--accent);
+}
+
+#story-go {
+  width: 52px; height: 52px;
+  border-radius: 50%;
+  border: 1px solid var(--line-hot);
+  display: grid;
+  place-items: center;
+  color: var(--accent);
+  background: var(--glass);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  transition: background 0.2s, transform 0.2s var(--ease);
+}
+
+#story-go:hover { background: var(--accent); color: var(--accent-ink); transform: scale(1.06); }
+
+/* The story card replaces the launcher while a tour is running. */
+#story-card {
+  position: absolute;
+  right: var(--pad);
+  bottom: var(--pad);
+  width: min(360px, calc(100vw - var(--pad) * 2));
+  padding: 16px 17px 14px;
+  z-index: 21;
+  display: none;
+}
+
+#story-card[data-open="true"] { display: block; }
+#story-launch[data-hidden="true"] { display: none; }
+
+#story-step { color: var(--accent); }
+
+#story-card h2 {
+  margin: 8px 0 6px;
+  font-size: 18px;
   font-weight: 600;
   letter-spacing: -0.01em;
 }
 
-header p {
-  margin: 4px 0 0;
-  color: var(--text-muted);
-  font-size: 12.5px;
+#story-card p { margin: 0; font-size: 13px; color: var(--muted); }
+
+#story-nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 14px;
 }
 
-section { padding: 16px 18px; border-bottom: 1px solid var(--line); }
+#story-progress {
+  flex: 1;
+  display: flex;
+  gap: 3px;
+}
 
-h2 {
+#story-progress i {
+  flex: 1;
+  height: 2px;
+  background: var(--line);
+}
+
+#story-progress i.done { background: var(--accent); }
+
+.ghost {
+  padding: 6px 11px;
+  border: 1px solid var(--line);
+  border-radius: 100px;
+  color: var(--muted);
+}
+
+.ghost:hover { color: var(--text); border-color: var(--line-hot); }
+
+/* --- Side panel ----------------------------------------------------------- */
+
+#panel {
+  position: absolute;
+  top: 0; right: 0;
+  height: 100%;
+  width: 368px;
+  max-width: 100vw;
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  transform: translateX(100%);
+  transition: transform 0.32s var(--ease);
+  border-left: 1px solid var(--line);
+  border-radius: 0;
+}
+
+#panel[data-open="true"] { transform: none; }
+
+@media (max-width: 560px) {
+  #panel {
+    top: auto; bottom: 0;
+    width: 100%; height: 76vh;
+    transform: translateY(100%);
+    border-left: none;
+    border-top: 1px solid var(--line);
+  }
+  #panel[data-open="true"] { transform: none; }
+}
+
+#tabs {
+  display: flex;
+  gap: 2px;
+  padding: 62px 14px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+@media (max-width: 560px) { #tabs { padding-top: 16px; } }
+
+.tab {
+  padding: 10px 12px;
+  color: var(--muted);
+  border-bottom: 1.5px solid transparent;
+  margin-bottom: -1px;
+}
+
+.tab[aria-selected="true"] { color: var(--accent); border-bottom-color: var(--accent); }
+
+.tabpanel { display: none; padding: 16px 16px 24px; overflow-y: auto; flex: 1; }
+.tabpanel[data-active="true"] { display: block; }
+
+h3 {
   margin: 0 0 10px;
-  font-size: 12.5px;
-  font-weight: 600;
-  color: var(--text-muted);
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
 }
 
-/* Layer list. The checkbox is the control; the row is the target. */
+h3:not(:first-child) { margin-top: 24px; }
+
+/* Layer rows: the whole row is the target, the dot shows state. */
 .layer {
   display: flex;
-  align-items: baseline;
-  gap: 9px;
-  padding: 5px 0;
-  cursor: pointer;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 9px 0;
+  text-align: left;
+  border-bottom: 1px solid rgba(232, 237, 234, 0.06);
 }
 
-.layer input { accent-color: var(--accent); margin: 0; }
+.layer .dot {
+  width: 9px; height: 9px;
+  border-radius: 50%;
+  border: 1px solid var(--muted);
+  flex: none;
+  transition: background 0.18s, border-color 0.18s, box-shadow 0.18s;
+}
 
-.layer .name { flex: 1; }
+.layer[aria-pressed="true"] .dot {
+  background: var(--swatch, var(--accent));
+  border-color: var(--swatch, var(--accent));
+  box-shadow: 0 0 0 3px rgba(224, 169, 60, 0.12);
+}
 
-.layer .count {
+.layer .txt { flex: 1; }
+.layer .nm { font-size: 13.5px; color: var(--muted); transition: color 0.18s; }
+.layer[aria-pressed="true"] .nm { color: var(--text); }
+
+.layer .meta {
   font-family: "IBM Plex Mono", monospace;
-  font-size: 11.5px;
-  color: var(--text-muted);
+  font-size: 10.5px;
+  color: var(--muted);
+  opacity: 0.75;
   font-variant-numeric: tabular-nums;
 }
 
-.layer.off .name { color: var(--text-muted); }
-
-/* SQL console */
+/* Query console */
 textarea {
   width: 100%;
-  min-height: 118px;
+  min-height: 112px;
   resize: vertical;
-  background: var(--ink);
+  background: rgba(0, 0, 0, 0.35);
   color: var(--text);
   border: 1px solid var(--line);
-  border-radius: var(--radius);
-  padding: 10px;
+  border-radius: var(--r);
+  padding: 11px;
   font-family: "IBM Plex Mono", monospace;
   font-size: 12.5px;
-  line-height: 1.55;
+  line-height: 1.6;
 }
 
-textarea:focus, button:focus-visible, .layer:focus-within {
-  outline: 2px solid var(--accent);
-  outline-offset: 1px;
-}
+textarea:focus { border-color: var(--line-hot); outline: none; }
 
-.row { display: flex; gap: 8px; margin-top: 10px; align-items: center; }
+.actions { display: flex; gap: 7px; align-items: center; margin-top: 10px; flex-wrap: wrap; }
 
-button {
-  font-family: inherit;
-  font-size: 13px;
-  padding: 7px 13px;
-  border-radius: var(--radius);
-  border: 1px solid var(--accent-dim);
+.solid {
+  padding: 8px 15px;
+  border-radius: 100px;
   background: var(--accent);
-  color: #1A1204;
+  color: var(--accent-ink);
+  font-size: 12.5px;
   font-weight: 600;
-  cursor: pointer;
 }
 
-button.secondary {
-  background: transparent;
-  color: var(--text);
-  border-color: var(--line);
-  font-weight: 400;
-}
+.solid:disabled { opacity: 0.4; cursor: not-allowed; }
 
-button:disabled { opacity: 0.45; cursor: not-allowed; }
+#status { font-size: 11.5px; color: var(--muted); flex-basis: 100%; }
+#status[data-error="true"] { color: #E0734A; }
 
-#status { font-size: 12px; color: var(--text-muted); }
-#status.error { color: var(--warn); }
-
-/* Example prompts double as documentation of what the data can answer. */
 .example {
   display: block;
   width: 100%;
   text-align: left;
-  background: none;
-  border: none;
-  border-left: 2px solid var(--line);
-  color: var(--text-muted);
-  padding: 4px 0 4px 10px;
-  margin: 2px 0;
+  border-left: 1.5px solid var(--line);
+  padding: 5px 0 5px 11px;
+  margin: 3px 0;
   font-size: 12.5px;
-  cursor: pointer;
-  font-weight: 400;
+  color: var(--muted);
 }
 
 .example:hover { color: var(--text); border-left-color: var(--accent); }
 
-/* Result table */
-#result { overflow-x: auto; }
-
-table { border-collapse: collapse; font-size: 12px; width: 100%; }
-
-th, td {
-  text-align: left;
-  padding: 4px 10px 4px 0;
-  border-bottom: 1px solid var(--line);
-  white-space: nowrap;
-}
-
-th { color: var(--text-muted); font-weight: 500; }
-
+#result { margin-top: 14px; overflow-x: auto; }
+table { border-collapse: collapse; font-size: 11.5px; width: 100%; }
+th, td { text-align: left; padding: 5px 12px 5px 0; border-bottom: 1px solid rgba(232,237,234,0.07); white-space: nowrap; }
+th { color: var(--muted); font-weight: 500; font-family: "IBM Plex Mono", monospace; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; }
 td { font-family: "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums; }
 
-footer {
-  margin-top: auto;
-  padding: 14px 18px;
-  font-size: 11.5px;
-  color: var(--text-muted);
-  line-height: 1.6;
+.prose { font-size: 13px; color: var(--muted); }
+.prose p { margin: 0 0 11px; }
+.prose a { color: var(--accent); text-decoration: none; border-bottom: 1px solid var(--line-hot); }
+.prose dt { font-size: 12.5px; color: var(--text); margin-top: 12px; }
+.prose dd { margin: 2px 0 0; font-size: 12px; }
+.prose code { font-family: "IBM Plex Mono", monospace; font-size: 11.5px; color: var(--accent); }
+
+#scrim {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s;
+  z-index: 25;
 }
 
-footer a { color: var(--text-muted); }
+#scrim[data-open="true"] { opacity: 1; pointer-events: auto; }
 
-/* --- Map ----------------------------------------------------------------- */
+/* --- Map furniture -------------------------------------------------------- */
 
-#map { height: 100%; width: 100%; background: var(--ink); }
+.maplibregl-ctrl-bottom-right { bottom: 88px !important; }
+.maplibregl-ctrl-group { background: var(--glass) !important; border: 1px solid var(--line) !important; }
+.maplibregl-ctrl-group button + button { border-top-color: var(--line) !important; }
+.maplibregl-ctrl-group button span { filter: invert(1) !important; }
+.maplibregl-ctrl-attrib { background: rgba(0,0,0,0.5) !important; font-size: 10px !important; }
+.maplibregl-ctrl-attrib a { color: var(--muted) !important; }
+.maplibregl-ctrl-scale { background: transparent !important; border-color: var(--line) !important; color: var(--muted) !important; font-family: "IBM Plex Mono", monospace !important; font-size: 10px !important; }
 
 .maplibregl-popup-content {
-  background: var(--panel);
+  background: var(--glass-hi);
+  backdrop-filter: blur(14px);
   color: var(--text);
   border: 1px solid var(--line);
-  border-radius: var(--radius);
-  font-family: "IBM Plex Mono", monospace;
+  border-radius: var(--r);
   font-size: 12px;
-  padding: 10px 12px;
+  padding: 11px 13px;
+  box-shadow: none;
 }
 
-.maplibregl-popup-tip { border-top-color: var(--panel); }
+.maplibregl-popup-content b {
+  display: block;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 5px;
+}
+
+.maplibregl-popup-content dl { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 2px 12px; }
+.maplibregl-popup-content dt { color: var(--muted); }
+.maplibregl-popup-content dd { margin: 0; font-family: "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums; }
+.maplibregl-popup-tip { border-top-color: var(--glass-hi) !important; border-bottom-color: var(--glass-hi) !important; }
+.maplibregl-popup-close-button { color: var(--muted); font-size: 16px; }
+
+#boot {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: var(--ink);
+  z-index: 60;
+  transition: opacity 0.6s;
+}
+
+#boot[data-done="true"] { opacity: 0; pointer-events: none; }
 
 @media (prefers-reduced-motion: reduce) {
-  * { animation: none !important; transition: none !important; }
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
 }
 </style>
 </head>
 
 <body>
-<div id="app">
 
-  <div id="rail">
-    <header>
-      <h1>Ghana GeoStack</h1>
-      <p>Spatial data for Ghana. Query it here, or connect any tool that speaks
-         SQL, OGC API or vector tiles.</p>
-    </header>
+<div id="map"></div>
+<div id="scrim"></div>
 
-    <section>
-      <h2>Layers</h2>
-      <div id="layers"></div>
-    </section>
+<!-- Legend -------------------------------------------------------------- -->
+<section id="legend" class="glass" data-open="true" aria-label="Legend">
+  <button id="legend-head" aria-expanded="true" aria-controls="legend-body">
+    <span>
+      <span id="legend-title" class="label">Ghana GeoStack</span>
+      <span id="legend-sub">Regions and districts</span>
+    </span>
+    <svg id="legend-chev" width="11" height="11" viewBox="0 0 11 11" fill="none" aria-hidden="true">
+      <path d="M2 4l3.5 3.5L9 4" stroke="currentColor" stroke-width="1.3"/>
+    </svg>
+  </button>
+  <div id="legend-body"></div>
+</section>
 
-    <section>
-      <h2>Ask the data</h2>
-      <textarea id="sql" spellcheck="false">
-SELECT name, round(area_km2) AS area_km2, population
-FROM ghana.region
-ORDER BY area_km2 DESC;</textarea>
-      <div class="row">
-        <button id="run">Run query</button>
-        <button id="mapit" class="secondary">Map result</button>
-        <span id="status">Loading engine…</span>
-      </div>
-      <div id="result"></div>
-    </section>
-
-    <section>
-      <h2>Try one of these</h2>
-      <button class="example" data-sql="SELECT name, round(area_km2) AS area_km2, population&#10;FROM ghana.region ORDER BY area_km2 DESC;">Regions by area</button>
-      <button class="example" data-sql="SELECT class, round(sum(length_m)/1000) AS km&#10;FROM ghana.road GROUP BY 1 ORDER BY km DESC;">Road length by class</button>
-      <button class="example" data-sql="SELECT d.name, count(*) AS buildings&#10;FROM ghana.building b JOIN ghana.district d ON b.district_id = d.id&#10;GROUP BY 1 ORDER BY buildings DESC LIMIT 20;">Districts with the most buildings</button>
-      <button class="example" data-sql="SELECT name, geom&#10;FROM ghana.district&#10;WHERE region_id = 'GH-AA';">Greater Accra districts, on the map</button>
-    </section>
-
-    <footer id="attribution">
-      Data licences and credits vary by layer. Every layer carries its own
-      attribution — see <a href="../data/exports/attribution.md">attribution.md</a>.
-      Boundaries, buildings and roads are not authoritative for legal or
-      cadastral purposes.
-    </footer>
-  </div>
-
-  <div id="map"></div>
+<!-- Wordmark and menu --------------------------------------------------- -->
+<div id="brand">
+  <span class="name">Ghana GeoStack</span>
+  <button id="menu-toggle" class="glass" aria-expanded="false" aria-controls="panel" aria-label="Open menu">
+    <span></span><span></span><span></span>
+  </button>
 </div>
 
+<!-- Pill controls -------------------------------------------------------- -->
+<nav id="controls" aria-label="Map controls">
+  <button class="pill glass label" id="btn-info" aria-pressed="false">
+    <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+      <circle cx="6" cy="6" r="5" stroke="currentColor"/><path d="M6 5v3M6 3.4v.6" stroke="currentColor" stroke-linecap="round"/>
+    </svg>Info
+  </button>
+  <button class="pill glass label" id="btn-reset">
+    <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+      <path d="M10 6a4 4 0 1 1-1.3-3M9.2 1.4v1.8H7.4" stroke="currentColor" stroke-linecap="round"/>
+    </svg>Reset
+  </button>
+  <button class="pill glass label" id="btn-locate">
+    <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+      <circle cx="6" cy="6" r="2" stroke="currentColor"/><path d="M6 .8v1.6M6 9.6v1.6M.8 6h1.6M9.6 6h1.6" stroke="currentColor" stroke-linecap="round"/>
+    </svg>My location
+  </button>
+  <button class="pill glass label" id="btn-query" aria-pressed="false">
+    <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+      <path d="M2 3.2h8M2 6h5.5M2 8.8h3.5" stroke="currentColor" stroke-linecap="round"/>
+    </svg>Query
+  </button>
+</nav>
+
+<!-- Story ---------------------------------------------------------------- -->
+<div id="story-launch" data-hidden="false">
+  <span class="cap label"><span>Step through the</span><strong>Story</strong></span>
+  <button id="story-go" aria-label="Start the guided tour">
+    <svg width="17" height="13" viewBox="0 0 17 13" fill="none" aria-hidden="true">
+      <path d="M1 6.5h14M10 1.5l5 5-5 5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+  </button>
+</div>
+
+<article id="story-card" class="glass" data-open="false" aria-live="polite">
+  <span id="story-step" class="label">01 / 06</span>
+  <h2 id="story-title"></h2>
+  <p id="story-text"></p>
+  <div id="story-nav">
+    <div id="story-progress" aria-hidden="true"></div>
+    <button class="ghost label" id="story-prev">Back</button>
+    <button class="ghost label" id="story-next">Next</button>
+    <button class="ghost label" id="story-exit" aria-label="Close the tour">Close</button>
+  </div>
+</article>
+
+<!-- Panel ---------------------------------------------------------------- -->
+<aside id="panel" class="glass" data-open="false" aria-label="Layers, query and sources">
+  <div id="tabs" role="tablist">
+    <button class="tab label" role="tab" id="tab-layers"  aria-selected="true"  aria-controls="pane-layers">Layers</button>
+    <button class="tab label" role="tab" id="tab-query"   aria-selected="false" aria-controls="pane-query">Query</button>
+    <button class="tab label" role="tab" id="tab-sources" aria-selected="false" aria-controls="pane-sources">Sources</button>
+  </div>
+
+  <div class="tabpanel" id="pane-layers" role="tabpanel" aria-labelledby="tab-layers" data-active="true"></div>
+
+  <div class="tabpanel" id="pane-query" role="tabpanel" aria-labelledby="tab-query">
+    <h3>SQL</h3>
+    <textarea id="sql" spellcheck="false" aria-label="SQL query">SELECT adm1_pcode, adm1_name, round(area_sqkm) AS km2
+FROM ghana.region
+ORDER BY km2 DESC;</textarea>
+    <div class="actions">
+      <button class="solid" id="run">Run</button>
+      <button class="ghost label" id="mapit">Map result</button>
+      <span id="status">Starting engine</span>
+    </div>
+    <div id="result"></div>
+    <h3>Examples</h3>
+    <div id="examples"></div>
+  </div>
+
+  <div class="tabpanel prose" id="pane-sources" role="tabpanel" aria-labelledby="tab-sources">
+    <h3>About</h3>
+    <p>Open spatial data for Ghana: 16 regions, 260 districts, buildings,
+       roads, facilities and terrain, in one database with one set of
+       conventions.</p>
+    <p>Everything shown here is queryable in SQL, downloadable as GeoParquet,
+       and servable as vector tiles.</p>
+
+    <h3>Attribution</h3>
+    <dl>
+      <dt>Administrative boundaries</dt>
+      <dd>OCHA Ghana Common Operational Dataset (COD-AB), v01, valid from
+          8 March 2021. CC BY 3.0 IGO.</dd>
+      <dt>Buildings and roads</dt>
+      <dd>© OpenStreetMap contributors (ODbL), Overture Maps Foundation,
+          Google Open Buildings (CC BY 4.0).</dd>
+      <dt>Terrain</dt>
+      <dd>Copernicus DEM GLO-30. © DLR e.V. 2010–2014,
+          © Airbus Defence and Space GmbH.</dd>
+      <dt>Basemap</dt>
+      <dd>© OpenStreetMap contributors, © CARTO.</dd>
+    </dl>
+
+    <h3>Reading the data</h3>
+    <p>Distances are straight-line, not travel time. Flood exposure is derived
+       from observed historical surface water and terrain; it is not a
+       modelled flood risk and carries no return period. Population is
+       modelled from census totals rather than counted.</p>
+    <p>Administrative units join on p-codes, not names:
+       <code>GH07</code> is Greater Accra and <code>GH0701</code> is a district
+       within it.</p>
+
+    <h3>Source</h3>
+    <p><a href="https://github.com/YOUR-ORG/ghana-geostack">github.com/YOUR-ORG/ghana-geostack</a></p>
+  </div>
+</aside>
+
+<div id="boot"><span class="label" style="color:var(--muted)">Loading Ghana</span></div>
+
 <script type="module">
-import maplibregl from "https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/+esm";
-import * as duckdb from "https://cdn.jsdelivr.net/npm/@duckdb/duckdb-wasm@1.29.0/+esm";
+import maplibregl from "https://cdn.jsdelivr.net/npm/maplibre-gl@5.6.0/+esm";
 
 /* ---------------------------------------------------------------------------
-   Configuration. Point TILES at a running pg_tileserv, or leave it and the
-   viewer falls back to the static GeoParquet exports read by DuckDB-WASM.
+   Configuration
 --------------------------------------------------------------------------- */
 
-const TILES    = "http://localhost:7800";        // pg_tileserv
-const FEATURES = "http://localhost:9000";        // pg_featureserv
-const EXPORTS  = "../data/exports";              // GeoParquet, for the static path
+const TILES    = "http://localhost:7800";     // pg_tileserv
+const EXPORTS  = "../data/exports";           // GeoParquet, for the DuckDB console
+const REFERENCE = "../data/reference";        // boundaries committed to the repo
 
-// Basemap. Swap in your own style URL, or a self-hosted PMTiles archive, for
-// production — a public demo tile endpoint is not something to depend on.
+const HOME = { center: [-1.09, 7.95], zoom: 6.2, pitch: 0, bearing: 0 };
+
+// Swap for a self-hosted style or a PMTiles basemap in production.
 const BASEMAP = {
   version: 8,
   sources: {
@@ -304,155 +720,563 @@ const BASEMAP = {
       type: "raster",
       tiles: ["https://basemaps.cartocdn.com/rastertiles/dark_nolabels/{z}/{x}/{y}@2x.png"],
       tileSize: 256,
-      attribution: "© OpenStreetMap contributors © CARTO"
+      attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors © <a href="https://carto.com/attributions">CARTO</a>'
     }
   },
-  layers: [{ id: "basemap", type: "raster", source: "carto" }]
+  layers: [
+    { id: "bg", type: "background", paint: { "background-color": "#070B0A" } },
+    { id: "basemap", type: "raster", source: "carto", paint: { "raster-opacity": 0.85 } }
+  ],
+  sky: { "sky-color": "#0A1412", "horizon-color": "#16211F", "fog-color": "#070B0A", "fog-ground-blend": 0.6 }
 };
 
+/* Layers. `source` is either a pg_tileserv table or a local GeoJSON file, so
+   the viewer works both against the full stack and against a bare clone. */
 const LAYERS = [
-  { id: "region",   table: "serve.region",   label: "Regions",   type: "line",
-    paint: { "line-color": "#D8A13A", "line-width": 1.2, "line-opacity": 0.9 } },
-  { id: "district", table: "serve.district", label: "Districts", type: "line",
-    paint: { "line-color": "#5E8F84", "line-width": 0.5, "line-opacity": 0.7 } },
-  { id: "road",     table: "serve.road_major", label: "Major roads", type: "line",
-    paint: { "line-color": "#9FB8B1", "line-width": 0.8, "line-opacity": 0.8 } },
-  { id: "building", table: "serve.building", label: "Buildings", type: "fill",
-    minzoom: 12,
-    paint: { "fill-color": "#E8C67A", "fill-opacity": 0.55 } },
-  { id: "facility", table: "serve.facility", label: "Facilities", type: "circle",
-    paint: { "circle-radius": 3, "circle-color": "#D2694A", "circle-opacity": 0.85 } },
-  // Density is shown as equal-area hexes rather than a district choropleth.
-  // District areas in Ghana vary by two orders of magnitude, so a choropleth
-  // of a count is mostly a map of how big the districts are.
-  { id: "density",  table: "serve.building_density", label: "Building density (H3)",
-    type: "fill", default: false,
-    paint: {
+  {
+    id: "district", name: "Districts", group: "Administrative",
+    file: `${REFERENCE}/gha_admin2.geojson`, table: "serve.district",
+    meta: "260", swatch: "#4E7F72", on: true,
+    legend: { type: "line", note: "Metropolitan, municipal and district assemblies" },
+    style: [
+      { type: "line", paint: { "line-color": "#4E7F72", "line-width": 0.55, "line-opacity": 0.75 } },
+      { type: "fill", paint: { "fill-color": "#4E7F72", "fill-opacity": 0.04 } }
+    ],
+    popup: (p) => ({ title: p.adm2_name ?? p.name, rows: {
+      "P-code": p.adm2_pcode ?? p.id, Region: p.adm1_name ?? p.region_name,
+      "Area km²": fmt(p.area_sqkm ?? p.area_km2) } })
+  },
+  {
+    id: "region", name: "Regions", group: "Administrative",
+    file: `${REFERENCE}/gha_admin1.geojson`, table: "serve.region",
+    meta: "16", swatch: "#E0A93C", on: true,
+    legend: { type: "line", note: "16 regions, p-coded GH01 to GH16" },
+    style: [
+      { type: "line", paint: { "line-color": "#E0A93C", "line-width": 1.25, "line-opacity": 0.9 } }
+    ],
+    popup: (p) => ({ title: p.adm1_name ?? p.name, rows: {
+      "P-code": p.adm1_pcode ?? p.id, "Area km²": fmt(p.area_sqkm ?? p.area_km2) } })
+  },
+  {
+    id: "capital", name: "Administrative capitals", group: "Administrative",
+    file: `${REFERENCE}/gha_admincapitals.geojson`, meta: "177",
+    swatch: "#F2E4C4", on: false,
+    legend: { type: "point", note: "Regional and district capitals" },
+    style: [
+      { type: "circle", paint: {
+        "circle-radius": ["interpolate", ["linear"], ["zoom"], 5, 1.8, 10, 4],
+        "circle-color": "#F2E4C4", "circle-opacity": 0.9,
+        "circle-stroke-width": 0.5, "circle-stroke-color": "#070B0A" } }
+    ],
+    popup: (p) => ({ title: p.name, rows: { District: p.adm2_name, Region: p.adm1_name } })
+  },
+  {
+    id: "road", name: "Major roads", group: "Infrastructure",
+    table: "serve.road_major", swatch: "#9FB8B1", on: false,
+    legend: { type: "line", note: "Motorway, trunk, primary and secondary" },
+    style: [{ type: "line", paint: {
+      "line-color": "#9FB8B1",
+      "line-width": ["interpolate", ["linear"], ["zoom"], 6, 0.4, 12, 1.6],
+      "line-opacity": 0.8 } }],
+    popup: (p) => ({ title: p.name || "Unnamed road", rows: { Class: p.class, Surface: p.surface } })
+  },
+  {
+    id: "building", name: "Buildings", group: "Infrastructure",
+    table: "serve.building", swatch: "#E8C67A", on: false, minzoom: 12,
+    legend: { type: "fill", note: "Visible from zoom 12" },
+    style: [{ type: "fill", paint: { "fill-color": "#E8C67A", "fill-opacity": 0.5 } }],
+    popup: (p) => ({ title: p.name || "Building", rows: { Class: p.class, "Height m": p.height_m, "Area m²": fmt(p.area_m2) } })
+  },
+  {
+    id: "facility", name: "Facilities", group: "Services",
+    table: "serve.facility", swatch: "#D2694A", on: false,
+    legend: { type: "point", note: "Health, education, market, water, energy" },
+    style: [{ type: "circle", paint: {
+      "circle-radius": 3, "circle-color": "#D2694A", "circle-opacity": 0.85 } }],
+    popup: (p) => ({ title: p.name, rows: { Category: p.category, Type: p.subtype } })
+  },
+  {
+    id: "density", name: "Building density", group: "Analysis",
+    table: "serve.building_density", swatch: "#8FA23C", on: false,
+    legend: {
+      type: "ramp",
+      stops: ["#12332C", "#2F6B4F", "#8FA23C", "#E0A93C", "#E8734A"],
+      ticks: ["0", "6", "12", "25%"],
+      note: "Built footprint as a share of each H3 cell. Equal-area hexes, because district areas vary by two orders of magnitude."
+    },
+    style: [{ type: "fill", paint: {
       "fill-color": ["interpolate", ["linear"], ["get", "built_pct"],
-                     0, "#12332C", 2, "#2F6B4F", 6, "#8FA23C", 12, "#D8A13A", 25, "#E8734A"],
-      "fill-opacity": 0.7
-    } }
+        0, "#12332C", 2, "#2F6B4F", 6, "#8FA23C", 12, "#E0A93C", 25, "#E8734A"],
+      "fill-opacity": 0.72 } }],
+    popup: (p) => ({ title: "H3 cell", rows: { Cell: p.h3, Buildings: fmt(p.building_count), "Built %": p.built_pct } })
+  },
+  {
+    id: "access", name: "Health access", group: "Analysis",
+    table: "serve.access_by_district", swatch: "#C9553D", on: false,
+    legend: {
+      type: "ramp",
+      stops: ["#1B4D3E", "#4E7F42", "#C9A227", "#C9553D"],
+      ticks: ["100", "75", "50", "25%"],
+      note: "Share of buildings within 5 km of a health facility. Straight-line distance, not travel time."
+    },
+    style: [{ type: "fill", paint: {
+      "fill-color": ["interpolate", ["linear"], ["get", "pct_within_5km_health"],
+        25, "#C9553D", 50, "#C9A227", 75, "#4E7F42", 100, "#1B4D3E"],
+      "fill-opacity": 0.7 } }],
+    popup: (p) => ({ title: p.district_name, rows: {
+      "Within 5 km": p.pct_within_5km_health + "%",
+      "Median distance": fmt(p.median_health_dist_m) + " m" } })
+  },
+  {
+    id: "flood", name: "Flood exposure", group: "Analysis",
+    table: "serve.flood_by_district", swatch: "#3D7FC9", on: false,
+    legend: {
+      type: "ramp",
+      stops: ["#0E1F2E", "#1D4E79", "#2E7FB8", "#5FB3E0"],
+      ticks: ["0", "2", "5", "10%"],
+      note: "Buildings on low ground near watercourses. Observed surface water and terrain, not a modelled flood risk."
+    },
+    style: [{ type: "fill", paint: {
+      "fill-color": ["interpolate", ["linear"], ["get", "pct_exposed"],
+        0, "#0E1F2E", 2, "#1D4E79", 5, "#2E7FB8", 10, "#5FB3E0"],
+      "fill-opacity": 0.72 } }],
+    popup: (p) => ({ title: p.district_name, rows: {
+      Exposed: fmt(p.exposed_buildings), "Share": p.pct_exposed + "%" } })
+  }
 ];
 
-/* --- Map ----------------------------------------------------------------- */
+/* The guided tour. Each step moves the camera and sets which layers are on,
+   so the map always shows what the caption is describing. */
+const STORY = [
+  {
+    title: "Ghana, in one database",
+    text: "Sixteen regions, 260 districts, several million buildings and the road network that connects them. One coordinate system, one catalogue, one set of conventions.",
+    view: { center: [-1.09, 7.95], zoom: 6.2, pitch: 0, bearing: 0 },
+    layers: ["region", "district"]
+  },
+  {
+    title: "Boundaries that hold",
+    text: "Every unit carries an OCHA p-code. GH07 is Greater Accra; GH0701 is a district inside it. The hierarchy lives in the code, so joins never depend on how a place name happens to be spelled.",
+    view: { center: [-1.09, 7.95], zoom: 6.6, pitch: 0, bearing: 0 },
+    layers: ["region", "district", "capital"]
+  },
+  {
+    title: "Where the country is built",
+    text: "Building density on an equal-area hex grid. A district choropleth would show mostly how large the districts are: Ablekuma West is under 13 km², while districts in Savannah run past 5,000.",
+    view: { center: [-1.09, 7.95], zoom: 6.4, pitch: 25, bearing: -8 },
+    layers: ["density", "region"]
+  },
+  {
+    title: "Accra, up close",
+    text: "The capital holds the densest building fabric in the country. Zoom past level 12 and individual footprints resolve, each with height and class where the source provides them.",
+    view: { center: [-0.187, 5.603], zoom: 11.6, pitch: 45, bearing: -20 },
+    layers: ["building", "road", "district"]
+  },
+  {
+    title: "Distance to care",
+    text: "Share of buildings within 5 km of a health facility, the catchment Ghana Health Service plans CHPS compounds around. These are straight-line distances; real journeys are longer, and considerably longer in the rainy season.",
+    view: { center: [-1.4, 9.4], zoom: 7, pitch: 0, bearing: 0 },
+    layers: ["access", "facility"]
+  },
+  {
+    title: "Ground that has been under water",
+    text: "Buildings on low ground close to a watercourse. This is observed history plus terrain, not a hydraulic model: it carries no return period and no depth. It says water has been here, which is a different claim from water will return.",
+    view: { center: [-0.4, 6.4], zoom: 7.2, pitch: 0, bearing: 0 },
+    layers: ["flood", "region"]
+  }
+];
+
+/* ---------------------------------------------------------------------------
+   Map
+--------------------------------------------------------------------------- */
+
+const fmt = (v) => (v === null || v === undefined || v === "" ? "—"
+  : typeof v === "number" ? Math.round(v).toLocaleString() : v);
 
 const map = new maplibregl.Map({
   container: "map",
   style: BASEMAP,
-  center: [-1.02, 7.95],      // Ghana, from config/ghana.yml
-  zoom: 6.4,
-  attributionControl: { compact: true }
+  center: HOME.center,
+  zoom: 2.2,
+  attributionControl: { compact: true },
+  dragRotate: true
 });
 
-map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
-map.addControl(new maplibregl.ScaleControl({ unit: "metric" }), "bottom-right");
+map.addControl(new maplibregl.NavigationControl({ showCompass: true, visualizePitch: true }), "bottom-right");
+map.addControl(new maplibregl.ScaleControl({ unit: "metric", maxWidth: 90 }), "bottom-right");
 
-map.on("load", () => {
-  for (const layer of LAYERS) addTileLayer(layer);
-  buildLayerList();
+const state = { active: new Set(), located: null, tilesOk: false };
+
+map.on("load", async () => {
+  // Open on a globe and settle onto Ghana, then let MapLibre hand over to
+  // mercator as the camera comes in.
+  try { map.setProjection({ type: "globe" }); } catch { /* older runtime */ }
+
+  await Promise.all(LAYERS.map(addLayer));
+
+  document.getElementById("boot").dataset.done = "true";
+  map.flyTo({ ...HOME, duration: 2600, essential: true });
+
+  for (const layer of LAYERS) setLayerVisible(layer.id, layer.on, false);
+  renderLayerList();
+  renderLegend();
 });
 
-function addTileLayer(layer) {
-  const src = `${layer.id}_src`;
-  map.addSource(src, {
-    type: "vector",
-    tiles: [`${TILES}/${layer.table}/{z}/{x}/{y}.pbf`],
-    minzoom: 0,
-    maxzoom: 16
-  });
-  map.addLayer({
-    id: layer.id,
-    type: layer.type,
-    source: src,
-    "source-layer": layer.table,
-    minzoom: layer.minzoom ?? 0,
-    paint: layer.paint,
-    layout: { visibility: layer.default === false ? "none" : "visible" }
+async function addLayer(layer) {
+  const sourceId = `src-${layer.id}`;
+
+  // Prefer live tiles; fall back to the committed GeoJSON so the viewer works
+  // on a bare clone with no database running.
+  let usedTiles = false;
+  if (layer.table) {
+    try {
+      const probe = await fetch(`${TILES}/${layer.table}.json`, { signal: AbortSignal.timeout(1200) });
+      if (probe.ok) {
+        map.addSource(sourceId, {
+          type: "vector",
+          tiles: [`${TILES}/${layer.table}/{z}/{x}/{y}.pbf`],
+          minzoom: 0, maxzoom: 16
+        });
+        usedTiles = true;
+        state.tilesOk = true;
+      }
+    } catch { /* tile server not running */ }
+  }
+
+  if (!usedTiles) {
+    if (!layer.file) { layer.unavailable = true; return; }
+    map.addSource(sourceId, { type: "geojson", data: layer.file });
+  }
+
+  layer.sublayers = [];
+  layer.style.forEach((part, i) => {
+    const id = `${layer.id}-${i}`;
+    map.addLayer({
+      id,
+      type: part.type,
+      source: sourceId,
+      ...(usedTiles ? { "source-layer": layer.table } : {}),
+      ...(layer.minzoom ? { minzoom: layer.minzoom } : {}),
+      paint: part.paint,
+      layout: { visibility: "none" }
+    });
+    layer.sublayers.push(id);
+
+    if (part.type !== "line") bindPopup(id, layer);
   });
 
-  map.on("click", layer.id, (e) => {
-    const props = e.features?.[0]?.properties ?? {};
-    const rows = Object.entries(props)
-      .filter(([, v]) => v !== null && v !== "")
-      .slice(0, 12)
-      .map(([k, v]) => `${k}: ${v}`)
-      .join("<br>");
-    new maplibregl.Popup().setLngLat(e.lngLat).setHTML(rows || "No attributes").addTo(map);
-  });
-
-  map.on("mouseenter", layer.id, () => map.getCanvas().style.cursor = "pointer");
-  map.on("mouseleave", layer.id, () => map.getCanvas().style.cursor = "");
+  // Fills get the popup; for line-only layers bind to the line itself.
+  if (!layer.style.some((p) => p.type !== "line")) bindPopup(layer.sublayers[0], layer);
 }
 
-function buildLayerList() {
-  const host = document.getElementById("layers");
-  host.innerHTML = "";
-  for (const layer of LAYERS) {
-    const on = layer.default !== false;
-    const row = document.createElement("label");
-    row.className = "layer" + (on ? "" : " off");
-    row.innerHTML = `
-      <input type="checkbox" ${on ? "checked" : ""}>
-      <span class="name">${layer.label}</span>
-      <span class="count" data-count="${layer.id}"></span>`;
-    row.querySelector("input").addEventListener("change", (e) => {
-      map.setLayoutProperty(layer.id, "visibility", e.target.checked ? "visible" : "none");
-      row.classList.toggle("off", !e.target.checked);
-    });
-    host.appendChild(row);
+function bindPopup(layerId, layer) {
+  map.on("click", layerId, (e) => {
+    const props = e.features?.[0]?.properties ?? {};
+    const { title, rows } = layer.popup(props);
+    const body = Object.entries(rows)
+      .filter(([, v]) => v !== undefined && v !== null && v !== "" && v !== "—")
+      .map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join("");
+    new maplibregl.Popup({ closeButton: true, maxWidth: "280px" })
+      .setLngLat(e.lngLat)
+      .setHTML(`<b>${title ?? layer.name}</b><dl>${body}</dl>`)
+      .addTo(map);
+  });
+  map.on("mouseenter", layerId, () => { map.getCanvas().style.cursor = "pointer"; });
+  map.on("mouseleave", layerId, () => { map.getCanvas().style.cursor = ""; });
+}
+
+function setLayerVisible(id, visible, redraw = true) {
+  const layer = LAYERS.find((l) => l.id === id);
+  if (!layer || layer.unavailable) return;
+  for (const sub of layer.sublayers ?? []) {
+    if (map.getLayer(sub)) map.setLayoutProperty(sub, "visibility", visible ? "visible" : "none");
+  }
+  visible ? state.active.add(id) : state.active.delete(id);
+  if (redraw) { renderLayerList(); renderLegend(); }
+}
+
+/* ---------------------------------------------------------------------------
+   Legend — describes the topmost active layer that has something to say
+--------------------------------------------------------------------------- */
+
+function renderLegend() {
+  const body = document.getElementById("legend-body");
+  const sub = document.getElementById("legend-sub");
+
+  const shown = LAYERS.filter((l) => state.active.has(l.id));
+  const ramp = [...shown].reverse().find((l) => l.legend?.type === "ramp");
+  const lead = ramp ?? shown[shown.length - 1];
+
+  if (!lead) {
+    sub.textContent = "No layers shown";
+    body.innerHTML = "";
+    return;
+  }
+
+  sub.textContent = lead.name;
+
+  if (lead.legend.type === "ramp") {
+    const gradient = `linear-gradient(90deg, ${lead.legend.stops.join(", ")})`;
+    body.innerHTML = `
+      <div class="ramp" style="background:${gradient}"></div>
+      <div class="ramp-ticks">${lead.legend.ticks.map((t) => `<span>${t}</span>`).join("")}</div>
+      <p style="margin:9px 0 0;font-size:11.5px;color:var(--muted)">${lead.legend.note}</p>`;
+  } else {
+    const swatches = shown.map((l) => `
+      <span class="swatch"><i style="background:${l.swatch}"></i>${l.name}</span>`).join("");
+    body.innerHTML = `<div class="swatches">${swatches}</div>
+      <p style="margin:9px 0 0;font-size:11.5px;color:var(--muted)">${lead.legend.note}</p>`;
   }
 }
 
-/* --- DuckDB in the browser ------------------------------------------------
-   The whole point of the GeoParquet exports: someone with no database, no
-   Docker and no credentials can still run real SQL against the data. The
-   engine is a few hundred kilobytes of WebAssembly and the Parquet files are
-   read over range requests, so only the columns and row groups a query needs
-   ever cross the network.
+/* ---------------------------------------------------------------------------
+   Layer list
+--------------------------------------------------------------------------- */
+
+function renderLayerList() {
+  const host = document.getElementById("pane-layers");
+  const groups = [...new Set(LAYERS.map((l) => l.group))];
+
+  host.innerHTML = groups.map((group) => {
+    const rows = LAYERS.filter((l) => l.group === group).map((l) => {
+      const on = state.active.has(l.id);
+      const meta = l.unavailable ? "needs database" : (l.meta ?? "");
+      return `
+        <button class="layer" data-layer="${l.id}" aria-pressed="${on}"
+                ${l.unavailable ? "disabled style='opacity:.4'" : ""}
+                style="--swatch:${l.swatch}">
+          <span class="dot"></span>
+          <span class="txt"><span class="nm">${l.name}</span></span>
+          <span class="meta">${meta}</span>
+        </button>`;
+    }).join("");
+    return `<h3>${group}</h3>${rows}`;
+  }).join("");
+
+  if (!state.tilesOk) {
+    host.insertAdjacentHTML("beforeend", `
+      <p style="margin-top:20px;font-size:11.5px;color:var(--muted);line-height:1.6">
+        Showing the boundaries committed to the repository. Start the stack with
+        <code style="font-family:'IBM Plex Mono',monospace;color:var(--accent)">make up</code>
+        to enable buildings, roads, facilities and the analysis layers.</p>`);
+  }
+
+  for (const btn of host.querySelectorAll("[data-layer]")) {
+    btn.addEventListener("click", () => {
+      const id = btn.dataset.layer;
+      setLayerVisible(id, !state.active.has(id));
+    });
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Panel, pills and keyboard
+--------------------------------------------------------------------------- */
+
+const panel  = document.getElementById("panel");
+const scrim  = document.getElementById("scrim");
+const toggle = document.getElementById("menu-toggle");
+
+function openPanel(tab) {
+  panel.dataset.open = "true";
+  scrim.dataset.open = "true";
+  toggle.setAttribute("aria-expanded", "true");
+  toggle.setAttribute("aria-label", "Close menu");
+  if (tab) selectTab(tab);
+}
+
+function closePanel() {
+  panel.dataset.open = "false";
+  scrim.dataset.open = "false";
+  toggle.setAttribute("aria-expanded", "false");
+  toggle.setAttribute("aria-label", "Open menu");
+  document.getElementById("btn-query").setAttribute("aria-pressed", "false");
+  document.getElementById("btn-info").setAttribute("aria-pressed", "false");
+}
+
+toggle.addEventListener("click", () =>
+  panel.dataset.open === "true" ? closePanel() : openPanel("layers"));
+scrim.addEventListener("click", closePanel);
+
+function selectTab(name) {
+  for (const t of document.querySelectorAll(".tab")) {
+    const on = t.id === `tab-${name}`;
+    t.setAttribute("aria-selected", String(on));
+    document.getElementById(t.getAttribute("aria-controls")).dataset.active = String(on);
+  }
+}
+
+for (const t of document.querySelectorAll(".tab")) {
+  t.addEventListener("click", () => selectTab(t.id.replace("tab-", "")));
+}
+
+document.getElementById("btn-query").addEventListener("click", (e) => {
+  const pressed = e.currentTarget.getAttribute("aria-pressed") === "true";
+  pressed ? closePanel() : (openPanel("query"), e.currentTarget.setAttribute("aria-pressed", "true"));
+});
+
+document.getElementById("btn-info").addEventListener("click", (e) => {
+  const pressed = e.currentTarget.getAttribute("aria-pressed") === "true";
+  pressed ? closePanel() : (openPanel("sources"), e.currentTarget.setAttribute("aria-pressed", "true"));
+});
+
+document.getElementById("btn-reset").addEventListener("click", () => {
+  map.flyTo({ ...HOME, duration: 1400 });
+  for (const l of LAYERS) setLayerVisible(l.id, Boolean(l.on), false);
+  if (state.located) { state.located.remove(); state.located = null; }
+  renderLayerList(); renderLegend();
+});
+
+document.getElementById("btn-locate").addEventListener("click", () => {
+  if (!navigator.geolocation) return;
+  navigator.geolocation.getCurrentPosition(
+    ({ coords }) => {
+      const at = [coords.longitude, coords.latitude];
+      state.located?.remove();
+      const el = document.createElement("div");
+      el.style.cssText = "width:13px;height:13px;border-radius:50%;background:#E0A93C;box-shadow:0 0 0 5px rgba(224,169,60,.22)";
+      state.located = new maplibregl.Marker({ element: el }).setLngLat(at).addTo(map);
+      map.flyTo({ center: at, zoom: 11, duration: 1800 });
+    },
+    () => { /* permission refused; nothing to do */ },
+    { enableHighAccuracy: true, timeout: 8000 }
+  );
+});
+
+// Legend collapse
+const legend = document.getElementById("legend");
+document.getElementById("legend-head").addEventListener("click", (e) => {
+  const open = legend.dataset.open === "true";
+  legend.dataset.open = String(!open);
+  e.currentTarget.setAttribute("aria-expanded", String(!open));
+});
+
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") { closePanel(); if (story.running) endStory(); }
+});
+
+/* ---------------------------------------------------------------------------
+   Story
+--------------------------------------------------------------------------- */
+
+const story = { i: 0, running: false };
+const storyCard   = document.getElementById("story-card");
+const storyLaunch = document.getElementById("story-launch");
+
+function startStory() {
+  story.running = true;
+  story.i = 0;
+  storyCard.dataset.open = "true";
+  storyLaunch.dataset.hidden = "true";
+  closePanel();
+  showStep();
+}
+
+function endStory() {
+  story.running = false;
+  storyCard.dataset.open = "false";
+  storyLaunch.dataset.hidden = "false";
+}
+
+function showStep() {
+  const step = STORY[story.i];
+
+  document.getElementById("story-step").textContent =
+    `${String(story.i + 1).padStart(2, "0")} / ${String(STORY.length).padStart(2, "0")}`;
+  document.getElementById("story-title").textContent = step.title;
+  document.getElementById("story-text").textContent = step.text;
+
+  document.getElementById("story-progress").innerHTML =
+    STORY.map((_, i) => `<i class="${i <= story.i ? "done" : ""}"></i>`).join("");
+
+  document.getElementById("story-prev").disabled = story.i === 0;
+  document.getElementById("story-next").textContent =
+    story.i === STORY.length - 1 ? "Finish" : "Next";
+
+  for (const l of LAYERS) setLayerVisible(l.id, step.layers.includes(l.id), false);
+  renderLayerList();
+  renderLegend();
+
+  map.flyTo({ ...step.view, duration: 2200, essential: true });
+}
+
+document.getElementById("story-go").addEventListener("click", startStory);
+document.getElementById("story-exit").addEventListener("click", endStory);
+document.getElementById("story-prev").addEventListener("click", () => {
+  if (story.i > 0) { story.i--; showStep(); }
+});
+document.getElementById("story-next").addEventListener("click", () => {
+  if (story.i < STORY.length - 1) { story.i++; showStep(); }
+  else { endStory(); map.flyTo({ ...HOME, duration: 1600 }); }
+});
+
+/* ---------------------------------------------------------------------------
+   DuckDB in the browser
+
+   Real SQL with no server: the WebAssembly engine reads the GeoParquet
+   exports over range requests, so only the columns and row groups a query
+   touches cross the network. Falls back to the committed boundary GeoJSON
+   when no exports are present.
 --------------------------------------------------------------------------- */
 
 const statusEl = document.getElementById("status");
 const resultEl = document.getElementById("result");
 let conn = null;
-let lastResult = null;
+
+const EXAMPLES = [
+  ["Regions by area",
+   "SELECT adm1_pcode, adm1_name, round(area_sqkm) AS km2\nFROM ghana.region ORDER BY km2 DESC;"],
+  ["Districts per region",
+   "SELECT r.adm1_name AS region, count(*) AS districts,\n       round(sum(d.area_sqkm)) AS km2\nFROM ghana.district d\nJOIN ghana.region r ON r.adm1_pcode = left(d.adm2_pcode, 4)\nGROUP BY 1 ORDER BY districts DESC;"],
+  ["Ten smallest districts",
+   "SELECT adm2_pcode, adm2_name, adm1_name,\n       round(area_sqkm, 1) AS km2\nFROM ghana.district ORDER BY area_sqkm LIMIT 10;"],
+  ["Greater Accra, on the map",
+   "SELECT adm2_name, geom\nFROM ghana.district\nWHERE left(adm2_pcode, 4) = 'GH07';"]
+];
+
+document.getElementById("examples").innerHTML = EXAMPLES
+  .map(([label], i) => `<button class="example" data-i="${i}">${label}</button>`).join("");
+
+for (const btn of document.querySelectorAll(".example")) {
+  btn.addEventListener("click", () => {
+    document.getElementById("sql").value = EXAMPLES[btn.dataset.i][1];
+    runQuery();
+  });
+}
 
 function setStatus(text, isError = false) {
   statusEl.textContent = text;
-  statusEl.classList.toggle("error", isError);
+  statusEl.dataset.error = String(isError);
 }
 
 async function initDuckDB() {
   try {
-    const bundles = duckdb.getJsDelivrBundles();
-    const bundle = await duckdb.selectBundle(bundles);
+    const duckdb = await import("https://cdn.jsdelivr.net/npm/@duckdb/duckdb-wasm@1.29.0/+esm");
+    const bundle = await duckdb.selectBundle(duckdb.getJsDelivrBundles());
     const worker = await duckdb.createWorker(bundle.mainWorker);
     const db = new duckdb.AsyncDuckDB(new duckdb.ConsoleLogger(), worker);
     await db.instantiate(bundle.mainModule, bundle.pthreadWorker);
     conn = await db.connect();
-
     await conn.query("INSTALL spatial; LOAD spatial;");
-
-    // Views over the exports, mirroring duckdb/bootstrap.sql so a query
-    // written here also runs in the desktop DuckDB session unchanged.
-    const views = {
-      region:   "core.admin_region",
-      district: "core.admin_district",
-      building: "core.building",
-      road:     "core.road",
-      facility: "core.facility"
-    };
     await conn.query("CREATE SCHEMA IF NOT EXISTS ghana;");
-    for (const [view, file] of Object.entries(views)) {
-      await conn.query(
-        `CREATE OR REPLACE VIEW ghana.${view} AS
-         SELECT * FROM read_parquet('${EXPORTS}/${file}.parquet');`
-      );
+
+    // Boundaries are always available; the wider exports only after make export.
+    await conn.query(`CREATE OR REPLACE VIEW ghana.region AS
+      SELECT * FROM st_read('${REFERENCE}/gha_admin1.geojson');`);
+    await conn.query(`CREATE OR REPLACE VIEW ghana.district AS
+      SELECT * FROM st_read('${REFERENCE}/gha_admin2.geojson');`);
+
+    for (const [view, file] of [["building", "core.building"], ["road", "core.road"],
+                                ["facility", "core.facility"]]) {
+      try {
+        await conn.query(`CREATE OR REPLACE VIEW ghana.${view} AS
+          SELECT * FROM read_parquet('${EXPORTS}/${file}.parquet');`);
+      } catch { /* export not generated yet */ }
     }
+
     setStatus("Ready");
   } catch (err) {
-    // Failing here is normal before the first export has been produced. Say
-    // what to do about it rather than showing a stack trace.
-    setStatus("No exports found. Run: make export", true);
+    setStatus("Query engine unavailable offline", true);
     console.warn(err);
   }
 }
@@ -462,17 +1286,15 @@ async function runQuery() {
   const sql = document.getElementById("sql").value.trim();
   if (!sql) return;
 
-  setStatus("Running…");
+  setStatus("Running");
   resultEl.innerHTML = "";
   const started = performance.now();
 
   try {
     const table = await conn.query(sql);
     const rows = table.toArray().map((r) => r.toJSON());
-    lastResult = rows;
     renderTable(rows);
-    const ms = Math.round(performance.now() - started);
-    setStatus(`${rows.length.toLocaleString()} rows in ${ms} ms`);
+    setStatus(`${rows.length.toLocaleString()} rows · ${Math.round(performance.now() - started)} ms`);
   } catch (err) {
     setStatus(String(err.message ?? err), true);
   }
@@ -480,72 +1302,67 @@ async function runQuery() {
 
 function renderTable(rows) {
   if (!rows.length) {
-    resultEl.innerHTML = `<p style="color:var(--text-muted);font-size:12.5px">
-      No rows. That is a result, but it is usually a filter that is too tight
-      or a name that did not match.</p>`;
+    resultEl.innerHTML = `<p style="font-size:12px;color:var(--muted)">
+      No rows. Usually a filter that is too tight, or a name that did not match.</p>`;
     return;
   }
-  const cols = Object.keys(rows[0]).filter((c) => c !== "geom" && c !== "geometry");
+  const cols = Object.keys(rows[0]).filter((c) => !["geom", "geometry", "wkb_geometry"].includes(c));
   const head = cols.map((c) => `<th>${c}</th>`).join("");
-  const body = rows.slice(0, 200).map((r) =>
-    `<tr>${cols.map((c) => `<td>${format(r[c])}</td>`).join("")}</tr>`).join("");
+  const body = rows.slice(0, 200)
+    .map((r) => `<tr>${cols.map((c) => `<td>${cell(r[c])}</td>`).join("")}</tr>`).join("");
   resultEl.innerHTML = `<table><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table>`
-    + (rows.length > 200 ? `<p style="color:var(--text-muted);font-size:11.5px">
-        Showing the first 200 of ${rows.length.toLocaleString()} rows.</p>` : "");
+    + (rows.length > 200
+        ? `<p style="font-size:11px;color:var(--muted);margin-top:8px">First 200 of ${rows.length.toLocaleString()} rows.</p>`
+        : "");
 }
 
-function format(v) {
+function cell(v) {
   if (v === null || v === undefined) return "—";
+  if (typeof v === "bigint") return v.toLocaleString();
   if (typeof v === "number") return Number.isInteger(v) ? v.toLocaleString() : v.toFixed(2);
-  return String(v).slice(0, 60);
+  return String(v).slice(0, 48);
 }
 
-/* Draw the query result on the map. Requires a geometry column, which is the
-   most common reason this button does nothing useful. */
+/* Draw a query result on the map. Needs a geometry column. */
 async function mapResult() {
   if (!conn) return setStatus("Engine not ready", true);
   const sql = document.getElementById("sql").value.trim().replace(/;\s*$/, "");
 
-  setStatus("Building layer…");
+  setStatus("Building layer");
   try {
     const table = await conn.query(
-      `SELECT ST_AsGeoJSON(geom) AS __geojson, * EXCLUDE (geom) FROM (${sql}) t`);
+      `SELECT ST_AsGeoJSON(geom) AS __g, * EXCLUDE (geom) FROM (${sql}) t`);
+
     const features = table.toArray().map((r) => {
       const row = r.toJSON();
-      const geometry = JSON.parse(row.__geojson);
-      delete row.__geojson;
+      const geometry = JSON.parse(row.__g);
+      delete row.__g;
       return { type: "Feature", geometry, properties: row };
     });
 
-    const geojson = { type: "FeatureCollection", features };
+    for (const id of ["qr-fill", "qr-line"]) if (map.getLayer(id)) map.removeLayer(id);
+    if (map.getSource("qr")) map.removeSource("qr");
 
-    if (map.getLayer("query_result")) map.removeLayer("query_result");
-    if (map.getLayer("query_result_line")) map.removeLayer("query_result_line");
-    if (map.getSource("query_result")) map.removeSource("query_result");
-
-    map.addSource("query_result", { type: "geojson", data: geojson });
-    map.addLayer({
-      id: "query_result", type: "fill", source: "query_result",
+    map.addSource("qr", { type: "geojson", data: { type: "FeatureCollection", features } });
+    map.addLayer({ id: "qr-fill", type: "fill", source: "qr",
       filter: ["in", ["geometry-type"], ["literal", ["Polygon", "MultiPolygon"]]],
-      paint: { "fill-color": "#D8A13A", "fill-opacity": 0.35 }
-    });
-    map.addLayer({
-      id: "query_result_line", type: "line", source: "query_result",
-      paint: { "line-color": "#D8A13A", "line-width": 1.4 }
-    });
+      paint: { "fill-color": "#E0A93C", "fill-opacity": 0.28 } });
+    map.addLayer({ id: "qr-line", type: "line", source: "qr",
+      paint: { "line-color": "#E0A93C", "line-width": 1.5 } });
 
-    // Fit to the result, because a layer drawn outside the current view looks
-    // exactly like a query that returned nothing.
-    const b = new maplibregl.LngLatBounds();
+    // Fit to the result: a layer drawn outside the viewport is indistinguishable
+    // from a query that returned nothing.
+    const bounds = new maplibregl.LngLatBounds();
     for (const f of features) {
-      const coords = f.geometry.coordinates.flat(Infinity);
-      for (let i = 0; i < coords.length; i += 2) b.extend([coords[i], coords[i + 1]]);
+      const flat = f.geometry.coordinates.flat(Infinity);
+      for (let i = 0; i < flat.length; i += 2) bounds.extend([flat[i], flat[i + 1]]);
     }
-    if (!b.isEmpty()) map.fitBounds(b, { padding: 48, duration: 600 });
+    if (!bounds.isEmpty()) map.fitBounds(bounds, { padding: 60, duration: 900 });
 
     setStatus(`${features.length.toLocaleString()} features mapped`);
+    closePanel();
   } catch (err) {
-    setStatus("Add a geometry column named geom to map this result", true);
+    setStatus("Result has no geometry column named geom", true);
     console.warn(err);
   }
 }
@@ -555,12 +1372,6 @@ document.getElementById("mapit").addEventListener("click", mapResult);
 document.getElementById("sql").addEventListener("keydown", (e) => {
   if ((e.metaKey || e.ctrlKey) && e.key === "Enter") runQuery();
 });
-for (const btn of document.querySelectorAll(".example")) {
-  btn.addEventListener("click", () => {
-    document.getElementById("sql").value = btn.dataset.sql;
-    runQuery();
-  });
-}
 
 initDuckDB();
 </script>

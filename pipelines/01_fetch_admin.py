@@ -1,127 +1,172 @@
 """Step 01 — administrative boundaries.
 
-Regions and districts are the backbone of everything else: every other table
-gets a region_id and a district_id, so if this step is wrong, every join
-downstream is wrong.
+Loads the Ghana Common Operational Dataset (COD-AB): 16 regions and 260
+districts, each carrying an OCHA p-code. P-codes are the join key used
+throughout this database, so this step runs before every other load.
 
-Source priority, best first:
-  1. Ghana Statistical Service (authoritative, post-2019, needs a data request)
-  2. GRID3 Ghana (CC BY 4.0, current, downloadable)
-  3. GADM 4.1 (non-commercial, districts lag the 2018-19 reorganisation)
-
-We start on GADM so the stack runs today, and the loader is written so that
-swapping in GSS later changes this file only.
+The converted boundaries are committed under data/reference/, which means
+this step needs no network access and the repository is usable immediately
+after cloning. Passing --shapefiles re-converts from an original COD
+shapefile bundle, for when a newer version is published.
 
 Usage:
     python pipelines/01_fetch_admin.py
-    python pipelines/01_fetch_admin.py --source grid3
+    python pipelines/01_fetch_admin.py --shapefiles ~/Downloads/gha_admin_boundaries_shp
+    python pipelines/01_fetch_admin.py --verify
 """
 
 from __future__ import annotations
 
 import argparse
+import json
 import sys
+from pathlib import Path
 
-import geopandas as gpd
-import requests
+from common import GH, ROOT, log, source, step
 
-from common import GH, RAW, log, source, step
-from common.validate import check_gdf
+REFERENCE = ROOT / "data" / "reference"
 
-GADM_LAYERS = {0: "ADM_ADM_0", 1: "ADM_ADM_1", 2: "ADM_ADM_2"}
+# Layer name in the bundle -> the raw table it becomes.
+LAYERS = {
+    "gha_admin0": "admin_level_0",
+    "gha_admin1": "admin_level_1",
+    "gha_admin2": "admin_level_2",
+    "gha_admincapitals": "admin_capital",
+}
 
-
-def download(url: str, dest, *, chunk: int = 1 << 20) -> None:
-    if dest.exists() and dest.stat().st_size > 0:
-        log.info("already downloaded: %s", dest.name)
-        return
-    log.info("downloading %s", url)
-    with requests.get(url, stream=True, timeout=600) as r:
-        r.raise_for_status()
-        tmp = dest.with_suffix(dest.suffix + ".part")
-        with open(tmp, "wb") as fh:
-            for block in r.iter_content(chunk_size=chunk):
-                fh.write(block)
-        tmp.rename(dest)
-    log.info("saved %s (%.1f MB)", dest.name, dest.stat().st_size / 1e6)
+EXPECTED = {
+    "gha_admin0": 1,
+    "gha_admin1": 16,
+    "gha_admin2": 260,
+}
 
 
-def fetch_gadm() -> None:
-    src = source("admin_gadm")
-    gpkg = RAW / "gadm41_GHA.gpkg"
-    download(src["url"], gpkg)
+def convert_bundle(directory: Path) -> None:
+    """Convert a COD shapefile bundle to GeoJSON in data/reference/."""
+    from tools.shp2geojson import ShapefileError, convert
 
-    for level, layer in GADM_LAYERS.items():
-        gdf = gpd.read_file(gpkg, layer=layer)
-        gdf = gdf.to_crs(4326)
+    shapefiles = [directory / f"{name}.shp" for name in LAYERS]
+    missing = [p.name for p in shapefiles if not p.exists()]
+    if missing:
+        raise SystemExit(
+            f"Missing layers in {directory}: {', '.join(missing)}. "
+            f"Expected a COD-AB bundle containing {', '.join(LAYERS)}.")
 
-        # GADM ships a lot of columns nobody needs. Keep the ones that
-        # actually identify the unit, and normalise the names now rather than
-        # in every downstream query.
-        rename = {
-            "GID_0": "gid_0", "NAME_0": "name_0",
-            "GID_1": "gid_1", "NAME_1": "name_1",
-            "GID_2": "gid_2", "NAME_2": "name_2",
-            "TYPE_2": "type_2", "ENGTYPE_2": "engtype_2",
+    REFERENCE.mkdir(parents=True, exist_ok=True)
+    for shp in shapefiles:
+        try:
+            out = convert(shp, REFERENCE / f"{shp.stem}.geojson")
+        except ShapefileError as exc:
+            raise SystemExit(f"{shp.name}: {exc}") from exc
+        log.info("converted %s (%.1f MB)", out.name, out.stat().st_size / 1e6)
+
+
+def verify() -> dict[str, dict]:
+    """Check the reference boundaries before anything is loaded from them.
+
+    Confirms feature counts, p-code format, hierarchy consistency and that the
+    geometry falls inside Ghana. Raises rather than returning on failure: a
+    wrong boundary set corrupts every table that joins to it.
+    """
+    summary: dict[str, dict] = {}
+    west, south, east, north = GH.bbox.as_tuple()
+
+    for layer in LAYERS:
+        path = REFERENCE / f"{layer}.geojson"
+        if not path.exists():
+            raise SystemExit(
+                f"Missing {path}. Convert a COD bundle with --shapefiles, or "
+                f"restore the committed reference boundaries.")
+
+        data = json.loads(path.read_text(encoding="utf-8"))
+        features = data["features"]
+
+        expected = EXPECTED.get(layer)
+        if expected and len(features) != expected:
+            raise SystemExit(
+                f"{layer}: {len(features)} features, expected {expected}. "
+                f"A region count of 10 means a pre-2019 boundary set.")
+
+        xs, ys = [], []
+        for feature in features:
+            geom = feature["geometry"]
+            polygons = (geom["coordinates"] if geom["type"] == "MultiPolygon"
+                        else [geom["coordinates"]] if geom["type"] == "Polygon"
+                        else [[[geom["coordinates"]]]])
+            for polygon in polygons:
+                for ring in polygon:
+                    for point in ring:
+                        xs.append(point[0])
+                        ys.append(point[1])
+
+        if not (west - 0.5 <= min(xs) and max(xs) <= east + 0.5
+                and south - 0.5 <= min(ys) and max(ys) <= north + 0.5):
+            raise SystemExit(
+                f"{layer}: geometry falls outside Ghana "
+                f"(x {min(xs):.3f}..{max(xs):.3f}, y {min(ys):.3f}..{max(ys):.3f}). "
+                f"Check coordinate order and CRS.")
+
+        summary[layer] = {
+            "features": len(features),
+            "extent": [round(min(xs), 4), round(min(ys), 4),
+                       round(max(xs), 4), round(max(ys), 4)],
         }
-        gdf = gdf.rename(columns={k: v for k, v in rename.items() if k in gdf.columns})
-        keep = [c for c in rename.values() if c in gdf.columns] + ["geometry"]
-        gdf = gdf[keep]
+        log.info("%-18s %4d features   extent %s", layer, len(features),
+                 summary[layer]["extent"])
 
-        # GADM polygons occasionally self-intersect at simplified coastlines.
-        gdf["geometry"] = gdf.geometry.make_valid()
+    # Hierarchy: every district p-code must begin with a region p-code.
+    regions = {f["properties"]["adm1_pcode"]
+               for f in json.loads((REFERENCE / "gha_admin1.geojson").read_text())["features"]}
+    districts = json.loads((REFERENCE / "gha_admin2.geojson").read_text())["features"]
 
-        expected = {0: 1, 1: GH.expected_regions, 2: 200}[level]
-        check_gdf(
-            gdf,
-            f"GADM level {level}",
-            min_rows=expected if level < 2 else 200,
-            geom_types={"Polygon", "MultiPolygon"},
-        )
+    orphans = [d["properties"]["adm2_pcode"] for d in districts
+               if d["properties"]["adm2_pcode"][:4] not in regions]
+    if orphans:
+        raise SystemExit(
+            f"{len(orphans)} districts have a p-code with no matching region: "
+            f"{', '.join(orphans[:5])}")
 
-        out = RAW / f"admin_level_{level}.gpkg"
-        gdf.to_file(out, driver="GPKG", layer=f"admin_{level}")
-        log.info("level %d: %d features -> %s", level, len(gdf), out.name)
+    area_regions = sum(f["properties"]["area_sqkm"]
+                       for f in json.loads((REFERENCE / "gha_admin1.geojson").read_text())["features"])
+    area_districts = sum(d["properties"]["area_sqkm"] for d in districts)
+    if abs(area_regions - area_districts) > 1:
+        raise SystemExit(
+            f"Region and district areas disagree: {area_regions:,.0f} km2 vs "
+            f"{area_districts:,.0f} km2. The two levels do not cover the same "
+            f"territory.")
 
-        if level == 1 and len(gdf) != GH.expected_regions:
-            log.warning(
-                "GADM returned %d regions, Ghana has %d since 2019. GADM 4.1 "
-                "predates the new regions in places. Treat level 1 as "
-                "provisional until the GSS boundaries are loaded.",
-                len(gdf), GH.expected_regions,
-            )
-
-
-def fetch_grid3() -> None:
-    """GRID3 is CC BY 4.0 and current, but the download is behind a portal
-    search rather than a stable URL, so this step guides rather than fetches."""
-    src = source("admin_grid3")
-    log.warning(
-        "GRID3 has no stable direct download URL. Fetch the Ghana boundary "
-        "and settlement-extent layers manually from %s, drop the GeoPackage "
-        "in %s, then rerun with --source local.",
-        src["url"], RAW,
-    )
-    sys.exit(2)
+    log.info("hierarchy consistent: %d regions, %d districts, %s km2 at both levels",
+             len(regions), len(districts), f"{area_regions:,.0f}")
+    return summary
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--source", default="gadm",
-                        choices=["gadm", "grid3", "local"],
-                        help="which boundary source to fetch")
+    parser.add_argument("--shapefiles", type=Path,
+                        help="directory holding an original COD shapefile bundle")
+    parser.add_argument("--verify", action="store_true",
+                        help="check the reference boundaries and stop")
     args = parser.parse_args()
 
-    step("01", f"Administrative boundaries ({args.source})")
+    step("01", "Administrative boundaries (Ghana COD-AB)")
 
-    if args.source == "gadm":
-        fetch_gadm()
-    elif args.source == "grid3":
-        fetch_grid3()
-    else:
-        log.info("using boundary files already in %s", RAW)
+    src = source("cod_ab_ghana")
+    log.info("source: %s", src["name"])
+    log.info("licence: %s", src["licence"])
+    log.info("vintage: %s, version %s", src["vintage"], src["version"])
 
-    log.info("Step 01 complete. Next: 02_fetch_osm.py")
+    if args.shapefiles:
+        sys.path.insert(0, str(ROOT / "pipelines"))
+        convert_bundle(args.shapefiles)
+
+    verify()
+
+    if args.verify:
+        log.info("Reference boundaries verified.")
+        return
+
+    log.info("Step 01 complete. Boundaries are in %s", REFERENCE)
+    log.info("Next: 20_load_postgis.py loads them into core.admin_*")
 
 
 if __name__ == "__main__":

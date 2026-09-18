@@ -51,7 +51,7 @@ rolling your own transform every time.
 ## The two-filter pattern
 
 ```sql
-WITH area AS (SELECT geom FROM core.admin_district WHERE id = 'GHA.5.3_1')
+WITH area AS (SELECT geom FROM core.admin_district WHERE id = 'GH0701')
 SELECT b.id, b.height_m::real AS height_m, b.geom
 FROM core.building b, area a
 WHERE b.geom && a.geom
@@ -78,7 +78,7 @@ CROSS JOIN LATERAL (
     ORDER BY b.geom <-> f.geom
     LIMIT 1
 ) f
-WHERE b.district_id = 'GHA.5.3_1';
+WHERE b.district_id = 'GH0701';
 ```
 
 `<->` orders by planar degree distance. Over a few kilometres at Ghana's
@@ -96,7 +96,7 @@ WHERE ST_Intersects(rast, ST_SetSRID(ST_Point(-0.187, 5.603), 4326));
 -- Statistics within a polygon
 SELECT (ST_SummaryStats(ST_Clip(d.rast, r.geom, true))).*
 FROM core.dem d
-JOIN core.admin_region r ON r.id = 'GH-AH'
+JOIN core.admin_region r ON r.id = 'GH02'
 WHERE ST_Intersects(d.rast, r.geom);
 ```
 

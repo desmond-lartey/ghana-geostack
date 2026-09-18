@@ -73,34 +73,46 @@ def load_vector(gdf, schema: str, table: str, *, if_exists: str = "replace",
 
 
 def load_admin() -> None:
-    """Boundaries first. Everything else joins to them."""
+    """Load the COD boundaries. Everything else joins to them, so this runs first."""
     log.info("loading administrative boundaries")
 
-    for level in (0, 1, 2):
-        path = RAW / f"admin_level_{level}.gpkg"
-        if not path.exists():
-            log.warning("missing %s — run 01_fetch_admin.py first", path.name)
-            return
-        gdf = gpd.read_file(path)
-        load_vector(gdf, "raw", f"admin_level_{level}")
+    reference = ROOT / "data" / "reference"
+    layers = {
+        "gha_admin0": "admin_level_0",
+        "gha_admin1": "admin_level_1",
+        "gha_admin2": "admin_level_2",
+        "gha_admincapitals": "admin_capital",
+    }
 
-    # raw -> core. Named columns, stable ids, real foreign keys.
+    for layer, table in layers.items():
+        path = reference / f"{layer}.geojson"
+        if not path.exists():
+            raise SystemExit(
+                f"Missing {path}. Run 01_fetch_admin.py, or restore the "
+                f"committed reference boundaries.")
+        gdf = gpd.read_file(path)
+        gdf.columns = [c.lower() for c in gdf.columns]
+        load_vector(gdf, "raw", table)
+
+    # raw -> core: p-code hierarchy, name corrections, aliases.
     db.run_sql_file(ROOT / "db" / "transform" / "admin.sql")
 
-    check_table("core", "admin_region", min_rows=10)
-    check_table("core", "admin_district", min_rows=100)
+    check_table("core", "admin_region", min_rows=16)
+    check_table("core", "admin_district", min_rows=260)
     check_magnitude("core", "admin_region", kind="area",
-                    low=230_000, high=245_000, unit="km2")
+                    low=235_000, high=242_000, unit="km2")
 
-    src = source("admin_gadm")
-    db.register("core.admin_region", "core", "admin_region",
-                "Ghana regions", "admin", src["name"], src["licence"],
-                src["attribution"], publishable=False)
-    db.register("core.admin_district", "core", "admin_district",
-                "Ghana districts (MMDAs)", "admin", src["name"], src["licence"],
-                src["attribution"], publishable=False)
-    log.info("admin registered as NOT publishable — GADM is non-commercial. "
-             "Flip to publishable once GSS or GRID3 boundaries replace it.")
+    src = source("cod_ab_ghana")
+    for table, title in (("admin_country", "Ghana national boundary"),
+                         ("admin_region", "Ghana regions"),
+                         ("admin_district", "Ghana districts (MMDAs)")):
+        db.register(f"core.{table}", "core", table, title, "admin",
+                    src["name"], src["licence"], src["attribution"],
+                    publishable=True)
+
+    log.info("boundaries loaded: %s regions, %s districts",
+             db.scalar("SELECT count(*) FROM core.admin_region"),
+             db.scalar("SELECT count(*) FROM core.admin_district"))
 
 
 def load_buildings() -> None:
