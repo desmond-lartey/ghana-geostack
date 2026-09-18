@@ -1,0 +1,130 @@
+/* Ghana GeoStack — documentation theme.
+   Carries the same identity as the map viewer: ochre accent on a deep petrol
+   ground, IBM Plex throughout, so the docs and the map read as one project. */
+
+:root {
+  --gh-ochre:       #B77F14;
+  --gh-ochre-light: #E0A93C;
+  --gh-petrol:      #0C1A17;
+  --gh-petrol-mid:  #14302A;
+  --gh-slate:       #4E7F72;
+}
+
+/* Light scheme */
+[data-md-color-scheme="default"] {
+  --md-primary-fg-color:         var(--gh-petrol-mid);
+  --md-primary-fg-color--light:  #22493F;
+  --md-primary-fg-color--dark:   var(--gh-petrol);
+  --md-primary-bg-color:         #F4F7F5;
+  --md-accent-fg-color:          var(--gh-ochre);
+  --md-accent-fg-color--transparent: rgba(183, 127, 20, 0.1);
+  --md-typeset-a-color:          var(--gh-ochre);
+}
+
+/* Dark scheme */
+[data-md-color-scheme="slate"] {
+  --md-hue: 170;
+  --md-default-bg-color:         var(--gh-petrol);
+  --md-default-bg-color--light:  #10221E;
+  --md-primary-fg-color:         #0E2320;
+  --md-primary-bg-color:         #E8EDEA;
+  --md-accent-fg-color:          var(--gh-ochre-light);
+  --md-accent-fg-color--transparent: rgba(224, 169, 60, 0.12);
+  --md-typeset-a-color:          var(--gh-ochre-light);
+  --md-code-bg-color:            rgba(0, 0, 0, 0.32);
+}
+
+/* Headings: tighter and less shouty than the theme default. */
+.md-typeset h1 {
+  font-weight: 600;
+  letter-spacing: -0.018em;
+  color: var(--md-default-fg-color);
+}
+
+.md-typeset h2 {
+  font-weight: 600;
+  letter-spacing: -0.012em;
+  margin-top: 2.2em;
+}
+
+.md-typeset h3 { font-weight: 600; }
+
+/* Section labels in the same mono treatment as the map interface. */
+.md-typeset h2 > code,
+.md-typeset h3 > code { font-size: 0.85em; }
+
+/* Tables: numbers align, headers read as instrumentation. */
+.md-typeset table:not([class]) th {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.68rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  background: var(--md-default-bg-color--light);
+}
+
+.md-typeset table:not([class]) td { font-size: 0.75rem; }
+
+.md-typeset table:not([class]) td:nth-child(n+2) {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Inline code sits closer to the accent, so identifiers stand out in prose. */
+.md-typeset code {
+  font-size: 0.82em;
+  border-radius: 2px;
+}
+
+/* Admonitions: flat, with a single accent rule rather than a coloured block. */
+.md-typeset .admonition,
+.md-typeset details {
+  border-radius: 2px;
+  border-width: 0 0 0 2px;
+  box-shadow: none;
+  background: var(--md-default-bg-color--light);
+}
+
+.md-typeset .admonition-title,
+.md-typeset summary {
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  background: transparent !important;
+}
+
+/* Code blocks */
+.md-typeset pre > code { border-radius: 2px; }
+
+/* The repository link in the header */
+.md-header__button.md-logo img,
+.md-header__button.md-logo svg { height: 1.4rem; }
+
+/* Footer generator notice — keep it, it is the theme's attribution. */
+.md-footer-meta { background: var(--gh-petrol); }
+
+/* Wide tables scroll rather than pushing the page sideways. */
+.md-typeset__table { overflow-x: auto; }
+
+/* A card grid for the landing page. */
+.gh-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 0.8rem;
+  margin: 1.4rem 0;
+}
+
+.gh-card {
+  border: 1px solid var(--md-default-fg-color--lightest);
+  border-radius: 2px;
+  padding: 0.9rem 1rem;
+}
+
+.gh-card h4 {
+  margin: 0 0 0.35rem;
+  font-size: 0.78rem;
+  font-family: "IBM Plex Mono", monospace;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--md-accent-fg-color);
+}
+
+.gh-card p { margin: 0; font-size: 0.75rem; }

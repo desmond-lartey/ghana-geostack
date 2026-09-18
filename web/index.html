@@ -6,6 +6,11 @@
 <title>Ghana GeoStack</title>
 <meta name="description" content="Open spatial data for Ghana. 16 regions, 260 districts, buildings, roads and terrain.">
 
+<!-- Deployment configuration. The defaults are correct when serving the
+     repository as-is; scripts/build_web.py rewrites them for a static host. -->
+<meta name="gh:data-root" content="../data">
+<meta name="gh:tiles-url" content="http://localhost:7800">
+
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maplibre-gl@5.6.0/dist/maplibre-gl.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -19,7 +24,7 @@
    Structure:
      top left      legend for the active layer, collapsible
      top right     wordmark and the menu toggle
-     right panel   layers, query, sources - hidden until the menu is opened
+     right panel   layers, query, sources — hidden until the menu is opened
      bottom left   pill controls
      bottom right  guided story
 
@@ -706,9 +711,13 @@ import maplibregl from "https://cdn.jsdelivr.net/npm/maplibre-gl@5.6.0/+esm";
    Configuration
 --------------------------------------------------------------------------- */
 
-const TILES    = "http://localhost:7800";     // pg_tileserv
-const EXPORTS  = "../data/exports";           // GeoParquet, for the DuckDB console
-const REFERENCE = "../data/reference";        // boundaries committed to the repo
+const meta = (name, fallback) =>
+  document.querySelector(`meta[name="${name}"]`)?.content?.trim() || fallback;
+
+const DATA_ROOT = meta("gh:data-root", "../data");
+const TILES     = meta("gh:tiles-url", "") || null;   // pg_tileserv, if reachable
+const EXPORTS   = `${DATA_ROOT}/exports`;             // GeoParquet for the SQL console
+const REFERENCE = `${DATA_ROOT}/reference`;           // committed boundaries
 
 const HOME = { center: [-1.09, 7.95], zoom: 6.2, pitch: 0, bearing: 0 };
 
@@ -890,7 +899,7 @@ const STORY = [
    Map
 --------------------------------------------------------------------------- */
 
-const fmt = (v) => (v === null || v === undefined || v === "" ? "-"
+const fmt = (v) => (v === null || v === undefined || v === "" ? "—"
   : typeof v === "number" ? Math.round(v).toLocaleString() : v);
 
 const map = new maplibregl.Map({
@@ -928,7 +937,7 @@ async function addLayer(layer) {
   // Prefer live tiles; fall back to the committed GeoJSON so the viewer works
   // on a bare clone with no database running.
   let usedTiles = false;
-  if (layer.table) {
+  if (layer.table && TILES) {
     try {
       const probe = await fetch(`${TILES}/${layer.table}.json`, { signal: AbortSignal.timeout(1200) });
       if (probe.ok) {
@@ -974,7 +983,7 @@ function bindPopup(layerId, layer) {
     const props = e.features?.[0]?.properties ?? {};
     const { title, rows } = layer.popup(props);
     const body = Object.entries(rows)
-      .filter(([, v]) => v !== undefined && v !== null && v !== "" && v !== "-")
+      .filter(([, v]) => v !== undefined && v !== null && v !== "" && v !== "—")
       .map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join("");
     new maplibregl.Popup({ closeButton: true, maxWidth: "280px" })
       .setLngLat(e.lngLat)
@@ -996,7 +1005,7 @@ function setLayerVisible(id, visible, redraw = true) {
 }
 
 /* ---------------------------------------------------------------------------
-   Legend - describes the topmost active layer that has something to say
+   Legend — describes the topmost active layer that has something to say
 --------------------------------------------------------------------------- */
 
 function renderLegend() {
@@ -1317,7 +1326,7 @@ function renderTable(rows) {
 }
 
 function cell(v) {
-  if (v === null || v === undefined) return "-";
+  if (v === null || v === undefined) return "—";
   if (typeof v === "bigint") return v.toLocaleString();
   if (typeof v === "number") return Number.isInteger(v) ? v.toLocaleString() : v.toFixed(2);
   return String(v).slice(0, 48);

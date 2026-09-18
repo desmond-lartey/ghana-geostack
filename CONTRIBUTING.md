@@ -7,7 +7,7 @@ git clone https://github.com/YOUR-ORG/ghana-geostack
 cd ghana-geostack
 cp .env.example .env
 
-# conda handles the GDAL stack far better than pip does 
+# conda handles the GDAL stack far better than pip does
 conda env create -f environment.yml
 conda activate ghana-geostack
 

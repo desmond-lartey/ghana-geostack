@@ -1,4 +1,4 @@
-# ghana.yml - the single source of truth for country constants.
+# ghana.yml — the single source of truth for country constants.
 # Every pipeline, SQL migration and skill reference reads from here.
 # Change a value once, and the whole stack follows.
 
@@ -37,9 +37,9 @@ crs:
   metric: 32630
 
   # Alternatives, kept here so nobody has to rediscover them:
-  #   32631 - UTM 31N, for analysis confined to east of 0 degrees.
-  #   2136  - Accra / Ghana National Grid (Gold Coast feet, Accra datum).
-  #   2137  - Accra / TM 1 NW (metres, central meridian 1W - a good national fit).
+  #   32631 — UTM 31N, for analysis confined to east of 0 degrees.
+  #   2136  — Accra / Ghana National Grid (Gold Coast feet, Accra datum).
+  #   2137  — Accra / TM 1 NW (metres, central meridian 1W — a good national fit).
   # VERIFY the national grid definition and its datum shift with the Lands
   # Commission Survey and Mapping Division before using it for anything legal.
   national_grid: 2136
@@ -50,7 +50,7 @@ crs:
 admin:
   level_0: country
   level_1: region          # 16 regions
-  level_2: district        # MMDAs - metropolitan, municipal, district assemblies
+  level_2: district        # MMDAs — metropolitan, municipal, district assemblies
   level_3: locality        # towns / enumeration-area groupings, where available
   expected_regions: 16
   expected_districts: 260
@@ -89,15 +89,15 @@ regions:
 schemas:
   raw: Untouched loads. Never edited by hand, always reproducible from source.
   core: Curated, conformed, documented. This is what people query.
-  analysis: Derived results - buffers, scores, clusters, exposure.
+  analysis: Derived results — buffers, scores, clusters, exposure.
   h3: Hex-grid rollups at several resolutions.
   serve: Thin, tile-ready views with only the columns a map needs.
   meta: Dataset registry, QC runs, lineage.
 
 h3:
-  country_resolution: 5    # ~250 km2 cells - national choropleths
-  region_resolution: 7     # ~5 km2 - regional patterns
-  city_resolution: 9       # ~0.1 km2 - urban density
+  country_resolution: 5    # ~250 km2 cells — national choropleths
+  region_resolution: 7     # ~5 km2 — regional patterns
+  city_resolution: 9       # ~0.1 km2 — urban density
 
 # Cities used for local-scale demos and tests.
 cities:

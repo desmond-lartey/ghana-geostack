@@ -23,5 +23,5 @@ def step(number: str, title: str) -> None:
     human waiting to see whether to go and make tea."""
     line = "=" * 68
     log.info(line)
-    log.info("Step %s - %s", number, title)
+    log.info("Step %s — %s", number, title)
     log.info(line)

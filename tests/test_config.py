@@ -43,7 +43,7 @@ def test_sixteen_regions(ghana):
     # The six regions created in 2018-19. Their absence means someone pasted a
     # pre-2018 list.
     for new in ["Ahafo", "Bono East", "North East", "Oti", "Savannah", "Western North"]:
-        assert new in ghana["regions"], f"{new} missing - this is a pre-2019 region list"
+        assert new in ghana["regions"], f"{new} missing — this is a pre-2019 region list"
 
 
 def test_admin_counts(ghana):

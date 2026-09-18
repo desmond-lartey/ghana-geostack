@@ -10,7 +10,7 @@ credit is traceable and the decisions are reviewable.
 
 - The numbered-step pipeline structure, which makes the order of operations
   obvious and each stage independently rerunnable
-- The schema separation of raw, processed and analysis - renamed here to raw,
+- The schema separation of raw, processed and analysis — renamed here to raw,
   core and analysis, with `h3`, `serve` and `meta` added
 - Loading rasters by piping `raster2pgsql` into `psql`, including closing the
   parent's end of the pipe to avoid the deadlock
@@ -58,7 +58,7 @@ credit is traceable and the decisions are reviewable.
 | Overture `division_area` for place resolution | `core.admin_region` and `core.admin_district`, with Ghana's name ambiguities documented | Accra means three different things, and 10 regions means a pre-2019 source |
 | Dekart as the required map path | Built-in viewer first, Dekart optional | One fewer dependency for the common case |
 | Generic geospatial reference | Ghana reference figures for sanity checks | A validation step needs something to validate against |
-| - | Licence and sensitivity rules in the skill | The agent should not be the weak point in data governance |
+| — | Licence and sensitivity rules in the skill | The agent should not be the weak point in data governance |
 
 ## The idea worth keeping from both
 

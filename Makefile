@@ -9,7 +9,8 @@ PY          := python
 PSQL        := psql -h $${PGHOST:-localhost} -p $${PGPORT:-5432} -U $${PGUSER:-ghana} -d $${PGDATABASE:-ghana} -v ON_ERROR_STOP=1
 
 .DEFAULT_GOAL := help
-.PHONY: help up down logs ps psql migrate fetch load analysis qc export pipeline serve duck lint test clean reset
+.PHONY: help up down logs ps psql migrate fetch load analysis qc export pipeline serve duck \
+        web docs docs-serve docs-build lint test clean reset
 
 help:  ## List the available commands
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) \
@@ -79,6 +80,24 @@ serve:  ## Serve the web viewer at http://localhost:8080
 duck:  ## Open DuckDB with the Ghana views loaded, no server needed
 	duckdb -init duckdb/bootstrap.sql
 
+# ── Publishing ────────────────────────────────────────────────────────────
+
+web:  ## Build the static site into public/, as Vercel does
+	$(PY) scripts/build_web.py
+
+web-preview: web  ## Build the static site and serve it
+	@echo "http://localhost:8080"
+	@cd public && $(PY) -m http.server 8080
+
+docs:  ## Sync the generated documentation pages
+	$(PY) scripts/sync_docs.py
+
+docs-serve: docs  ## Serve the documentation at http://localhost:8000
+	mkdocs serve
+
+docs-build: docs  ## Build the documentation site into site/
+	mkdocs build --strict
+
 # ── Development ───────────────────────────────────────────────────────────
 
 lint:  ## Check Python style and SQL formatting
@@ -92,9 +111,10 @@ test:  ## Run the test suite
 
 # ── Housekeeping ──────────────────────────────────────────────────────────
 
-clean:  ## Remove downloaded and intermediate data, keeping exports
+clean:  ## Remove downloaded data and build outputs, keeping exports
 	rm -rf data/raw/* data/interim/*
-	@echo "Cleared raw and interim data. Exports kept."
+	rm -rf public/ site/ docs/skill/ docs/project/
+	@echo "Cleared raw data and build outputs. Exports and reference boundaries kept."
 
 reset:  ## Destroy the database volume and start over. Irreversible.
 	@read -p "This deletes the database and all loaded data. Type yes to continue: " ok; \

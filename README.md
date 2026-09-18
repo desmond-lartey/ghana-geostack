@@ -28,13 +28,13 @@ present and what may be republished.
 
 ### Included analyses
 
-- **Health and education accessibility** - distance from every building to the
+- **Health and education accessibility** — distance from every building to the
   nearest facility, summarised by district against the 5 km CHPS catchment
-- **Flood exposure** - buildings on low ground near watercourses, derived from
+- **Flood exposure** — buildings on low ground near watercourses, derived from
   observed historical surface water and terrain
-- **Building density** - H3 hex rollups at national, regional and urban
+- **Building density** — H3 hex rollups at national, regional and urban
   resolutions
-- **Siting suitability** - weighted multi-criteria scoring with the weights
+- **Siting suitability** — weighted multi-criteria scoring with the weights
   held in a visible table and component scores retained alongside the total
 
 ---
@@ -186,7 +186,7 @@ the interface stays out of the way until asked for.
 | --- | --- |
 | Legend, top left | Describes the active layer; collapses to its title |
 | Menu, top right | Opens layers, the SQL console and sources |
-| Pills, bottom left | Info, reset, locate, query - panels open only on request |
+| Pills, bottom left | Info, reset, locate, query — panels open only on request |
 | Story, bottom right | Six-step guided tour through the data |
 
 Layers are grouped into Administrative, Infrastructure, Services and Analysis,
@@ -197,6 +197,30 @@ can be drawn straight onto the map.
 
 The map opens as a globe and settles onto Ghana, handing over to a flat
 projection as the camera comes in.
+
+## Deployment
+
+| Target | Serves | Trigger |
+| --- | --- | --- |
+| Vercel | The map viewer and boundary files | Push to `main` |
+| GitHub Pages | Documentation, built with Material for MkDocs | Push to `main` |
+
+```bash
+make web            # build the static site into public/, as Vercel does
+make web-preview    # build it and serve on :8080
+make docs-serve     # documentation on :8000
+```
+
+Import the repository into Vercel and deploy — `vercel.json` supplies the build
+command and output directory, and the build uses only the Python standard
+library. Set `TILES_URL` to a public pg_tileserv endpoint to enable buildings,
+roads and the analysis layers; without it the deployment serves boundaries
+only, which is the safe default.
+
+For the documentation, set **Settings → Pages → Source** to GitHub Actions.
+
+Full instructions, including headers, CORS and the pre-launch checklist:
+[`docs/deployment.md`](docs/deployment.md).
 
 ## Architecture
 
@@ -221,7 +245,7 @@ Six schemas, each with a single responsibility:
 | --- | --- | --- |
 | PostGIS | 5432 | Authoritative database |
 | pg_tileserv | 7800 | Vector tiles from SQL |
-| pg_featureserv | 9000 | OGC API - Features |
+| pg_featureserv | 9000 | OGC API — Features |
 | TiTiler | 8001 | Dynamic raster tiles from COGs |
 | MinIO | 9001 | S3-compatible object store |
 
@@ -254,7 +278,7 @@ make qc
 **Store in EPSG:4326, measure in EPSG:32630.** Ghana straddles the prime
 meridian, so no UTM zone fits perfectly; zone 30N keeps scale error under
 roughly 0.1% in the eastern strip, which is suitable for analysis but not for
-cadastral survey. Use `core.gh_area_m2()` and the related helpers -
+cadastral survey. Use `core.gh_area_m2()` and the related helpers —
 `ST_Area` on a 4326 geometry returns square degrees.
 See [`docs/crs.md`](skills/ghana-geosql/references/crs.md).
 
@@ -306,7 +330,7 @@ Behavioural tests are in [`evals/evals.json`](evals/evals.json).
 - **No hydraulic flood model.** Flood exposure derives from observed
   historical surface water and terrain, without return periods or depths.
 - **No cadastral or land-tenure data.**
-- **Facility attributes are thin** - no bed counts, staffing or opening hours.
+- **Facility attributes are thin** — no bed counts, staffing or opening hours.
 - **Population is modelled**, disaggregated from census totals rather than
   counted.
 

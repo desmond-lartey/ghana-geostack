@@ -1,0 +1,33 @@
+name: Web
+
+on:
+  push:
+    branches: [main]
+    paths: [web/**, scripts/build_web.py, data/reference/**, vercel.json]
+  pull_request:
+    paths: [web/**, scripts/build_web.py, data/reference/**, vercel.json]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Build the static site
+        run: python scripts/build_web.py
+
+      - name: Check the output
+        # Confirms the build produced what Vercel will serve, and that the
+        # data paths were rewritten for a static host.
+        run: |
+          test -f public/index.html
+          test -f public/data/reference/gha_admin1.geojson
+          test -f public/data/reference/gha_admin2.geojson
+          grep -q 'gh:data-root" content="./data"' public/index.html
+          echo "Static site builds cleanly"
+
+      - name: Validate vercel.json
+        run: python -c "import json; json.load(open('vercel.json')); print('vercel.json is valid')"

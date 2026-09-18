@@ -38,7 +38,7 @@ def report(checks: list[Check], context: str) -> None:
     All of them print first. Debugging is much easier when you can see every
     check at once rather than the first one that blew up.
     """
-    log.info("Validation - %s", context)
+    log.info("Validation — %s", context)
     for c in checks:
         log.info("%s", c)
     failed = [c for c in checks if not c.passed]

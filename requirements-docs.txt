@@ -1,0 +1,7 @@
+# Documentation site. Install separately from the pipeline requirements:
+#   pip install -r requirements-docs.txt
+#   make docs-serve
+
+mkdocs-material>=9.5
+mkdocs-material[imaging]>=9.5   # social cards
+pymdown-extensions>=10.8
