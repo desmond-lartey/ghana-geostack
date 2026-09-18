@@ -28,8 +28,7 @@ import subprocess
 
 import geopandas as gpd
 
-from common import EXPORTS, ROOT, log, step
-from common import db
+from common import EXPORTS, ROOT, db, log, step
 
 
 def publishable_layers() -> list[tuple[str, str, str, str]]:

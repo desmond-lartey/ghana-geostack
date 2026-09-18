@@ -189,6 +189,11 @@ the interface stays out of the way until asked for.
 | Buttons, bottom left | About, reset view, locate, query - panels open on request |
 | Tour, bottom right | Six-step guided walkthrough of the data |
 
+The panel is a dock rather than a modal: the map keeps its own space and stays
+pannable while the panel is open. The **Style** tab restyles anything drawn -
+colour, graduated ramps over any numeric column, opacity, line width, 3D
+height - and removes it again.
+
 Typography is the Source superfamily - Source Serif 4 for headings, Source
 Sans 3 for interface text, JetBrains Mono for figures and SQL. Light and dark
 themes are both defined, and the choice persists.

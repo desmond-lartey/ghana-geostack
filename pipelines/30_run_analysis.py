@@ -13,8 +13,7 @@ from __future__ import annotations
 
 import argparse
 
-from common import ROOT, log, step
-from common import db
+from common import ROOT, db, log, step
 
 ANALYSIS_DIR = ROOT / "db" / "analysis"
 

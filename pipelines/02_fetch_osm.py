@@ -18,7 +18,7 @@ from __future__ import annotations
 
 import argparse
 
-from common import GH, RAW, log, source, step
+from common import RAW, log, source, step
 from common.validate import check_gdf
 
 LAYERS = ["roads", "buildings", "waterways", "landuse", "places", "pois"]

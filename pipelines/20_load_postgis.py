@@ -26,9 +26,8 @@ from pathlib import Path
 
 import geopandas as gpd
 
-from common import GH, PROCESSED, RAW, ROOT, log, source, step
-from common import db
-from common.validate import check_table, check_magnitude
+from common import GH, PROCESSED, RAW, ROOT, db, log, source, step
+from common.validate import check_magnitude, check_table
 
 MIGRATIONS = sorted((ROOT / "db" / "migrations").glob("*.sql"))
 

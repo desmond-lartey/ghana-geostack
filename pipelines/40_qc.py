@@ -19,8 +19,7 @@ import os
 import subprocess
 import sys
 
-from common import ROOT, log, step
-from common import db
+from common import ROOT, db, log, step
 
 
 def git_sha() -> str:

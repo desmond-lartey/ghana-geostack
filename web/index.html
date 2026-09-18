@@ -102,7 +102,13 @@ html, body {
   text-rendering: optimizeLegibility;
 }
 
-#map { position: absolute; inset: 0; }
+#map { position: absolute; inset: 0; transition: right 0.3s var(--ease); }
+
+/* On a wide screen the map gives up the panel's width rather than hiding
+   underneath it, so nothing a reader is looking at is ever covered. */
+@media (min-width: 900px) {
+  body[data-panel="open"] #map { right: 392px; }
+}
 
 .card {
   background: var(--surface);
@@ -577,15 +583,8 @@ td { font-family: var(--font-mono); font-size: 12.5px; font-variant-numeric: tab
 .prose dd { margin: 3px 0 0; font-size: 13.5px; }
 .prose code { font-family: var(--font-mono); font-size: 12.5px; color: var(--accent); }
 
-#scrim {
-  position: absolute; inset: 0;
-  background: rgba(0, 0, 0, 0.38);
-  opacity: 0; pointer-events: none;
-  transition: opacity 0.28s;
-  z-index: 25;
-}
-
-#scrim[data-open="true"] { opacity: 1; pointer-events: auto; }
+/* No scrim. The panel is a dock, not a modal: the map stays live behind it so
+   a reader can pan and zoom while reading a result or setting up a fetch. */
 
 /* --- Map furniture -------------------------------------------------------- */
 
@@ -668,7 +667,6 @@ td { font-family: var(--font-mono); font-size: 12.5px; font-variant-numeric: tab
 <body>
 
 <div id="map"></div>
-<div id="scrim"></div>
 
 <section id="legend" class="card" data-open="true" aria-label="Legend">
   <button id="legend-head" aria-expanded="true" aria-controls="legend-body">
@@ -762,6 +760,7 @@ td { font-family: var(--font-mono); font-size: 12.5px; font-variant-numeric: tab
       <button class="tab" role="tab" id="tab-layers"   aria-selected="true"  aria-controls="pane-layers">Layers</button>
       <button class="tab" role="tab" id="tab-ask"      aria-selected="false" aria-controls="pane-ask">Ask</button>
       <button class="tab" role="tab" id="tab-tools"    aria-selected="false" aria-controls="pane-tools">Tools</button>
+      <button class="tab" role="tab" id="tab-style"    aria-selected="false" aria-controls="pane-style">Style</button>
       <button class="tab" role="tab" id="tab-query"    aria-selected="false" aria-controls="pane-query">Query</button>
       <button class="tab" role="tab" id="tab-settings" aria-selected="false" aria-controls="pane-settings">Map</button>
       <button class="tab" role="tab" id="tab-sources"  aria-selected="false" aria-controls="pane-sources">About</button>
@@ -823,11 +822,14 @@ td { font-family: var(--font-mono); font-size: 12.5px; font-variant-numeric: tab
     <div class="actions">
       <button class="btn btn-primary" id="tool-run">Run tool</button>
       <button class="btn btn-quiet" id="tool-download" style="height:38px">GeoJSON</button>
+      <button class="btn btn-quiet" id="tool-clear" style="height:38px">Clear map</button>
       <span id="tool-status">&nbsp;</span>
     </div>
 
     <div id="tool-result"></div>
   </div>
+
+  <div class="tabpanel" id="pane-style" role="tabpanel" aria-labelledby="tab-style"></div>
 
   <div class="tabpanel" id="pane-query" role="tabpanel" aria-labelledby="tab-query">
     <h3>Run SQL against the data</h3>
@@ -839,6 +841,7 @@ ORDER BY km2 DESC;</textarea>
       <button class="btn btn-quiet" id="mapit" style="height:38px">Show on map</button>
       <button class="btn btn-quiet" id="download-geojson" style="height:38px">GeoJSON</button>
       <button class="btn btn-quiet" id="download-csv" style="height:38px">CSV</button>
+      <button class="btn btn-quiet" id="clear-query" style="height:38px">Clear map</button>
       <span id="status">Starting engine</span>
     </div>
     <div id="result"></div>
@@ -1407,7 +1410,7 @@ function setLayerVisible(id, visible, redraw = true) {
   }
 
   visible ? state.active.add(id) : state.active.delete(id);
-  if (redraw) { renderLayerList(); renderLegend(); }
+  if (redraw) { renderLayerList(); renderLegend(); renderStylePane(); }
 }
 
 /* Repaint every layer for the current theme, without rebuilding the map. */
@@ -1516,6 +1519,10 @@ function renderLayerList() {
   for (const btn of host.querySelectorAll("[data-live]")) {
     btn.addEventListener("click", () => fetchLive(btn.dataset.live));
   }
+  for (const btn of host.querySelectorAll("[data-live-clear]")) {
+    btn.addEventListener("click", () => clearLive(btn.dataset.liveClear));
+  }
+  refreshLiveAreas();
 
   if (!state.tilesOk) {
     host.insertAdjacentHTML("beforeend", `
@@ -1537,12 +1544,12 @@ function renderLayerList() {
 --------------------------------------------------------------------------- */
 
 const panel = document.getElementById("panel");
-const scrim = document.getElementById("scrim");
 const hamburger = document.getElementById("hamburger");
 
 function openPanel(tab) {
   panel.dataset.open = "true";
-  scrim.dataset.open = "true";
+  document.body.dataset.panel = "open";
+  setTimeout(() => map.resize(), 320);
   hamburger.setAttribute("aria-expanded", "true");
   hamburger.setAttribute("aria-label", "Close menu");
   if (tab) selectTab(tab);
@@ -1550,7 +1557,8 @@ function openPanel(tab) {
 
 function closePanel() {
   panel.dataset.open = "false";
-  scrim.dataset.open = "false";
+  document.body.dataset.panel = "closed";
+  setTimeout(() => map.resize(), 320);
   hamburger.setAttribute("aria-expanded", "false");
   hamburger.setAttribute("aria-label", "Open menu");
   for (const id of ["btn-query", "btn-info", "btn-ask", "btn-tools"]) {
@@ -1560,7 +1568,6 @@ function closePanel() {
 
 hamburger.addEventListener("click", () =>
   panel.dataset.open === "true" ? closePanel() : openPanel("layers"));
-scrim.addEventListener("click", closePanel);
 
 function selectTab(name) {
   for (const t of document.querySelectorAll(".tab")) {
@@ -1589,11 +1596,14 @@ togglePanelButton("btn-query", "query");
 togglePanelButton("btn-info", "sources");
 
 document.getElementById("btn-reset").addEventListener("click", () => {
+  clearQueryResult();
+  clearToolResult();
+  for (const id of Object.keys(LIVE_SOURCES)) clearLive(id);
   map.flyTo({ ...HOME, duration: 1400 });
   for (const l of LAYERS) setLayerVisible(l.id, Boolean(l.on), false);
   state.located?.remove();
   state.located = null;
-  renderLayerList(); renderLegend();
+  renderLayerList(); renderLegend(); renderStylePane();
 });
 
 document.getElementById("btn-locate").addEventListener("click", () => {
@@ -2154,11 +2164,7 @@ async function mapResult() {
 
     lastRows = rows;   // so the downloads carry the geometry too
 
-    for (const id of ["qr-fill", "qr-line", "qr-point"]) {
-      if (map.getLayer(id)) map.removeLayer(id);
-    }
-    if (map.getSource("qr")) map.removeSource("qr");
-
+    clearQueryResult();
     map.addSource("qr", { type: "geojson", data: { type: "FeatureCollection", features } });
     map.addLayer({ id: "qr-fill", type: "fill", source: "qr",
       filter: ["in", ["geometry-type"], ["literal", ["Polygon", "MultiPolygon"]]],
@@ -2180,7 +2186,7 @@ async function mapResult() {
 
     setStatus(`${features.length.toLocaleString()} features drawn`
       + (joinedOn ? ` · geometry from ${joinedOn}` : ""));
-    closePanel();
+    renderStylePane();
   } catch (err) {
     setStatus(String(err.message ?? err), true);
     console.error(err);
@@ -2647,6 +2653,235 @@ document.getElementById("download-geojson").addEventListener("click", () => {
 });
 
 /* ---------------------------------------------------------------------------
+   Styling
+
+   Every drawn layer, published or produced in this session, gets the same set
+   of controls: colour, opacity, stroke width, height, and a graduated ramp
+   over any numeric column it carries. A result that cannot be restyled is
+   only half an answer - the reader has to be able to make the map say what
+   they found.
+--------------------------------------------------------------------------- */
+
+const PALETTES = {
+  warm:   ["#2A2018", "#8A4B2A", "#C25540", "#E0A93C", "#F5E2A8"],
+  cool:   ["#11242F", "#1E5478", "#3184B5", "#63B4DE", "#C9E6F5"],
+  green:  ["#16302C", "#2F6B58", "#6E9B4E", "#B9C25C", "#EDE4A6"],
+  single: null
+};
+
+/* Which map layers a style target owns, and what kind of geometry they draw. */
+function styleTargets() {
+  const targets = [];
+
+  for (const layer of LAYERS) {
+    if (!state.active.has(layer.id) || !layer.sublayers) continue;
+    targets.push({ key: layer.id, label: layer.name, ids: [...layer.sublayers,
+                   ...(layer.extrusionLayer ? [layer.extrusionLayer] : [])] });
+  }
+
+  for (const [id, source] of Object.entries(LIVE_SOURCES)) {
+    const ids = ["fill", "line", "circle", "3d"]
+      .map((suffix) => `live-${id}-${suffix}`).filter((l) => map.getLayer(l));
+    if (ids.length) targets.push({ key: `live-${id}`, label: `${source.label} (live)`, ids, live: id });
+  }
+
+  const query = ["qr-fill", "qr-line", "qr-point"].filter((l) => map.getLayer(l));
+  if (query.length) targets.push({ key: "qr", label: "Query result", ids: query, clear: "query" });
+
+  const tool = ["tool-fill", "tool-line", "tool-point"].filter((l) => map.getLayer(l));
+  if (tool.length) targets.push({ key: "tool", label: "Tool result", ids: tool, clear: "tool" });
+
+  return targets;
+}
+
+/* Numeric columns available on a layer's features, for the graduated ramp. */
+function numericFields(ids) {
+  for (const id of ids) {
+    const features = map.queryRenderedFeatures({ layers: [id] });
+    if (!features.length) continue;
+    const props = features[0].properties ?? {};
+    return Object.keys(props).filter((k) => {
+      const v = props[k];
+      return v !== null && v !== "" && Number.isFinite(Number(v));
+    });
+  }
+  return [];
+}
+
+const styleState = {};   // key -> { colour, opacity, width, field, palette, height }
+
+function applyStyle(target) {
+  const st = styleState[target.key];
+  if (!st) return;
+
+  for (const id of target.ids) {
+    const layer = map.getLayer(id);
+    if (!layer) continue;
+
+    // A graduated ramp needs the value range, which is read from what is
+    // currently drawn rather than from the whole dataset.
+    let colour = st.colour;
+    if (st.field && st.palette !== "single") {
+      const values = map.queryRenderedFeatures({ layers: [id] })
+        .map((f) => Number(f.properties?.[st.field]))
+        .filter(Number.isFinite);
+      if (values.length > 1) {
+        const min = Math.min(...values);
+        const max = Math.max(...values);
+        if (max > min) {
+          const stops = PALETTES[st.palette] ?? PALETTES.warm;
+          colour = ["interpolate", ["linear"], ["coalesce", ["to-number", ["get", st.field]], min],
+            ...stops.flatMap((c, i) => [min + (max - min) * (i / (stops.length - 1)), c])];
+        }
+      }
+    }
+
+    if (layer.type === "fill") {
+      map.setPaintProperty(id, "fill-color", colour);
+      map.setPaintProperty(id, "fill-opacity", st.opacity);
+    } else if (layer.type === "line") {
+      map.setPaintProperty(id, "line-color", colour);
+      map.setPaintProperty(id, "line-opacity", Math.min(1, st.opacity + 0.25));
+      map.setPaintProperty(id, "line-width", st.width);
+    } else if (layer.type === "circle") {
+      map.setPaintProperty(id, "circle-color", colour);
+      map.setPaintProperty(id, "circle-opacity", st.opacity);
+      map.setPaintProperty(id, "circle-radius", Math.max(1, st.width * 3));
+    } else if (layer.type === "fill-extrusion") {
+      map.setPaintProperty(id, "fill-extrusion-color", colour);
+      map.setPaintProperty(id, "fill-extrusion-opacity", st.opacity);
+      if (st.field && st.height) {
+        map.setPaintProperty(id, "fill-extrusion-height",
+          ["*", ["coalesce", ["to-number", ["get", st.field]], 0], st.height]);
+      }
+    }
+  }
+}
+
+function renderStylePane() {
+  const host = document.getElementById("pane-style");
+  const targets = styleTargets();
+
+  if (!targets.length) {
+    host.innerHTML = `<div class="hint">Nothing is drawn yet. Turn on a layer,
+      run a query, or fetch live data, and its controls appear here.</div>`;
+    return;
+  }
+
+  host.innerHTML = targets.map((target) => {
+    const st = styleState[target.key] ??= {
+      colour: colours().query, opacity: 0.6, width: 1.4,
+      field: "", palette: "warm", height: 400
+    };
+    const fields = numericFields(target.ids);
+
+    return `
+      <div style="padding:14px 0;border-bottom:1px solid var(--border)">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:11px">
+          <h3 style="margin:0;flex:1;color:var(--text);font-size:14.5px">${target.label}</h3>
+          ${target.clear || target.live
+            ? `<button class="btn btn-quiet" data-style-clear="${target.key}" style="height:28px">Remove</button>`
+            : ""}
+        </div>
+
+        <label class="legend-note" style="display:block;margin-bottom:4px">Colour</label>
+        <div style="display:flex;gap:8px;align-items:center;margin-bottom:11px">
+          <input type="color" data-style="colour" data-key="${target.key}" value="${st.colour}"
+                 style="width:44px;height:32px;padding:2px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface-2)">
+          <select data-style="palette" data-key="${target.key}" style="flex:1;height:32px">
+            <option value="single"${st.palette === "single" ? " selected" : ""}>Single colour</option>
+            <option value="warm"${st.palette === "warm" ? " selected" : ""}>Graduated, warm</option>
+            <option value="cool"${st.palette === "cool" ? " selected" : ""}>Graduated, cool</option>
+            <option value="green"${st.palette === "green" ? " selected" : ""}>Graduated, green</option>
+          </select>
+        </div>
+
+        ${fields.length ? `
+          <label class="legend-note" style="display:block;margin-bottom:4px">Graduate by</label>
+          <select data-style="field" data-key="${target.key}" style="width:100%;height:32px;margin-bottom:11px">
+            <option value="">Nothing - one colour</option>
+            ${fields.map((f) => `<option value="${f}"${st.field === f ? " selected" : ""}>${f}</option>`).join("")}
+          </select>` : ""}
+
+        <label class="legend-note" style="display:block;margin-bottom:4px">
+          Opacity <span data-style-out="opacity-${target.key}">${st.opacity}</span></label>
+        <input type="range" data-style="opacity" data-key="${target.key}"
+               min="0.05" max="1" step="0.05" value="${st.opacity}"
+               style="width:100%;margin-bottom:11px;accent-color:var(--accent)">
+
+        <label class="legend-note" style="display:block;margin-bottom:4px">
+          Line width and point size <span data-style-out="width-${target.key}">${st.width}</span></label>
+        <input type="range" data-style="width" data-key="${target.key}"
+               min="0.2" max="6" step="0.2" value="${st.width}"
+               style="width:100%;margin-bottom:11px;accent-color:var(--accent)">
+
+        ${st.field ? `
+          <label class="legend-note" style="display:block;margin-bottom:4px">
+            Height per unit in 3D <span data-style-out="height-${target.key}">${st.height}</span></label>
+          <input type="range" data-style="height" data-key="${target.key}"
+                 min="0" max="3000" step="50" value="${st.height}"
+                 style="width:100%;accent-color:var(--accent)">` : ""}
+      </div>`;
+  }).join("");
+
+  host.insertAdjacentHTML("beforeend", `
+    <div class="actions" style="margin-top:16px">
+      <button class="btn btn-quiet" id="style-clear-all" style="height:34px">Remove all results</button>
+    </div>`);
+
+  for (const input of host.querySelectorAll("[data-style]")) {
+    const event = input.type === "range" ? "input" : "change";
+    input.addEventListener(event, () => {
+      const key = input.dataset.key;
+      const property = input.dataset.style;
+      styleState[key][property] = input.type === "range" ? Number(input.value) : input.value;
+
+      const readout = host.querySelector(`[data-style-out="${property}-${key}"]`);
+      if (readout) readout.textContent = input.value;
+
+      const target = styleTargets().find((t) => t.key === key);
+      if (target) applyStyle(target);
+
+      // Choosing a field reveals the height control, so the pane is redrawn.
+      if (property === "field" && input.value) renderStylePane();
+    });
+  }
+
+  for (const btn of host.querySelectorAll("[data-style-clear]")) {
+    btn.addEventListener("click", () => {
+      const target = styleTargets().find((t) => t.key === btn.dataset.styleClear);
+      if (!target) return;
+      if (target.live) clearLive(target.live);
+      else if (target.clear === "query") clearQueryResult();
+      else if (target.clear === "tool") clearToolResult();
+      renderStylePane();
+    });
+  }
+
+  document.getElementById("style-clear-all").addEventListener("click", () => {
+    clearQueryResult();
+    clearToolResult();
+    for (const id of Object.keys(LIVE_SOURCES)) clearLive(id);
+    renderStylePane();
+    renderLayerList();
+  });
+}
+
+function clearQueryResult() {
+  for (const id of ["qr-fill", "qr-line", "qr-point"]) {
+    if (map.getLayer(id)) map.removeLayer(id);
+  }
+  if (map.getSource("qr")) map.removeSource("qr");
+}
+
+function clearToolResult() {
+  for (const id of ["tool-fill", "tool-line", "tool-point"]) {
+    if (map.getLayer(id)) map.removeLayer(id);
+  }
+  if (map.getSource("tool")) map.removeSource("tool");
+}
+
+/* ---------------------------------------------------------------------------
    Geoprocessing
 
    Turf runs the vector operations in this page, on the features already in the
@@ -2826,7 +3061,7 @@ async function runTool() {
     else toolResult.innerHTML = "";
 
     setToolStatus(`${output.features.length.toLocaleString()} features produced and drawn`);
-    closePanel();
+    renderStylePane();
   } catch (err) {
     setToolStatus(String(err.message ?? err), true);
     console.error(err);
@@ -2834,11 +3069,7 @@ async function runTool() {
 }
 
 function drawToolOutput(collection) {
-  for (const id of ["tool-fill", "tool-line", "tool-point"]) {
-    if (map.getLayer(id)) map.removeLayer(id);
-  }
-  if (map.getSource("tool")) map.removeSource("tool");
-
+  clearToolResult();
   map.addSource("tool", { type: "geojson", data: collection });
   map.addLayer({ id: "tool-fill", type: "fill", source: "tool",
     filter: ["in", ["geometry-type"], ["literal", ["Polygon", "MultiPolygon"]]],
@@ -2858,6 +3089,13 @@ function drawToolOutput(collection) {
   }
   if (!bounds.isEmpty()) map.fitBounds(bounds, { padding: 60, duration: 900 });
 }
+
+document.getElementById("tool-clear").addEventListener("click", () => {
+  clearToolResult();
+  toolOutput = null;
+  renderStylePane();
+  setToolStatus("Result removed from the map");
+});
 
 document.getElementById("tool-run").addEventListener("click", runTool);
 document.getElementById("tool-download").addEventListener("click", () => {
@@ -3037,6 +3275,7 @@ async function fetchLive(id) {
     host.textContent =
       `View covers ${Math.round(area).toLocaleString()} km². Zoom in below ` +
       `${source.maxAreaKm2.toLocaleString()} km² first.`;
+    refreshLiveAreas();
     return;
   }
 
@@ -3082,6 +3321,9 @@ async function fetchLive(id) {
     }
 
     host.textContent = summary + (registered ? ` · ghana.${source.table}` : "");
+    const clear = document.querySelector(`[data-live-clear="${id}"]`);
+    if (clear) clear.style.display = "";
+    renderStylePane();
   } catch (err) {
     host.textContent = `Could not fetch: ${err.message ?? err}`;
     console.error(err);
@@ -3182,6 +3424,48 @@ async function registerLiveTable(source, collection) {
   }
 }
 
+function refreshLiveAreas() {
+  const area = viewAreaKm2();
+
+  for (const [id, source] of Object.entries(LIVE_SOURCES)) {
+    const line = document.querySelector(`[data-live-area="${id}"]`);
+    const button = document.querySelector(`[data-live="${id}"]`);
+    if (!line || !button) continue;
+
+    const ok = area <= source.maxAreaKm2;
+    button.disabled = !ok;
+    button.style.opacity = ok ? "1" : "0.45";
+    button.title = ok ? "" : "Zoom in further";
+
+    line.textContent = ok
+      ? `View covers ${Math.round(area).toLocaleString()} km² - ready.`
+      : `View covers ${Math.round(area).toLocaleString()} km². ` +
+        `Zoom in below ${source.maxAreaKm2.toLocaleString()} km².`;
+    line.style.color = ok ? "var(--teal, #3E8E7E)" : "var(--text-3)";
+  }
+}
+
+/* Recomputed on every move, but not on every frame of one. */
+let liveAreaTimer = null;
+map.on("moveend", () => {
+  clearTimeout(liveAreaTimer);
+  liveAreaTimer = setTimeout(refreshLiveAreas, 120);
+});
+
+function clearLive(id) {
+  const sourceId = `live-${id}`;
+  for (const suffix of ["fill", "line", "circle", "3d"]) {
+    const layerId = `${sourceId}-${suffix}`;
+    if (map.getLayer(layerId)) map.removeLayer(layerId);
+  }
+  if (map.getSource(sourceId)) map.removeSource(sourceId);
+
+  const status = document.getElementById(`live-status-${id}`);
+  if (status) status.textContent = "";
+  const clear = document.querySelector(`[data-live-clear="${id}"]`);
+  if (clear) clear.style.display = "none";
+}
+
 function renderLiveSection() {
   return `
     <h3>Live from OpenStreetMap</h3>
@@ -3193,12 +3477,20 @@ function renderLiveSection() {
         <div style="display:flex;align-items:center;gap:10px">
           <span style="width:13px;height:13px;border-radius:3px;background:${source.colour};flex:none"></span>
           <span style="flex:1;font-size:14.5px">${source.label}</span>
+          <button class="btn btn-quiet" data-live-clear="${id}" style="height:30px;display:none">Clear</button>
           <button class="btn btn-quiet" data-live="${id}" style="height:30px">Fetch</button>
         </div>
         <p class="legend-note" style="margin:5px 0 0 23px">${source.note}</p>
+        <p class="legend-note" data-live-area="${id}" style="margin:3px 0 0 23px"></p>
         <p class="legend-note" id="live-status-${id}" style="margin:3px 0 0 23px;color:var(--text-2)"></p>
       </div>`).join("")}`;
 }
+
+document.getElementById("clear-query").addEventListener("click", () => {
+  clearQueryResult();
+  renderStylePane();
+  setStatus("Result removed from the map");
+});
 
 document.getElementById("run").addEventListener("click", runQuery);
 document.getElementById("mapit").addEventListener("click", mapResult);

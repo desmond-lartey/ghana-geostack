@@ -300,3 +300,44 @@ almost nobody has surveyed building heights into OSM outside a few districts.
 `num_floors` across the whole country, and `pipelines/03_fetch_overture.py`
 already loads them. Served through pg_tileserv, the `building` layer extrudes
 nationally rather than for one well-mapped neighbourhood.
+
+
+## Styling a result
+
+The **Style** tab lists everything currently drawn - published layers, query
+results, tool output and live fetches alike - and gives each the same controls:
+
+| Control | Effect |
+| --- | --- |
+| Colour | A single fill, or a graduated ramp |
+| Graduate by | Any numeric column the features carry |
+| Palette | Warm, cool or green, five steps each |
+| Opacity | 0.05 to 1 |
+| Line width and point size | Applies to outlines and to points |
+| Height per unit | How far the graduating column raises features in 3D |
+| Remove | Takes that result off the map |
+
+The ramp range is read from the features actually drawn, so a graduated colour
+always spans the data in front of you rather than a fixed scale.
+
+A raw result is a starting point, not an answer. Being able to graduate it by
+the column that matters, and raise it in 3D by the same column, is how a
+reader gets from *here is some data* to *here is what it shows*.
+
+## Clearing the map
+
+Query results and tool output replace themselves on each run rather than
+stacking. Everything can also be removed explicitly:
+
+- **Clear map** in the Query and Tools tabs
+- **Remove** beside any layer in the Style tab
+- **Remove all results** at the foot of the Style tab
+- **Clear** beside a live layer in the Layers tab
+- **Reset view** removes every result and returns the camera to Ghana
+
+## The panel does not block the map
+
+The side panel is a dock, not a modal. On a wide screen the map gives up the
+panel's width rather than sliding underneath it, so panning and zooming
+continue to work with the panel open - which matters when setting up a live
+fetch, where the view decides what gets fetched.
