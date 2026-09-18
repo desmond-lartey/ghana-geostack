@@ -1,167 +1,81 @@
 /* Ghana GeoStack — documentation theme.
 
-   Orange header over dark slate content, matching the house style used across
-   these project sites. Typography stays on the Material defaults (Roboto),
-   which is what makes the pages read as ordinary technical documentation
-   rather than as something bespoke. */
+   Orange header over neutral dark content. Everything else is left to Material
+   for MkDocs, because the theme defaults are what make documentation look like
+   documentation. */
 
 :root {
   --gh-orange:       #F2683C;
   --gh-orange-light: #F78A63;
   --gh-orange-dark:  #D2502A;
-  --gh-teal:         #3E8E7E;
-  --gh-gold:         #D9A63C;
 }
 
-/* Header and accent colour, both schemes. */
+/* The header, set directly rather than through the palette variables. Material
+   resolves those in a specific order and a scheme block can win over them,
+   which leaves the bar the wrong colour. */
+.md-header,
+.md-tabs {
+  background-color: var(--gh-orange);
+  color: #fff;
+}
+
 [data-md-color-primary="custom"] {
   --md-primary-fg-color:        var(--gh-orange);
   --md-primary-fg-color--light: var(--gh-orange-light);
   --md-primary-fg-color--dark:  var(--gh-orange-dark);
-  --md-primary-bg-color:        #FFFFFF;
-  --md-primary-bg-color--light: rgba(255, 255, 255, 0.72);
+  --md-primary-bg-color:        #fff;
+  --md-primary-bg-color--light: rgba(255, 255, 255, 0.7);
 }
 
 [data-md-color-accent="custom"] {
-  --md-accent-fg-color:             var(--gh-orange);
+  --md-accent-fg-color:              var(--gh-orange);
   --md-accent-fg-color--transparent: rgba(242, 104, 60, 0.1);
-  --md-accent-bg-color:             #FFFFFF;
+  --md-accent-bg-color:              #fff;
 }
 
-/* Dark scheme — the default. */
+/* Dark scheme, the default. Neutral charcoal, no colour cast. */
 [data-md-color-scheme="slate"] {
-  --md-hue: 215;
-  --md-default-bg-color:        #22272E;
-  --md-default-bg-color--light: #2A3038;
-  --md-default-bg-color--lighter: #313841;
-  --md-default-fg-color:        rgba(255, 255, 255, 0.92);
-  --md-default-fg-color--light: rgba(255, 255, 255, 0.68);
-  --md-default-fg-color--lighter: rgba(255, 255, 255, 0.34);
-  --md-default-fg-color--lightest: rgba(255, 255, 255, 0.13);
-  --md-code-bg-color:           #1B2026;
-  --md-code-fg-color:           rgba(255, 255, 255, 0.86);
-  --md-typeset-a-color:         var(--gh-orange-light);
-  --md-footer-bg-color:         #1B2026;
-  --md-footer-bg-color--dark:   #171B21;
+  --md-default-bg-color:           #262A31;
+  --md-default-bg-color--light:    #2E333B;
+  --md-default-bg-color--lighter:  #363C45;
+  --md-default-bg-color--lightest: #3E454F;
+  --md-default-fg-color:           rgba(255, 255, 255, 0.9);
+  --md-default-fg-color--light:    rgba(255, 255, 255, 0.66);
+  --md-default-fg-color--lighter:  rgba(255, 255, 255, 0.32);
+  --md-default-fg-color--lightest: rgba(255, 255, 255, 0.12);
+  --md-code-bg-color:              #1E2228;
+  --md-code-fg-color:              rgba(255, 255, 255, 0.86);
+  --md-typeset-a-color:            var(--gh-orange-light);
+  --md-footer-bg-color:            #1E2228;
+  --md-footer-bg-color--dark:      #1A1D22;
 }
 
 [data-md-color-scheme="default"] {
   --md-typeset-a-color: var(--gh-orange-dark);
-  --md-footer-bg-color: #2A3038;
 }
 
-/* Headings sit lighter and larger, as on the rest of the project sites. */
-.md-typeset h1 {
-  font-weight: 300;
-  font-size: 2.1rem;
-  line-height: 1.25;
-  letter-spacing: -0.01em;
-  color: var(--md-default-fg-color--light);
-  margin-bottom: 1.2rem;
-}
-
-.md-typeset h2 {
-  font-weight: 400;
-  letter-spacing: -0.005em;
-  margin-top: 2.2em;
-}
-
-.md-typeset h3 { font-weight: 500; }
-
-/* The search field reads as part of the orange bar rather than a white box. */
-.md-search__form {
-  background-color: rgba(0, 0, 0, 0.15);
-  border-radius: 3px;
-}
-
-.md-search__form:hover { background-color: rgba(0, 0, 0, 0.22); }
-
+/* Search reads as part of the orange bar rather than a white box. */
+.md-search__form { background-color: rgba(0, 0, 0, 0.16); }
+.md-search__form:hover { background-color: rgba(0, 0, 0, 0.24); }
 [data-md-toggle="search"]:checked ~ .md-header .md-search__form {
   background-color: var(--md-default-bg-color);
 }
 
-/* Tables: aligned figures, quiet headers. */
-.md-typeset table:not([class]) th {
-  font-weight: 600;
-  font-size: 0.72rem;
-  background: var(--md-default-bg-color--light);
+/* Page title, lighter and larger, as on the other project sites. */
+.md-typeset h1 {
+  font-weight: 300;
+  font-size: 2.1rem;
+  line-height: 1.25;
+  color: var(--md-default-fg-color--light);
 }
 
-.md-typeset table:not([class]) td { font-size: 0.76rem; }
-.md-typeset table:not([class]) td:nth-child(n + 2) { font-variant-numeric: tabular-nums; }
+.md-typeset h2 { font-weight: 400; }
 
-/* Admonitions: flat, single accent rule, no coloured block. */
-.md-typeset .admonition,
-.md-typeset details {
-  border-radius: 4px;
-  border-width: 0 0 0 3px;
-  box-shadow: none;
-  background: var(--md-default-bg-color--light);
-  font-size: 0.76rem;
-}
+/* Badge row under a page title. */
+.md-typeset .badges { margin: 0 0 1.4rem; }
+.md-typeset .badges img { height: 20px; margin: 0 4px 4px 0; vertical-align: top; }
 
-.md-typeset .admonition-title,
-.md-typeset summary { background: transparent !important; font-weight: 600; }
-
-.md-typeset pre > code { border-radius: 4px; }
-.md-typeset code { border-radius: 3px; }
-
-/* Badge row under the page title. */
-.md-typeset .badges {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 5px;
-  margin: 0 0 1.6rem;
-}
-
-.md-typeset .badges img { height: 20px; margin: 0; border-radius: 3px; }
-
-/* Landing-page cards. */
-.gh-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(235px, 1fr));
-  gap: 0.75rem;
-  margin: 1.5rem 0;
-}
-
-.gh-card {
-  border: 1px solid var(--md-default-fg-color--lightest);
-  border-radius: 4px;
-  padding: 1rem 1.1rem;
-  background: var(--md-default-bg-color--light);
-  transition: border-color 0.15s;
-}
-
-.gh-card:hover { border-color: var(--gh-orange); }
-
-.gh-card h4 {
-  margin: 0 0 0.4rem;
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  color: var(--gh-orange);
-}
-
-.gh-card p { margin: 0; font-size: 0.75rem; line-height: 1.6; }
-
-/* Buttons keep the orange as a solid fill. */
-.md-typeset .md-button--primary {
-  background-color: var(--gh-orange);
-  border-color: var(--gh-orange);
-  color: #fff;
-}
-
-.md-typeset .md-button--primary:hover {
-  background-color: var(--gh-orange-dark);
-  border-color: var(--gh-orange-dark);
-}
-
-.md-typeset .md-button:not(.md-button--primary) { border-color: var(--gh-orange); color: var(--gh-orange); }
-.md-typeset .md-button:not(.md-button--primary):hover { background: var(--gh-orange); color: #fff; }
-
-/* Logo sits a little larger than the theme default. */
 .md-header__button.md-logo img,
-.md-header__button.md-logo svg { height: 1.55rem; width: 1.55rem; }
+.md-header__button.md-logo svg { height: 1.5rem; width: 1.5rem; }
 
 .md-typeset__table { overflow-x: auto; }

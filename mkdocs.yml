@@ -14,7 +14,6 @@ site_url: https://desmond-lartey.github.io/ghana-geostack/
 
 repo_url: https://github.com/desmond-lartey/ghana-geostack
 repo_name: desmond-lartey/ghana-geostack
-edit_uri: edit/main/docs/
 
 copyright: >-
   Code released under the MIT licence. Data remains under the licence of its
@@ -55,22 +54,13 @@ theme:
         name: Switch to dark mode
 
   features:
-    - navigation.tabs
-    - navigation.tabs.sticky
-    - navigation.sections
     - navigation.top
     - navigation.instant
-    - navigation.instant.progress
     - navigation.tracking
-    - navigation.indexes
     - toc.follow
     - search.suggest
     - search.highlight
-    - search.share
     - content.code.copy
-    - content.code.annotate
-    - content.tabs.link
-    - content.action.edit
 
 extra_css:
   - stylesheets/extra.css
@@ -127,31 +117,21 @@ markdown_extensions:
 
 nav:
   - Home: index.md
-
-  - Getting started:
-      - Quick start: quickstart.md
-      - Deployment: deployment.md
-
-  - Data:
-      - Administrative boundaries: boundaries.md
-      - Catalogue: skill/data-catalog.md
-      - Coordinate systems: skill/crs.md
-
-  - Platform:
-      - Architecture: architecture.md
-      - Migration notes: migration-notes.md
-
-  - Agent skill:
-      - Overview: skill/index.md
-      - PostGIS: skill/postgis.md
-      - DuckDB: skill/duckdb.md
-      - Map styling: skill/map-styling.md
-
-  - Project:
-      - Contributing: project/contributing.md
-      - Working with agents: project/agents.md
-      - Roadmap: project/roadmap.md
-      - Data licensing: project/licensing.md
+  - Quick start: quickstart.md
+  - Administrative boundaries: boundaries.md
+  - Architecture: architecture.md
+  - Data catalogue: skill/data-catalog.md
+  - Coordinate systems: skill/crs.md
+  - Agent skill: skill/index.md
+  - PostGIS reference: skill/postgis.md
+  - DuckDB reference: skill/duckdb.md
+  - Map styling: skill/map-styling.md
+  - Deployment: deployment.md
+  - Contributing: project/contributing.md
+  - Working with agents: project/agents.md
+  - Data licensing: project/licensing.md
+  - Roadmap: project/roadmap.md
+  - Migration notes: migration-notes.md
 
 watch:
   - skills
