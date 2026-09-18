@@ -29,34 +29,30 @@ theme:
   custom_dir: docs/overrides
 
   font:
-    text: IBM Plex Sans
-    code: IBM Plex Mono
+    text: Roboto
+    code: Roboto Mono
+
+  logo: assets/logo.svg
+  favicon: assets/favicon.svg
 
   icon:
     repo: fontawesome/brands/github
-    logo: material/map-marker-radius
 
+  # Dark first, so it is what a visitor sees by default.
   palette:
-    - media: "(prefers-color-scheme)"
-      toggle:
-        icon: material/brightness-auto
-        name: Follow system theme
-
-    - media: "(prefers-color-scheme: light)"
-      scheme: default
+    - scheme: slate
       primary: custom
       accent: custom
       toggle:
-        icon: material/brightness-7
-        name: Switch to dark mode
-
-    - media: "(prefers-color-scheme: dark)"
-      scheme: slate
-      primary: custom
-      accent: custom
-      toggle:
-        icon: material/brightness-4
+        icon: material/weather-sunny
         name: Switch to light mode
+
+    - scheme: default
+      primary: custom
+      accent: custom
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
 
   features:
     - navigation.tabs

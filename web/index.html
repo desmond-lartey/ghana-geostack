@@ -11,6 +11,11 @@
 <meta name="gh:data-root" content="../data">
 <meta name="gh:tiles-url" content="">
 
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="icon" href="favicon-32.png" sizes="32x32">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="theme-color" content="#F2683C">
+
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maplibre-gl@5.6.0/dist/maplibre-gl.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -44,8 +49,8 @@
   --pad: 18px;
   --ease: cubic-bezier(0.22, 0.61, 0.36, 1);
 
-  --clay: #C25540;
-  --clay-hover: #AC4833;
+  --clay: #F2683C;
+  --clay-hover: #D2502A;
   --gold: #D9A63C;
   --teal: #3E8E7E;
 }
@@ -62,7 +67,7 @@
   --text-2:    #9AA6AF;
   --text-3:    #6B7780;
   --shadow:    0 6px 28px rgba(0, 0, 0, 0.45);
-  --accent:    #E0664C;
+  --accent:    #F2683C;
   --accent-on: #FFFFFF;
 }
 
@@ -76,7 +81,7 @@
   --text-2:    #5C666E;
   --text-3:    #8A939A;
   --shadow:    0 6px 24px rgba(40, 34, 25, 0.13);
-  --accent:    #B8462F;
+  --accent:    #D2502A;
   --accent-on: #FFFFFF;
 }
 
@@ -913,22 +918,22 @@ const BASEMAPS = {
    moves, so a reader who switches theme is not relearning the map. */
 const PALETTE = {
   dark: {
-    region: "#E0664C", district: "#4E8C7E", capital: "#EBD9B4",
+    region: "#F2683C", district: "#4E8C7E", capital: "#EBD9B4",
     road: "#9DAAB2", building: "#D9A63C", facility: "#D4694A",
     ground: "#0E1215",
-    densityRamp: ["#16302C", "#2F6B58", "#8CA33F", "#D9A63C", "#E0664C"],
-    accessRamp: ["#1E5647", "#4E8C4A", "#C9A227", "#C2553C"],
+    densityRamp: ["#16302C", "#2F6B58", "#8CA33F", "#D9A63C", "#F2683C"],
+    accessRamp: ["#1E5647", "#4E8C4A", "#C9A227", "#C2502A"],
     floodRamp: ["#11242F", "#1E5478", "#3184B5", "#63B4DE"],
-    query: "#E0664C"
+    query: "#F2683C"
   },
   light: {
-    region: "#B8462F", district: "#2E7264", capital: "#8A6E32",
+    region: "#C2502A", district: "#2E7264", capital: "#8A6E32",
     road: "#6E7A82", building: "#B58325", facility: "#B04A2E",
     ground: "#EDE9E2",
-    densityRamp: ["#D8E3D4", "#95BFA4", "#B3B851", "#D39A2A", "#B8462F"],
-    accessRamp: ["#2E7264", "#6FA34C", "#C79A1E", "#B8462F"],
+    densityRamp: ["#D8E3D4", "#95BFA4", "#B3B851", "#D39A2A", "#C2502A"],
+    accessRamp: ["#2E7264", "#6FA34C", "#C79A1E", "#C2502A"],
     floodRamp: ["#DCE7EE", "#9CC0D8", "#4A8FBE", "#1E5478"],
-    query: "#B8462F"
+    query: "#C2502A"
   }
 };
 

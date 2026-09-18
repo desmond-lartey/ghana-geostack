@@ -10,7 +10,7 @@ PSQL        := psql -h $${PGHOST:-localhost} -p $${PGPORT:-5432} -U $${PGUSER:-g
 
 .DEFAULT_GOAL := help
 .PHONY: help up down logs ps psql migrate fetch load analysis qc export pipeline serve duck \
-        web docs docs-serve docs-build lint test clean reset
+        web icons docs docs-serve docs-build lint test clean reset
 
 help:  ## List the available commands
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) \
@@ -88,6 +88,9 @@ web:  ## Build the static site into public/, as Vercel does
 web-preview: web  ## Build the static site and serve it
 	@echo "http://localhost:8080"
 	@cd public && $(PY) -m http.server 8080
+
+icons:  ## Regenerate the favicon and logo from the national boundary
+	$(PY) scripts/make_icons.py
 
 docs:  ## Sync the generated documentation pages
 	$(PY) scripts/sync_docs.py

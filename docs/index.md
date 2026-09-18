@@ -1,11 +1,21 @@
 # Ghana GeoStack
 
-Open spatial data platform for Ghana. PostGIS as the authoritative store,
-DuckDB for portable analysis, GeoParquet for interchange, vector tiles and an
-OGC API for the web.
+**Open spatial data infrastructure for Ghana.**
 
-Administrative boundaries for all 16 regions and 260 districts are included in
-the repository, so a clone is immediately useful.
+<div class="badges" markdown>
+![status](https://img.shields.io/badge/status-active-2EA043)
+![licence](https://img.shields.io/badge/code-MIT-informational)
+![data](https://img.shields.io/badge/boundaries-CC%20BY%203.0%20IGO-blue)
+![regions](https://img.shields.io/badge/regions-16-F2683C)
+![districts](https://img.shields.io/badge/districts-260-F2683C)
+![boundaries](https://img.shields.io/badge/COD--AB-v01%20%C2%B7%202021-6E7B8B)
+![engines](https://img.shields.io/badge/PostGIS%20%C2%B7%20DuckDB-GeoParquet-3E8E7E)
+</div>
+
+PostGIS as the authoritative store, DuckDB for portable analysis, GeoParquet
+for interchange, vector tiles and an OGC API for the web. Administrative
+boundaries for all 16 regions and 260 districts ship with the repository, so a
+clone is immediately useful.
 
 [Open the map](https://ghana-geostack.vercel.app){ .md-button .md-button--primary }
 [Quick start](quickstart.md){ .md-button }

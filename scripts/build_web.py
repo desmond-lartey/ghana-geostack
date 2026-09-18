@@ -65,6 +65,11 @@ def copy_viewer() -> None:
                   rf'\1{TILES_URL}\2', html)
 
     (OUT / "index.html").write_text(html, encoding="utf-8")
+
+    for icon in ("favicon.svg", "favicon-32.png", "apple-touch-icon.png"):
+        source_icon = ROOT / "web" / icon
+        if source_icon.exists():
+            shutil.copy2(source_icon, OUT / icon)
     log(f"index.html ({len(html) / 1024:.0f} KB)"
         + (f", tiles -> {TILES_URL}" if TILES_URL else ", boundaries only"))
 

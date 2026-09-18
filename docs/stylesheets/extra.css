@@ -1,130 +1,167 @@
 /* Ghana GeoStack — documentation theme.
-   Carries the same identity as the map viewer: ochre accent on a deep petrol
-   ground, IBM Plex throughout, so the docs and the map read as one project. */
+
+   Orange header over dark slate content, matching the house style used across
+   these project sites. Typography stays on the Material defaults (Roboto),
+   which is what makes the pages read as ordinary technical documentation
+   rather than as something bespoke. */
 
 :root {
-  --gh-ochre:       #B77F14;
-  --gh-ochre-light: #E0A93C;
-  --gh-petrol:      #0C1A17;
-  --gh-petrol-mid:  #14302A;
-  --gh-slate:       #4E7F72;
+  --gh-orange:       #F2683C;
+  --gh-orange-light: #F78A63;
+  --gh-orange-dark:  #D2502A;
+  --gh-teal:         #3E8E7E;
+  --gh-gold:         #D9A63C;
 }
 
-/* Light scheme */
-[data-md-color-scheme="default"] {
-  --md-primary-fg-color:         var(--gh-petrol-mid);
-  --md-primary-fg-color--light:  #22493F;
-  --md-primary-fg-color--dark:   var(--gh-petrol);
-  --md-primary-bg-color:         #F4F7F5;
-  --md-accent-fg-color:          var(--gh-ochre);
-  --md-accent-fg-color--transparent: rgba(183, 127, 20, 0.1);
-  --md-typeset-a-color:          var(--gh-ochre);
+/* Header and accent colour, both schemes. */
+[data-md-color-primary="custom"] {
+  --md-primary-fg-color:        var(--gh-orange);
+  --md-primary-fg-color--light: var(--gh-orange-light);
+  --md-primary-fg-color--dark:  var(--gh-orange-dark);
+  --md-primary-bg-color:        #FFFFFF;
+  --md-primary-bg-color--light: rgba(255, 255, 255, 0.72);
 }
 
-/* Dark scheme */
+[data-md-color-accent="custom"] {
+  --md-accent-fg-color:             var(--gh-orange);
+  --md-accent-fg-color--transparent: rgba(242, 104, 60, 0.1);
+  --md-accent-bg-color:             #FFFFFF;
+}
+
+/* Dark scheme — the default. */
 [data-md-color-scheme="slate"] {
-  --md-hue: 170;
-  --md-default-bg-color:         var(--gh-petrol);
-  --md-default-bg-color--light:  #10221E;
-  --md-primary-fg-color:         #0E2320;
-  --md-primary-bg-color:         #E8EDEA;
-  --md-accent-fg-color:          var(--gh-ochre-light);
-  --md-accent-fg-color--transparent: rgba(224, 169, 60, 0.12);
-  --md-typeset-a-color:          var(--gh-ochre-light);
-  --md-code-bg-color:            rgba(0, 0, 0, 0.32);
+  --md-hue: 215;
+  --md-default-bg-color:        #22272E;
+  --md-default-bg-color--light: #2A3038;
+  --md-default-bg-color--lighter: #313841;
+  --md-default-fg-color:        rgba(255, 255, 255, 0.92);
+  --md-default-fg-color--light: rgba(255, 255, 255, 0.68);
+  --md-default-fg-color--lighter: rgba(255, 255, 255, 0.34);
+  --md-default-fg-color--lightest: rgba(255, 255, 255, 0.13);
+  --md-code-bg-color:           #1B2026;
+  --md-code-fg-color:           rgba(255, 255, 255, 0.86);
+  --md-typeset-a-color:         var(--gh-orange-light);
+  --md-footer-bg-color:         #1B2026;
+  --md-footer-bg-color--dark:   #171B21;
 }
 
-/* Headings: tighter and less shouty than the theme default. */
+[data-md-color-scheme="default"] {
+  --md-typeset-a-color: var(--gh-orange-dark);
+  --md-footer-bg-color: #2A3038;
+}
+
+/* Headings sit lighter and larger, as on the rest of the project sites. */
 .md-typeset h1 {
-  font-weight: 600;
-  letter-spacing: -0.018em;
-  color: var(--md-default-fg-color);
+  font-weight: 300;
+  font-size: 2.1rem;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+  color: var(--md-default-fg-color--light);
+  margin-bottom: 1.2rem;
 }
 
 .md-typeset h2 {
-  font-weight: 600;
-  letter-spacing: -0.012em;
+  font-weight: 400;
+  letter-spacing: -0.005em;
   margin-top: 2.2em;
 }
 
-.md-typeset h3 { font-weight: 600; }
+.md-typeset h3 { font-weight: 500; }
 
-/* Section labels in the same mono treatment as the map interface. */
-.md-typeset h2 > code,
-.md-typeset h3 > code { font-size: 0.85em; }
+/* The search field reads as part of the orange bar rather than a white box. */
+.md-search__form {
+  background-color: rgba(0, 0, 0, 0.15);
+  border-radius: 3px;
+}
 
-/* Tables: numbers align, headers read as instrumentation. */
+.md-search__form:hover { background-color: rgba(0, 0, 0, 0.22); }
+
+[data-md-toggle="search"]:checked ~ .md-header .md-search__form {
+  background-color: var(--md-default-bg-color);
+}
+
+/* Tables: aligned figures, quiet headers. */
 .md-typeset table:not([class]) th {
-  font-family: "IBM Plex Mono", monospace;
-  font-size: 0.68rem;
-  font-weight: 500;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  font-weight: 600;
+  font-size: 0.72rem;
   background: var(--md-default-bg-color--light);
 }
 
-.md-typeset table:not([class]) td { font-size: 0.75rem; }
+.md-typeset table:not([class]) td { font-size: 0.76rem; }
+.md-typeset table:not([class]) td:nth-child(n + 2) { font-variant-numeric: tabular-nums; }
 
-.md-typeset table:not([class]) td:nth-child(n+2) {
-  font-variant-numeric: tabular-nums;
-}
-
-/* Inline code sits closer to the accent, so identifiers stand out in prose. */
-.md-typeset code {
-  font-size: 0.82em;
-  border-radius: 2px;
-}
-
-/* Admonitions: flat, with a single accent rule rather than a coloured block. */
+/* Admonitions: flat, single accent rule, no coloured block. */
 .md-typeset .admonition,
 .md-typeset details {
-  border-radius: 2px;
-  border-width: 0 0 0 2px;
+  border-radius: 4px;
+  border-width: 0 0 0 3px;
   box-shadow: none;
   background: var(--md-default-bg-color--light);
+  font-size: 0.76rem;
 }
 
 .md-typeset .admonition-title,
-.md-typeset summary {
-  font-weight: 600;
-  letter-spacing: 0.01em;
-  background: transparent !important;
+.md-typeset summary { background: transparent !important; font-weight: 600; }
+
+.md-typeset pre > code { border-radius: 4px; }
+.md-typeset code { border-radius: 3px; }
+
+/* Badge row under the page title. */
+.md-typeset .badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin: 0 0 1.6rem;
 }
 
-/* Code blocks */
-.md-typeset pre > code { border-radius: 2px; }
+.md-typeset .badges img { height: 20px; margin: 0; border-radius: 3px; }
 
-/* The repository link in the header */
-.md-header__button.md-logo img,
-.md-header__button.md-logo svg { height: 1.4rem; }
-
-/* Footer generator notice — keep it, it is the theme's attribution. */
-.md-footer-meta { background: var(--gh-petrol); }
-
-/* Wide tables scroll rather than pushing the page sideways. */
-.md-typeset__table { overflow-x: auto; }
-
-/* A card grid for the landing page. */
+/* Landing-page cards. */
 .gh-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
-  gap: 0.8rem;
-  margin: 1.4rem 0;
+  grid-template-columns: repeat(auto-fit, minmax(235px, 1fr));
+  gap: 0.75rem;
+  margin: 1.5rem 0;
 }
 
 .gh-card {
   border: 1px solid var(--md-default-fg-color--lightest);
-  border-radius: 2px;
-  padding: 0.9rem 1rem;
+  border-radius: 4px;
+  padding: 1rem 1.1rem;
+  background: var(--md-default-bg-color--light);
+  transition: border-color 0.15s;
 }
+
+.gh-card:hover { border-color: var(--gh-orange); }
 
 .gh-card h4 {
-  margin: 0 0 0.35rem;
-  font-size: 0.78rem;
-  font-family: "IBM Plex Mono", monospace;
-  letter-spacing: 0.08em;
+  margin: 0 0 0.4rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
   text-transform: uppercase;
-  color: var(--md-accent-fg-color);
+  color: var(--gh-orange);
 }
 
-.gh-card p { margin: 0; font-size: 0.75rem; }
+.gh-card p { margin: 0; font-size: 0.75rem; line-height: 1.6; }
+
+/* Buttons keep the orange as a solid fill. */
+.md-typeset .md-button--primary {
+  background-color: var(--gh-orange);
+  border-color: var(--gh-orange);
+  color: #fff;
+}
+
+.md-typeset .md-button--primary:hover {
+  background-color: var(--gh-orange-dark);
+  border-color: var(--gh-orange-dark);
+}
+
+.md-typeset .md-button:not(.md-button--primary) { border-color: var(--gh-orange); color: var(--gh-orange); }
+.md-typeset .md-button:not(.md-button--primary):hover { background: var(--gh-orange); color: #fff; }
+
+/* Logo sits a little larger than the theme default. */
+.md-header__button.md-logo img,
+.md-header__button.md-logo svg { height: 1.55rem; width: 1.55rem; }
+
+.md-typeset__table { overflow-x: auto; }
