@@ -185,9 +185,24 @@ the interface stays out of the way until asked for.
 | Element | Behaviour |
 | --- | --- |
 | Legend, top left | Describes the active layer; collapses to its title |
-| Menu, top right | Opens layers, the SQL console and sources |
-| Pills, bottom left | Info, reset, locate, query — panels open only on request |
-| Story, bottom right | Six-step guided tour through the data |
+| Menu, top right | Opens layers, the SQL console, map settings and sources |
+| Buttons, bottom left | About, reset view, locate, query — panels open on request |
+| Tour, bottom right | Six-step guided walkthrough of the data |
+
+Typography is the Source superfamily — Source Serif 4 for headings, Source
+Sans 3 for interface text, JetBrains Mono for figures and SQL. Light and dark
+themes are both defined, and the choice persists.
+
+### Basemaps
+
+The default is **no basemap**. The boundaries are served from the same origin,
+so the map works with no third-party request at all — faster, private, and it
+cannot break when a tile provider changes its terms.
+
+Three key-free alternatives are selectable under **Map** in the panel: Esri
+dark and light grey canvas, and OpenStreetMap standard. Confirm the terms of
+whichever you deploy, and run your own tile server for anything with real
+traffic.
 
 Layers are grouped into Administrative, Infrastructure, Services and Analysis,
 and each carries its own legend and popup schema. The SQL console runs DuckDB

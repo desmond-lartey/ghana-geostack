@@ -185,8 +185,9 @@ Add a `CNAME` file containing the domain to `docs/`, set the domain under
       `.claude-plugin/*.json`, `scripts/sync_docs.py`
 - [ ] Confirm the boundary licence on the
       [HDX dataset page](https://data.humdata.org/dataset/cod-ab-gha)
-- [ ] Replace the CARTO basemap with a self-hosted style or PMTiles archive —
-      a third-party demo tile endpoint is not something to depend on
+- [ ] Decide on a basemap. The default is none, which needs no third party.
+      If you enable one, confirm its terms and consider self-hosting a style
+      or a PMTiles archive for anything with real traffic
 - [ ] Set `SITE_URL` in Vercel so the sitemap is written
 - [ ] Narrow `TS_CORSORIGINS` from `*` to the deployed origin
 - [ ] Run `make qc` and confirm it passes before publishing any export

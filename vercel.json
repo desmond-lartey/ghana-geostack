@@ -6,49 +6,93 @@
   "framework": null,
   "cleanUrls": true,
   "trailingSlash": false,
-  "github": { "silent": true },
-
+  "github": {
+    "silent": true
+  },
   "headers": [
     {
       "source": "/(.*)",
       "headers": [
         {
           "key": "Content-Security-Policy",
-          "value": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net blob:; worker-src 'self' blob:; child-src 'self' blob:; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https://basemaps.cartocdn.com https://*.basemaps.cartocdn.com; connect-src 'self' https://cdn.jsdelivr.net https://basemaps.cartocdn.com; frame-ancestors 'none'; base-uri 'self'"
+          "value": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net blob:; worker-src 'self' blob:; child-src 'self' blob:; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https://services.arcgisonline.com https://tile.openstreetmap.org https://*.tile.openstreetmap.org; connect-src 'self' https://cdn.jsdelivr.net https://services.arcgisonline.com https://tile.openstreetmap.org https://*.tile.openstreetmap.org; frame-ancestors 'none'; base-uri 'self'"
         },
-        { "key": "X-Content-Type-Options", "value": "nosniff" },
-        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
-        { "key": "X-Frame-Options", "value": "DENY" },
-        { "key": "Permissions-Policy", "value": "geolocation=(self), camera=(), microphone=(), interest-cohort=()" }
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "strict-origin-when-cross-origin"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "DENY"
+        },
+        {
+          "key": "Permissions-Policy",
+          "value": "geolocation=(self), camera=(), microphone=(), interest-cohort=()"
+        }
       ]
     },
     {
       "source": "/data/reference/(.*).geojson",
       "headers": [
-        { "key": "Content-Type", "value": "application/geo+json; charset=utf-8" },
-        { "key": "Cache-Control", "value": "public, max-age=3600, s-maxage=86400, stale-while-revalidate=604800" },
-        { "key": "Access-Control-Allow-Origin", "value": "*" }
+        {
+          "key": "Content-Type",
+          "value": "application/geo+json; charset=utf-8"
+        },
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=3600, s-maxage=86400, stale-while-revalidate=604800"
+        },
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "*"
+        }
       ]
     },
     {
       "source": "/data/exports/(.*).parquet",
       "headers": [
-        { "key": "Content-Type", "value": "application/vnd.apache.parquet" },
-        { "key": "Cache-Control", "value": "public, max-age=3600, s-maxage=86400" },
-        { "key": "Access-Control-Allow-Origin", "value": "*" },
-        { "key": "Accept-Ranges", "value": "bytes" }
+        {
+          "key": "Content-Type",
+          "value": "application/vnd.apache.parquet"
+        },
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=3600, s-maxage=86400"
+        },
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "*"
+        },
+        {
+          "key": "Accept-Ranges",
+          "value": "bytes"
+        }
       ]
     },
     {
       "source": "/index.html",
       "headers": [
-        { "key": "Cache-Control", "value": "public, max-age=0, s-maxage=3600, must-revalidate" }
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=0, s-maxage=3600, must-revalidate"
+        }
       ]
     }
   ],
-
   "redirects": [
-    { "source": "/docs", "destination": "https://desmond-lartey.github.io/ghana-geostack/", "permanent": false },
-    { "source": "/github", "destination": "https://github.com/desmond-lartey/ghana-geostack", "permanent": false }
+    {
+      "source": "/docs",
+      "destination": "https://desmond-lartey.github.io/ghana-geostack/",
+      "permanent": false
+    },
+    {
+      "source": "/github",
+      "destination": "https://github.com/desmond-lartey/ghana-geostack",
+      "permanent": false
+    }
   ]
 }
