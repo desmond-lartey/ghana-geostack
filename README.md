@@ -204,8 +204,16 @@ dark and light grey canvas, and OpenStreetMap standard. Confirm the terms of
 whichever you deploy, and run your own tile server for anything with real
 traffic.
 
+The **Ask** tab turns a plain-English question into SQL, shows the SQL, and
+runs it only once you have read it. Translation needs `ANTHROPIC_API_KEY` set
+on the deployment; without it, built-in patterns answer the common questions
+offline. The query itself always runs in the browser, so no data leaves the
+machine.
+
 Layers are grouped into Administrative, Infrastructure, Services and Analysis,
-and each carries its own legend and popup schema. The SQL console runs DuckDB
+and each carries its own legend and popup schema. **Map → Dimension** extrudes
+every layer that carries a magnitude: buildings by their real height in metres,
+districts and the analysis layers by the value being mapped. The SQL console runs DuckDB
 compiled to WebAssembly, reading GeoParquet over range requests, so queries
 execute in the browser with no server involved. Results with a `geom` column
 can be drawn straight onto the map.

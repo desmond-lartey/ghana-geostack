@@ -24,3 +24,6 @@ environment.yml
 requirements.txt
 requirements-docs.txt
 mkdocs.yml
+
+# The /api directory holds the question endpoint and must be deployed.
+!api/

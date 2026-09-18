@@ -11,6 +11,7 @@ Ghanaian data called out.
 | How dense? | H3 hexes, or tuned points | District choropleth of a raw count |
 | Comparison across regions | Polygon choropleth of a **rate** | Choropleth of a count |
 | Vertical magnitude | 3D polygon height | Colour alone |
+| Building form | 3D extrusion by `height_m` | Flat fill, which loses the skyline |
 | Flows between places | Arc | Line, which implies a route |
 | Movement along a route | Line or Trip | Arc |
 
@@ -63,6 +64,23 @@ colour encoding the same value.
 Ghana-specific: avoid red-green as the only distinction on anything about
 agriculture or vegetation, both for colour-vision reasons and because green
 already reads as vegetation on a land-cover map.
+
+## 3D extrusion
+
+The viewer's **Map → Dimension** switch extrudes every layer that carries a
+magnitude. Buildings rise by `height_m` in real metres; districts and the
+analysis layers rise by the value being mapped.
+
+Use it when the question is about magnitude and the reader needs to compare
+across the map at a glance - height is read faster and more accurately than
+colour. Two cautions:
+
+- **Extrude the finding, not its inverse.** `serve.access_by_district` rises by
+  the shortfall, so the tall blocks are the districts furthest from care.
+  Extruding the good news would bury the point.
+- **Tilt the camera.** A flat view over an extruded map shows only the tops of
+  the blocks and is strictly worse than the 2D version. The viewer tilts
+  automatically; a Dekart or kepler.gl scene needs it set by hand.
 
 ## Basemap
 

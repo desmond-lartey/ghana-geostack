@@ -35,6 +35,23 @@ Set these under **Settings → Environment Variables**. All are optional.
 | `TILES_URL` | Public pg_tileserv endpoint. Unset means a boundaries-only deployment |
 | `SITE_URL` | Canonical URL, used to write `sitemap.xml` |
 | `INCLUDE_EXPORTS` | Set to `0` to leave GeoParquet out of the deployment |
+| `ANTHROPIC_API_KEY` | Enables the **Ask** tab, which turns a plain-English question into SQL |
+| `ANTHROPIC_MODEL` | Overrides the model used for that translation |
+
+### The Ask endpoint
+
+`api/ask.js` deploys automatically as a Vercel serverless function. It takes a
+question, returns SQL, and runs nothing: the query executes in the reader's
+browser against data the browser already downloaded, after the reader has seen
+the SQL.
+
+Only the question travels. No row of the database is sent anywhere, which is
+why the endpoint can be enabled on a public deployment without the data
+leaving your control.
+
+Without `ANTHROPIC_API_KEY` the endpoint reports that it is not configured and
+the viewer falls back to a set of built-in question patterns, which cover the
+common shapes - counts, rankings, districts within a named region - offline.
 
 `scripts/build_web.py` rewrites the `gh:data-root` and `gh:tiles-url` meta tags
 in the built page, so the same `web/index.html` works from the repository, from

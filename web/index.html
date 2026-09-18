@@ -10,6 +10,7 @@
      repository as-is; scripts/build_web.py rewrites them for a static host. -->
 <meta name="gh:data-root" content="../data">
 <meta name="gh:tiles-url" content="">
+<meta name="gh:ask-url" content="/api/ask">
 
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="icon" href="favicon-32.png" sizes="32x32">
@@ -540,8 +541,8 @@ textarea:focus { border-color: var(--accent); outline: none; }
 
 .actions { display: flex; gap: 8px; align-items: center; margin-top: 12px; flex-wrap: wrap; }
 
-#status { flex-basis: 100%; font-size: 12.5px; color: var(--text-3); }
-#status[data-error="true"] { color: var(--accent); }
+#status, #ask-status { flex-basis: 100%; font-size: 12.5px; color: var(--text-3); }
+#status[data-error="true"], #ask-status[data-error="true"] { color: var(--accent); }
 
 .example {
   display: block;
@@ -712,6 +713,13 @@ td { font-family: var(--font-mono); font-size: 12.5px; font-variant-numeric: tab
       <path d="M7.5 1v2M7.5 12v2M1 7.5h2M12 7.5h2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
     </svg>Locate me
   </button>
+  <button class="btn btn-secondary" id="btn-ask" aria-pressed="false">
+    <svg width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden="true">
+      <path d="M5.4 5.6a2.1 2.1 0 1 1 2.8 2v1.2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+      <circle cx="7.5" cy="11.6" r="0.85" fill="currentColor"/>
+      <circle cx="7.5" cy="7.5" r="6.2" stroke="currentColor" stroke-width="1.2"/>
+    </svg>Ask
+  </button>
   <button class="btn btn-secondary" id="btn-query" aria-pressed="false">
     <svg width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden="true">
       <path d="M2.5 4h10M2.5 7.5h6.5M2.5 11h4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
@@ -745,6 +753,7 @@ td { font-family: var(--font-mono); font-size: 12.5px; font-variant-numeric: tab
     <h2>Ghana GeoStack</h2>
     <div id="tabs" role="tablist">
       <button class="tab" role="tab" id="tab-layers"   aria-selected="true"  aria-controls="pane-layers">Layers</button>
+      <button class="tab" role="tab" id="tab-ask"      aria-selected="false" aria-controls="pane-ask">Ask</button>
       <button class="tab" role="tab" id="tab-query"    aria-selected="false" aria-controls="pane-query">Query</button>
       <button class="tab" role="tab" id="tab-settings" aria-selected="false" aria-controls="pane-settings">Map</button>
       <button class="tab" role="tab" id="tab-sources"  aria-selected="false" aria-controls="pane-sources">About</button>
@@ -752,6 +761,33 @@ td { font-family: var(--font-mono); font-size: 12.5px; font-variant-numeric: tab
   </div>
 
   <div class="tabpanel" id="pane-layers" role="tabpanel" aria-labelledby="tab-layers" data-active="true"></div>
+
+  <div class="tabpanel" id="pane-ask" role="tabpanel" aria-labelledby="tab-ask">
+    <h3>Ask a question in plain English</h3>
+    <textarea id="question" rows="3" spellcheck="true" style="min-height:76px;font-family:var(--font-ui);font-size:14.5px"
+              placeholder="Which region has the most districts?"></textarea>
+    <div class="actions">
+      <button class="btn btn-primary" id="ask-run">Write the SQL</button>
+      <span id="ask-status">&nbsp;</span>
+    </div>
+
+    <div id="ask-result" hidden>
+      <h3>The query it wrote</h3>
+      <p class="legend-note" style="margin:0 0 9px">
+        Read it before you run it. Every answer this gives you is only as good
+        as the SQL underneath, and the SQL is right here.</p>
+      <textarea id="ask-sql" spellcheck="false" aria-label="Generated SQL"></textarea>
+      <div class="actions">
+        <button class="btn btn-primary" id="ask-execute">Run it</button>
+        <button class="btn btn-quiet" id="ask-map" style="height:38px">Show on map</button>
+        <button class="btn btn-quiet" id="ask-edit" style="height:38px">Open in Query</button>
+      </div>
+      <div id="ask-table"></div>
+    </div>
+
+    <h3>Questions that work</h3>
+    <div id="ask-examples"></div>
+  </div>
 
   <div class="tabpanel" id="pane-query" role="tabpanel" aria-labelledby="tab-query">
     <h3>Run SQL against the data</h3>
@@ -780,6 +816,17 @@ ORDER BY km2 DESC;</textarea>
       <button data-theme-set="dark"  aria-pressed="true">Dark</button>
       <button data-theme-set="light" aria-pressed="false">Light</button>
     </div>
+
+    <h3>Dimension</h3>
+    <div class="segmented" role="group" aria-label="Dimension">
+      <button data-dimension="2" aria-pressed="true">Flat</button>
+      <button data-dimension="3" aria-pressed="false">3D</button>
+    </div>
+    <p class="legend-note">
+      Buildings rise by their real height in metres. Districts and the analysis
+      layers rise by the value being mapped, so magnitude is read as height
+      rather than only as colour.
+    </p>
 
     <h3>Projection</h3>
     <div class="segmented" role="group" aria-label="Projection">
@@ -842,6 +889,7 @@ const meta = (name, fallback) =>
 
 const DATA_ROOT = meta("gh:data-root", "../data");
 const TILES     = meta("gh:tiles-url", "") || null;
+const ASK_URL   = meta("gh:ask-url", "") || null;
 const EXPORTS   = `${DATA_ROOT}/exports`;
 const REFERENCE = `${DATA_ROOT}/reference`;
 
@@ -953,6 +1001,15 @@ const LAYERS = [
       { type: "fill", paint: { "fill-color": c.district, "fill-opacity": 0.05 } },
       { type: "line", paint: { "line-color": c.district, "line-width": 0.6, "line-opacity": 0.8 } }
     ],
+    // Extruded by area, which turns the district map into a block model where
+    // the tall columns are the sparse northern districts rather than the busy
+    // southern ones. A useful corrective to the usual choropleth.
+    extrude: (c) => ({
+      "fill-extrusion-color": ["interpolate", ["linear"], ["get", "area_sqkm"],
+        0, c.district, 2000, c.region],
+      "fill-extrusion-height": ["*", ["coalesce", ["get", "area_sqkm"], 0], 18],
+      "fill-extrusion-opacity": 0.85
+    }),
     popup: (p) => ({ title: p.adm2_name ?? p.name, rows: {
       "P-code": p.adm2_pcode ?? p.id, Region: p.adm1_name ?? p.region_name,
       "Area km²": fmt(p.area_sqkm ?? p.area_km2) } })
@@ -991,6 +1048,15 @@ const LAYERS = [
     table: "serve.building", key: "building", on: false, minzoom: 12,
     legend: { type: "fill", note: "Visible from zoom 12" },
     style: (c) => [{ type: "fill", paint: { "fill-color": c.building, "fill-opacity": 0.55 } }],
+    // Real building heights in metres. Where the source has no height, a
+    // single storey is assumed rather than dropping the building.
+    extrude: (c) => ({
+      "fill-extrusion-color": ["interpolate", ["linear"], ["coalesce", ["get", "height_m"], 3],
+        0, c.district, 12, c.building, 40, c.region],
+      "fill-extrusion-height": ["coalesce", ["get", "height_m"], 3],
+      "fill-extrusion-base": 0,
+      "fill-extrusion-opacity": 0.92
+    }),
     popup: (p) => ({ title: p.name || "Building", rows: { Class: p.class, "Height m": p.height_m, "Area m²": fmt(p.area_m2) } })
   },
   {
@@ -1010,6 +1076,13 @@ const LAYERS = [
         0, c.densityRamp[0], 2, c.densityRamp[1], 6, c.densityRamp[2],
         12, c.densityRamp[3], 25, c.densityRamp[4]],
       "fill-opacity": 0.75 } }],
+    extrude: (c) => ({
+      "fill-extrusion-color": ["interpolate", ["linear"], ["get", "built_pct"],
+        0, c.densityRamp[0], 2, c.densityRamp[1], 6, c.densityRamp[2],
+        12, c.densityRamp[3], 25, c.densityRamp[4]],
+      "fill-extrusion-height": ["*", ["coalesce", ["get", "built_pct"], 0], 1600],
+      "fill-extrusion-opacity": 0.9
+    }),
     popup: (p) => ({ title: "Hex cell", rows: { Cell: p.h3, Buildings: fmt(p.building_count), "Built %": p.built_pct } })
   },
   {
@@ -1021,6 +1094,14 @@ const LAYERS = [
       "fill-color": ["interpolate", ["linear"], ["get", "pct_within_5km_health"],
         25, c.accessRamp[3], 50, c.accessRamp[2], 75, c.accessRamp[1], 100, c.accessRamp[0]],
       "fill-opacity": 0.72 } }],
+    // Height is the shortfall, so the tall blocks are the districts furthest
+    // from care. Extruding the good news would bury the finding.
+    extrude: (c) => ({
+      "fill-extrusion-color": ["interpolate", ["linear"], ["get", "pct_within_5km_health"],
+        25, c.accessRamp[3], 50, c.accessRamp[2], 75, c.accessRamp[1], 100, c.accessRamp[0]],
+      "fill-extrusion-height": ["*", ["-", 100, ["coalesce", ["get", "pct_within_5km_health"], 100]], 400],
+      "fill-extrusion-opacity": 0.9
+    }),
     popup: (p) => ({ title: p.district_name, rows: {
       "Within 5 km": p.pct_within_5km_health + "%",
       "Median distance": fmt(p.median_health_dist_m) + " m" } })
@@ -1034,6 +1115,12 @@ const LAYERS = [
       "fill-color": ["interpolate", ["linear"], ["get", "pct_exposed"],
         0, c.floodRamp[0], 2, c.floodRamp[1], 5, c.floodRamp[2], 10, c.floodRamp[3]],
       "fill-opacity": 0.75 } }],
+    extrude: (c) => ({
+      "fill-extrusion-color": ["interpolate", ["linear"], ["get", "pct_exposed"],
+        0, c.floodRamp[0], 2, c.floodRamp[1], 5, c.floodRamp[2], 10, c.floodRamp[3]],
+      "fill-extrusion-height": ["*", ["coalesce", ["get", "pct_exposed"], 0], 1800],
+      "fill-extrusion-opacity": 0.9
+    }),
     popup: (p) => ({ title: p.district_name, rows: { Exposed: fmt(p.exposed_buildings), Share: p.pct_exposed + "%" } })
   }
 ];
@@ -1089,6 +1176,7 @@ const state = {
   theme: store.get("theme", "dark"),
   basemap: store.get("basemap", "esri_dark"),
   projection: store.get("projection", "globe"),
+  threeD: store.get("threeD", "0") === "1",
   located: null,
   tilesOk: false
 };
@@ -1129,6 +1217,7 @@ map.on("load", async () => {
   document.getElementById("boot").dataset.done = "true";
   map.flyTo({ ...HOME, duration: 2400, essential: true });
   for (const layer of LAYERS) setLayerVisible(layer.id, layer.on, false);
+  setDimension(state.threeD);
   renderLayerList(); renderLegend();
 });
 
@@ -1178,6 +1267,22 @@ async function addLayer(layer) {
     if (part.type !== "line") bindPopup(id, layer);
   });
 
+  // A parallel extruded version of the fill, built once and swapped by
+  // visibility. Cheaper and far less error-prone than rebuilding the layer
+  // every time the 3D switch is thrown.
+  if (layer.extrude) {
+    const id = `${layer.id}-3d`;
+    map.addLayer({
+      id, type: "fill-extrusion", source: sourceId,
+      ...(usedTiles ? { "source-layer": layer.table } : {}),
+      ...(layer.minzoom ? { minzoom: layer.minzoom } : {}),
+      paint: layer.extrude(colours()),
+      layout: { visibility: "none" }
+    });
+    layer.extrusionLayer = id;
+    bindPopup(id, layer);
+  }
+
   if (!layer.style(colours()).some((p) => p.type !== "line")) bindPopup(layer.sublayers[0], layer);
 }
 
@@ -1198,9 +1303,22 @@ function bindPopup(layerId, layer) {
 function setLayerVisible(id, visible, redraw = true) {
   const layer = LAYERS.find((l) => l.id === id);
   if (!layer || layer.unavailable) return;
+
+  // In 3D the extruded version replaces the flat fill; outlines stay either way.
+  const solid = state.threeD && layer.extrusionLayer;
+
   for (const sub of layer.sublayers ?? []) {
-    if (map.getLayer(sub)) map.setLayoutProperty(sub, "visibility", visible ? "visible" : "none");
+    if (!map.getLayer(sub)) continue;
+    const isFill = map.getLayer(sub).type === "fill";
+    const show = visible && !(solid && isFill);
+    map.setLayoutProperty(sub, "visibility", show ? "visible" : "none");
   }
+
+  if (layer.extrusionLayer && map.getLayer(layer.extrusionLayer)) {
+    map.setLayoutProperty(layer.extrusionLayer, "visibility",
+                          visible && state.threeD ? "visible" : "none");
+  }
+
   visible ? state.active.add(id) : state.active.delete(id);
   if (redraw) { renderLayerList(); renderLegend(); }
 }
@@ -1216,6 +1334,12 @@ function repaintLayers() {
         map.setPaintProperty(id, prop, value);
       }
     });
+
+    if (layer.extrude && layer.extrusionLayer && map.getLayer(layer.extrusionLayer)) {
+      for (const [prop, value] of Object.entries(layer.extrude(colours()))) {
+        map.setPaintProperty(layer.extrusionLayer, prop, value);
+      }
+    }
   }
   if (map.getLayer("qr-fill")) map.setPaintProperty("qr-fill", "fill-color", colours().query);
   if (map.getLayer("qr-line")) map.setPaintProperty("qr-line", "line-color", colours().query);
@@ -1336,7 +1460,7 @@ function closePanel() {
   scrim.dataset.open = "false";
   hamburger.setAttribute("aria-expanded", "false");
   hamburger.setAttribute("aria-label", "Open menu");
-  for (const id of ["btn-query", "btn-info"]) {
+  for (const id of ["btn-query", "btn-info", "btn-ask"]) {
     document.getElementById(id).setAttribute("aria-pressed", "false");
   }
 }
@@ -1366,6 +1490,7 @@ function togglePanelButton(buttonId, tab) {
   });
 }
 
+togglePanelButton("btn-ask", "ask");
 togglePanelButton("btn-query", "query");
 togglePanelButton("btn-info", "sources");
 
@@ -1450,6 +1575,28 @@ basemapSelect.addEventListener("change", async () => {
   document.getElementById("basemap-note").textContent = BASEMAPS[state.basemap].note;
   await rebuildStyle();
 });
+
+// 3D
+function setDimension(threeD) {
+  state.threeD = threeD;
+  store.set("threeD", threeD ? "1" : "0");
+
+  for (const b of document.querySelectorAll("[data-dimension]")) {
+    b.setAttribute("aria-pressed", String((b.dataset.dimension === "3") === threeD));
+  }
+
+  for (const layer of LAYERS) setLayerVisible(layer.id, state.active.has(layer.id), false);
+  renderLayerList(); renderLegend();
+
+  // A flat camera over an extruded map shows nothing but the tops of the
+  // blocks, so tilt on the way in and level out on the way back.
+  if (threeD && map.getPitch() < 25) map.easeTo({ pitch: 50, duration: 900 });
+  if (!threeD && map.getPitch() > 5) map.easeTo({ pitch: 0, duration: 700 });
+}
+
+for (const b of document.querySelectorAll("[data-dimension]")) {
+  b.addEventListener("click", () => setDimension(b.dataset.dimension === "3"));
+}
 
 // Projection
 for (const b of document.querySelectorAll("[data-projection]")) {
@@ -1552,6 +1699,23 @@ function setStatus(text, isError = false) {
   statusEl.dataset.error = String(isError);
 }
 
+async function registerLayer(db, conn, name, url) {
+  const response = await fetch(url);
+  if (!response.ok) throw new Error(`${url}: ${response.status}`);
+  const collection = await response.json();
+
+  const rows = collection.features.map((f) => ({
+    ...f.properties,
+    geom_json: JSON.stringify(f.geometry)
+  }));
+
+  await db.registerFileText(`${name}.json`, JSON.stringify(rows));
+  await conn.query(`
+    CREATE OR REPLACE VIEW ghana.${name} AS
+    SELECT * EXCLUDE (geom_json), ST_GeomFromGeoJSON(geom_json) AS geom
+    FROM read_json_auto('${name}.json');`);
+}
+
 async function initDuckDB() {
   try {
     const duckdb = await import("https://cdn.jsdelivr.net/npm/@duckdb/duckdb-wasm@1.29.0/+esm");
@@ -1563,10 +1727,13 @@ async function initDuckDB() {
     await conn.query("INSTALL spatial; LOAD spatial;");
     await conn.query("CREATE SCHEMA IF NOT EXISTS ghana;");
 
-    await conn.query(`CREATE OR REPLACE VIEW ghana.region AS
-      SELECT * FROM st_read('${REFERENCE}/gha_admin1.geojson');`);
-    await conn.query(`CREATE OR REPLACE VIEW ghana.district AS
-      SELECT * FROM st_read('${REFERENCE}/gha_admin2.geojson');`);
+    // st_read cannot reach an HTTP URL from inside the WebAssembly build, so
+    // each layer is fetched by the page, flattened to plain rows, and handed
+    // to DuckDB as a registered file. The geometry travels as GeoJSON text and
+    // is parsed by the spatial extension on the way into the view.
+    await registerLayer(db, conn, "region", `${REFERENCE}/gha_admin1.geojson`);
+    await registerLayer(db, conn, "district", `${REFERENCE}/gha_admin2.geojson`);
+    await registerLayer(db, conn, "capital", `${REFERENCE}/gha_admincapitals.geojson`);
 
     for (const [view, file] of [["building", "core.building"], ["road", "core.road"],
                                 ["facility", "core.facility"]]) {
@@ -1578,8 +1745,8 @@ async function initDuckDB() {
 
     setStatus("Ready");
   } catch (err) {
-    setStatus("Query engine unavailable", true);
-    console.warn(err);
+    setStatus(`Query engine failed to start: ${err.message ?? err}`, true);
+    console.error(err);
   }
 }
 
@@ -1602,9 +1769,11 @@ async function runQuery() {
   }
 }
 
-function renderTable(rows) {
+function renderTable(rows) { renderInto(resultEl, rows); }
+
+function renderInto(host, rows) {
   if (!rows.length) {
-    resultEl.innerHTML = `<p style="font-size:13.5px;color:var(--text-3)">
+    host.innerHTML = `<p style="font-size:13.5px;color:var(--text-3)">
       No rows. Usually a filter that is too tight, or a name that did not match.</p>`;
     return;
   }
@@ -1612,7 +1781,7 @@ function renderTable(rows) {
   const head = cols.map((c) => `<th>${c}</th>`).join("");
   const body = rows.slice(0, 200)
     .map((r) => `<tr>${cols.map((c) => `<td>${cell(r[c])}</td>`).join("")}</tr>`).join("");
-  resultEl.innerHTML = `<table><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table>`
+  host.innerHTML = `<table><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table>`
     + (rows.length > 200
         ? `<p style="font-size:12.5px;color:var(--text-3);margin-top:10px">First 200 of ${rows.length.toLocaleString()} rows.</p>`
         : "");
@@ -1665,6 +1834,188 @@ async function mapResult() {
     console.warn(err);
   }
 }
+
+/* ---------------------------------------------------------------------------
+   Ask
+
+   A question becomes SQL, the SQL is shown, and only then does anything run.
+   The query executes in this browser against data the browser already has, so
+   nothing from the database leaves the machine - only the question travels,
+   and only when a translation endpoint is configured.
+
+   Without an endpoint the patterns below still answer the most common
+   questions offline.
+--------------------------------------------------------------------------- */
+
+const ASK_PATTERNS = [
+  {
+    test: /(most|highest|greatest).*(district|mmda)/i,
+    sql: `SELECT r.adm1_name AS region, count(*) AS districts
+FROM ghana.district d
+JOIN ghana.region r ON r.adm1_pcode = left(d.adm2_pcode, 4)
+GROUP BY 1 ORDER BY districts DESC;`
+  },
+  {
+    test: /(largest|biggest).*(region)|region.*(largest|biggest|area)/i,
+    sql: `SELECT adm1_pcode, adm1_name, round(area_sqkm) AS km2
+FROM ghana.region ORDER BY area_sqkm DESC;`
+  },
+  {
+    test: /(smallest).*(region)/i,
+    sql: `SELECT adm1_pcode, adm1_name, round(area_sqkm) AS km2
+FROM ghana.region ORDER BY area_sqkm ASC;`
+  },
+  {
+    test: /(smallest).*(district|mmda)/i,
+    sql: `SELECT adm2_pcode, adm2_name, adm1_name, round(area_sqkm, 1) AS km2
+FROM ghana.district ORDER BY area_sqkm ASC LIMIT 20;`
+  },
+  {
+    test: /(largest|biggest).*(district|mmda)/i,
+    sql: `SELECT adm2_pcode, adm2_name, adm1_name, round(area_sqkm, 1) AS km2
+FROM ghana.district ORDER BY area_sqkm DESC LIMIT 20;`
+  },
+  {
+    test: /how many (region)/i,
+    sql: `SELECT count(*) AS regions FROM ghana.region;`
+  },
+  {
+    test: /how many (district|mmda)/i,
+    sql: `SELECT count(*) AS districts FROM ghana.district;`
+  },
+  {
+    // "districts in Ashanti", "show me Volta"
+    test: /(district|mmda|show|map).*\b(in|of|for)\s+([a-z\s]{3,24})$/i,
+    build: (q) => {
+      const place = q.match(/\b(?:in|of|for)\s+([a-z\s]{3,24})$/i)[1].trim().toLowerCase();
+      return `SELECT adm2_pcode, adm2_name, round(area_sqkm, 1) AS km2, geom
+FROM ghana.district
+WHERE lower(adm1_name) LIKE '%${place.replace(/'/g, "")}%'
+ORDER BY area_sqkm DESC;`;
+    }
+  },
+  {
+    test: /capital/i,
+    sql: `SELECT name, adm1_name AS region, adm2_name AS district, geom
+FROM ghana.capital WHERE adm_p_lvl <= 1;`
+  }
+];
+
+const ASK_EXAMPLES = [
+  "Which region has the most districts?",
+  "List the ten smallest districts",
+  "Show me the districts in Ashanti",
+  "How large is each region?",
+  "Where are the regional capitals?"
+];
+
+const askStatus = document.getElementById("ask-status");
+const askResult = document.getElementById("ask-result");
+const askSql = document.getElementById("ask-sql");
+const askTable = document.getElementById("ask-table");
+
+document.getElementById("ask-examples").innerHTML = ASK_EXAMPLES
+  .map((q) => `<button class="example" data-q="${q}">${q}</button>`).join("");
+
+for (const btn of document.querySelectorAll("#ask-examples .example")) {
+  btn.addEventListener("click", () => {
+    document.getElementById("question").value = btn.dataset.q;
+    askQuestion();
+  });
+}
+
+function askOffline(question) {
+  for (const pattern of ASK_PATTERNS) {
+    if (pattern.test.test(question)) {
+      return pattern.build ? pattern.build(question) : pattern.sql;
+    }
+  }
+  return null;
+}
+
+async function askQuestion() {
+  const question = document.getElementById("question").value.trim();
+  if (!question) return;
+
+  askStatus.textContent = "Thinking";
+  askStatus.dataset.error = "false";
+
+  let sql = null;
+  let message = null;
+
+  if (ASK_URL) {
+    try {
+      const response = await fetch(ASK_URL, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ question })
+      });
+      const payload = await response.json();
+      sql = payload.sql ?? null;
+      message = payload.message ?? payload.error ?? null;
+    } catch {
+      message = "Could not reach the translation endpoint.";
+    }
+  }
+
+  // Either no endpoint, or it declined. Try the offline patterns.
+  if (!sql) {
+    const offline = askOffline(question);
+    if (offline) {
+      sql = offline;
+      message = ASK_URL ? null : "Answered from the built-in question patterns.";
+    }
+  }
+
+  if (!sql) {
+    askResult.hidden = true;
+    askStatus.dataset.error = "true";
+    askStatus.textContent = message
+      ? `${message}`
+      : "No match. Try rephrasing, or write the SQL yourself in the Query tab.";
+    return;
+  }
+
+  askSql.value = sql;
+  askResult.hidden = false;
+  askTable.innerHTML = "";
+  askStatus.textContent = message ?? "Read the SQL, then run it.";
+}
+
+async function askExecute(toMap = false) {
+  const sql = askSql.value.trim();
+  if (!sql || !conn) return;
+
+  askStatus.dataset.error = "false";
+  askStatus.textContent = "Running";
+
+  try {
+    if (toMap) {
+      document.getElementById("sql").value = sql;
+      await mapResult();
+      askStatus.textContent = "Drawn on the map.";
+      return;
+    }
+    const table = await conn.query(sql);
+    const rows = table.toArray().map((r) => r.toJSON());
+    renderInto(askTable, rows);
+    askStatus.textContent = `${rows.length.toLocaleString()} rows.`;
+  } catch (err) {
+    askStatus.dataset.error = "true";
+    askStatus.textContent = String(err.message ?? err);
+  }
+}
+
+document.getElementById("ask-run").addEventListener("click", askQuestion);
+document.getElementById("ask-execute").addEventListener("click", () => askExecute(false));
+document.getElementById("ask-map").addEventListener("click", () => askExecute(true));
+document.getElementById("ask-edit").addEventListener("click", () => {
+  document.getElementById("sql").value = askSql.value;
+  selectTab("query");
+});
+document.getElementById("question").addEventListener("keydown", (e) => {
+  if ((e.metaKey || e.ctrlKey) && e.key === "Enter") askQuestion();
+});
 
 document.getElementById("run").addEventListener("click", runQuery);
 document.getElementById("mapit").addEventListener("click", mapResult);
