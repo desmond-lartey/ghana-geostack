@@ -2,18 +2,7 @@ name: Documentation
 
 on:
   push:
-    branches: [main]
-    paths:
-      - docs/**
-      - skills/**
-      - mkdocs.yml
-      - scripts/sync_docs.py
-      - requirements-docs.txt
-      - CONTRIBUTING.md
-      - AGENTS.md
-      - ROADMAP.md
-      - LICENSE-DATA.md
-      - .github/workflows/docs.yml
+    branches: [main, master]
   workflow_dispatch:
 
 # One deployment at a time; a queued run supersedes a pending one rather than

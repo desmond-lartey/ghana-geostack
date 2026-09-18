@@ -112,10 +112,27 @@ interface changes reviewable in the pull request itself.
 No branch to select and no `gh-pages` branch to maintain; the workflow
 publishes the built site directly.
 
+Do this before the first push. `actions/configure-pages` fails with
+`Get Pages site failed` if Pages has not been enabled, and the run shows as a
+red failure rather than a missing build.
+
+### If no build appears
+
+Check the **Actions** tab. Three things account for almost every case:
+
+| Symptom | Cause | Fix |
+| --- | --- | --- |
+| No runs listed at all | The branch is not `main` or `master` | `git branch -M main && git push -u origin main` |
+| Run fails at *Configure Pages* | Pages source not set to GitHub Actions | Set it, then re-run the job |
+| Actions tab shows a prompt to enable | Actions disabled for the repository | Settings → Actions → General → Allow all actions |
+
+The workflow also has `workflow_dispatch`, so it can always be started by hand:
+**Actions → Documentation → Run workflow**.
+
 ### The workflow
 
-`.github/workflows/docs.yml` runs on every push to `main` that touches
-documentation, and can be run manually from the Actions tab. It:
+`.github/workflows/docs.yml` runs on every push to `main` or `master`, and can
+be run manually from the Actions tab. It:
 
 1. installs Material for MkDocs from `requirements-docs.txt`
 2. runs `scripts/sync_docs.py`

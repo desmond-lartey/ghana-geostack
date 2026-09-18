@@ -2,10 +2,9 @@ name: Web
 
 on:
   push:
-    branches: [main]
-    paths: [web/**, scripts/build_web.py, data/reference/**, vercel.json]
+    branches: [main, master]
   pull_request:
-    paths: [web/**, scripts/build_web.py, data/reference/**, vercel.json]
+  workflow_dispatch:
 
 jobs:
   build:
