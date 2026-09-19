@@ -11,7 +11,7 @@ data the page already downloaded.
 | `ghana.region` | 16 | Regions |
 | `ghana.district` | 260 | Districts (MMDAs) |
 | `ghana.capital` | 177 | Administrative capitals |
-| `ghana.building`, `ghana.road`, `ghana.facility` | — | Only once the pipeline has been run and exported |
+| `ghana.building`, `ghana.road`, `ghana.facility` | - | Only once the pipeline has been run and exported |
 
 Every row carries, in addition to its source attributes:
 
@@ -26,8 +26,8 @@ Every row carries, in addition to its source attributes:
 
 The viewer tries to load the DuckDB spatial extension on start. When it
 succeeds, every view gains a `shape` column holding a real geometry and the
-full `ST_` function set applies to it. When it fails — offline, behind a strict
-proxy, or on an engine build without the extension — everything below still
+full `ST_` function set applies to it. When it fails - offline, behind a strict
+proxy, or on an engine build without the extension - everything below still
 works, because it does not depend on the extension at all.
 
 The status line under the query box says which mode you are in.
@@ -94,8 +94,8 @@ GROUP BY 1 ORDER BY districts DESC;
 
 ### When the extension is unavailable
 
-True geometric predicates — point-in-polygon against a real boundary, polygon
-intersection, buffering, overlay — need `shape`, and therefore the extension.
+True geometric predicates - point-in-polygon against a real boundary, polygon
+intersection, buffering, overlay - need `shape`, and therefore the extension.
 Bounding-box tests approximate containment well enough for filtering, but they
 are not the same operation and should not be described as one.
 
@@ -179,13 +179,13 @@ downloads it.
 | Tool | Does | Needs a parameter |
 | --- | --- | --- |
 | Buffer | A zone of the given radius around each feature | Radius in km |
-| Centroids | One point per feature, at its centre of mass | — |
-| Dissolve into one | Merges every feature into a single polygon | — |
-| Convex hull | The tightest convex polygon containing the input | — |
-| Bounding box | One rectangle around the whole input | — |
+| Centroids | One point per feature, at its centre of mass | - |
+| Dissolve into one | Merges every feature into a single polygon | - |
+| Convex hull | The tightest convex polygon containing the input | - |
+| Bounding box | One rectangle around the whole input | - |
 | Simplify | Removes vertices while keeping the shape | Tolerance in degrees |
-| Voronoi catchments | The area closest to each input point | — |
-| Measure | Area in km² and perimeter in km per feature | — |
+| Voronoi catchments | The area closest to each input point | - |
+| Measure | Area in km² and perimeter in km per feature | - |
 
 Input is either the current query result or a whole layer. Output draws on the
 map, appears as a table, and downloads as GeoJSON.
@@ -199,7 +199,7 @@ Health facility catchments, without leaving the browser:
 3. Run. Sixteen catchments draw on the map and download as GeoJSON.
 
 Swap in `ghana.facility` once the pipeline has been run, set the radius to 5,
-and that is the CHPS catchment analysis — computed on the reader's own machine.
+and that is the CHPS catchment analysis - computed on the reader's own machine.
 
 ### What these results are, and are not
 
@@ -207,8 +207,8 @@ The library works on the sphere and its buffers, unions and intersections are
 approximations. They are correct enough to explore with, to sketch a catchment,
 to see whether an idea is worth pursuing.
 
-They are not the authority. Anything that has to be defensible — a published
-figure, a planning submission, a decision about where a clinic goes — should be
+They are not the authority. Anything that has to be defensible - a published
+figure, a planning submission, a decision about where a clinic goes - should be
 recomputed in PostGIS, where the projection is explicit, the geometry is valid,
 and the result passes the quality-control suite.
 
@@ -247,7 +247,7 @@ FROM ghana.osm_health
 ORDER BY name;
 ```
 
-Which means the full chain works with no database at all — fetch health
+Which means the full chain works with no database at all - fetch health
 facilities for a district, buffer them by 5 km in the Tools tab, and download
 the catchments as GeoJSON.
 
@@ -304,8 +304,8 @@ nationally rather than for one well-mapped neighbourhood.
 
 ## Styling a result
 
-The **Style** tab lists everything currently drawn — published layers, query
-results, tool output and live fetches alike — and gives each the same controls:
+The **Style** tab lists everything currently drawn - published layers, query
+results, tool output and live fetches alike - and gives each the same controls:
 
 | Control | Effect |
 | --- | --- |
@@ -339,12 +339,12 @@ stacking. Everything can also be removed explicitly:
 
 The side panel is a dock, not a modal. On a wide screen the map gives up the
 panel's width rather than sliding underneath it, so panning and zooming
-continue to work with the panel open — which matters when setting up a live
+continue to work with the panel open - which matters when setting up a live
 fetch, where the view decides what gets fetched.
 
 ## Terrain
 
-Elevation comes from Terrarium tiles on AWS Open Data — SRTM and other public
+Elevation comes from Terrarium tiles on AWS Open Data - SRTM and other public
 sources encoded into RGB. Free, keyless, and available everywhere, so it works
 on a plain deployment with no pipeline.
 

@@ -1,4 +1,4 @@
-# catalog.yml — Earth observation datasets for Ghana.
+# catalog.yml - Earth observation datasets for Ghana.
 #
 # One catalogue, two consumers:
 #
@@ -19,14 +19,14 @@
 #   attribution  the exact credit line a published map must carry
 #   resolution   native pixel size
 #   cadence      how often a new observation arrives
-#   browser:     optional — loadable in the viewer with no account
+#   browser:     optional - loadable in the viewer with no account
 #     kind         wmts_gibs | xyz
 #     layer        GIBS layer identifier, for kind wmts_gibs
 #     level        GIBS GoogleMapsCompatible level; wrong level means blank tiles
 #     format       jpg | png
 #     temporal     true when the layer takes a date
 #     url          full template, for kind xyz
-#   gee:         optional — for the pipeline
+#   gee:         optional - for the pipeline
 #     collection   Earth Engine collection or image id
 #     bands        bands to keep
 #     reducer      median | mean | max | min | mosaic

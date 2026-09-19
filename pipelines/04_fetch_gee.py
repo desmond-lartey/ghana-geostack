@@ -1,4 +1,4 @@
-"""Step 04 — Earth Engine, driven by the catalogue.
+"""Step 04 - Earth Engine, driven by the catalogue.
 
 Exports a Ghana-clipped raster for any dataset in `config/catalog.yml` that
 carries a `gee` block. The collection id, bands, reducer and scale all come
@@ -242,7 +242,7 @@ def main() -> None:
             f"'{args.dataset}' has no Earth Engine entry. Use {route} instead."
         )
 
-    step("04", f"Earth Engine — {entry['title']}")
+    step("04", f"Earth Engine - {entry['title']}")
     log.info("licence: %s", entry["licence"])
     log.info("credit: %s", entry["attribution"])
 
@@ -258,7 +258,7 @@ def main() -> None:
     name = f"{entry['id']}_{scope}"
 
     if args.drive or pixels > DIRECT_DOWNLOAD_PIXEL_LIMIT:
-        log.info("too large for a direct download — exporting to Drive")
+        log.info("too large for a direct download - exporting to Drive")
         task = ee.batch.Export.image.toDrive(
             image=image,
             description=name,
