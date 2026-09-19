@@ -2,7 +2,7 @@
 
 Three paths, depending on what you have. Pick one.
 
-## 1. Boundaries only - no install
+## 1. Boundaries only — no install
 
 All 16 regions and 260 districts are committed as GeoJSON under
 `data/reference/`. They open directly in QGIS, or:
@@ -15,7 +15,7 @@ for f in regions["features"]:
     print(p["adm1_pcode"], p["adm1_name"], round(p["area_sqkm"]))
 ```
 
-## 2. The full dataset - no database
+## 2. The full dataset — no database
 
 Download `ghana.duckdb` and the GeoParquet files from the latest release, then:
 
@@ -36,7 +36,7 @@ FROM ghana.road GROUP BY 1 ORDER BY km DESC;
 Everything works offline once downloaded. The Parquet files open in QGIS,
 GeoPandas, R and ArcGIS Pro directly.
 
-## 3. Run the whole stack - an hour, mostly downloading
+## 3. Run the whole stack — an hour, mostly downloading
 
 ```bash
 git clone https://github.com/desmond-lartey/ghana-geostack
@@ -109,7 +109,7 @@ reload both from the same bundle.
 engine failed to load the boundaries. The status line under the query box now
 carries the reason for each layer that failed; the console has the full error.
 
-Nothing needs to be registered or configured for querying to work - no key, no
+Nothing needs to be registered or configured for querying to work — no key, no
 account, no Vercel setting. The engine and the data both come from the same
 site. An API key is only needed for the **Ask** tab, and only if you want
 plain-English questions.

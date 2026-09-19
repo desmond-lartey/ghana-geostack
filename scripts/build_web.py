@@ -8,7 +8,7 @@ Configuration comes from the environment, which is how it is set in the Vercel
 project settings:
 
     TILES_URL     public pg_tileserv endpoint. Leave unset for a
-                  boundaries-only deployment, which is the safe default -
+                  boundaries-only deployment, which is the safe default —
                   the viewer detects the absence and disables the layers that
                   need a database rather than failing.
     SITE_URL      canonical URL, used in the sitemap.
@@ -51,12 +51,49 @@ def clean() -> None:
     OUT.mkdir(parents=True)
 
 
+def compiled_catalog() -> str:
+    """config/catalog.yml as compact JSON for the viewer.
+
+    The viewer holds a compiled copy so it never parses YAML in the browser.
+    Recompiling at build time is what stops the two drifting apart.
+    """
+    import json
+
+    try:
+        import yaml
+    except ImportError:
+        return ""   # not installed on the build image; keep whatever is in the file
+
+    with open(ROOT / "config" / "catalog.yml", encoding="utf-8") as fh:
+        doc = yaml.safe_load(fh)
+
+    compact = []
+    for dataset in doc["datasets"]:
+        entry = {k: dataset[k] for k in
+                 ("id", "title", "theme", "licence", "attribution",
+                  "resolution", "cadence", "notes")}
+        entry["notes"] = " ".join(entry["notes"].split())
+        if "browser" in dataset:
+            entry["browser"] = dataset["browser"]
+        if "gee" in dataset:
+            entry["gee"] = {"collection": dataset["gee"]["collection"]}
+        compact.append(entry)
+
+    return json.dumps(compact, ensure_ascii=False, separators=(",", ":"))
+
+
 def copy_viewer() -> None:
     source = ROOT / "web" / "index.html"
     if not source.exists():
         sys.exit("web/index.html is missing")
 
     html = source.read_text(encoding="utf-8")
+
+    catalog = compiled_catalog()
+    if catalog:
+        html = re.sub(r"const CATALOG = \[.*?\];\n",
+                      f"const CATALOG = {catalog};\n", html, count=1, flags=re.S)
+        log(f"catalogue recompiled from config/catalog.yml ({len(catalog) / 1024:.0f} KB)")
 
     # In the built site the data sits beside the page rather than one level up.
     html = re.sub(r'(<meta name="gh:data-root" content=")[^"]*(">)',
@@ -130,7 +167,7 @@ def write_metadata() -> None:
 def report() -> None:
     total = sum(p.stat().st_size for p in OUT.rglob("*") if p.is_file())
     count = sum(1 for p in OUT.rglob("*") if p.is_file())
-    print(f"\nBuilt public/ - {count} files, {total / 1e6:.1f} MB")
+    print(f"\nBuilt public/ — {count} files, {total / 1e6:.1f} MB")
 
 
 def main() -> None:

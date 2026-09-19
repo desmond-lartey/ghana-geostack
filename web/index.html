@@ -25,7 +25,7 @@
 
 <style>
 /* ---------------------------------------------------------------------------
-   Ghana GeoStack - viewer
+   Ghana GeoStack — viewer
 
    Typography is the Source superfamily: Source Serif 4 for headings, Source
    Sans 3 for interface text, JetBrains Mono for figures and SQL. The serif
@@ -798,6 +798,7 @@ td { font-family: var(--font-mono); font-size: 12.5px; font-variant-numeric: tab
       <button class="tab" role="tab" id="tab-ask"      aria-selected="false" aria-controls="pane-ask">Ask</button>
       <button class="tab" role="tab" id="tab-tools"    aria-selected="false" aria-controls="pane-tools">Tools</button>
       <button class="tab" role="tab" id="tab-style"    aria-selected="false" aria-controls="pane-style">Style</button>
+      <button class="tab" role="tab" id="tab-data"     aria-selected="false" aria-controls="pane-data">Data</button>
       <button class="tab" role="tab" id="tab-query"    aria-selected="false" aria-controls="pane-query">Query</button>
       <button class="tab" role="tab" id="tab-settings" aria-selected="false" aria-controls="pane-settings">Map</button>
       <button class="tab" role="tab" id="tab-sources"  aria-selected="false" aria-controls="pane-sources">About</button>
@@ -867,6 +868,22 @@ td { font-family: var(--font-mono); font-size: 12.5px; font-variant-numeric: tab
   </div>
 
   <div class="tabpanel" id="pane-style" role="tabpanel" aria-labelledby="tab-style"></div>
+
+  <div class="tabpanel" id="pane-data" role="tabpanel" aria-labelledby="tab-data">
+    <h3>Earth observation catalogue</h3>
+    <div class="field">
+      <input id="catalog-search" type="search" placeholder="Search rainfall, fire, land cover…"
+             style="width:100%;height:38px;padding:0 11px;border-radius:var(--radius);border:1px solid var(--border);background:var(--surface-2);color:var(--text);font-size:14px">
+    </div>
+    <div class="field">
+      <label for="catalog-date">Date, for layers that take one</label>
+      <input id="catalog-date" type="date"
+             style="width:100%;height:38px;padding:0 11px;border-radius:var(--radius);border:1px solid var(--border);background:var(--surface-2);color:var(--text);font-family:var(--font-mono);font-size:13px">
+      <p class="legend-note">Cloud is heavy in Ghana's rainy season. If a day
+        looks empty, step back two or three.</p>
+    </div>
+    <div id="catalog-list"></div>
+  </div>
 
   <div class="tabpanel" id="pane-query" role="tabpanel" aria-labelledby="tab-query">
     <h3>Run SQL against the data</h3>
@@ -1063,7 +1080,7 @@ const store = {
 /* Basemaps.
 
    The default is no basemap at all. The boundaries are the map, they are
-   served from this site, and nothing is requested from a third party - which
+   served from this site, and nothing is requested from a third party — which
    is faster, works offline, and cannot break when somebody else changes their
    terms. The alternatives below are open endpoints that need no API key;
    confirm the terms of whichever you deploy. */
@@ -1117,7 +1134,7 @@ const BASEMAPS = {
     } }]
   },
   none: {
-    label: "None - data only",
+    label: "None — data only",
     note: "No third-party requests, and nothing but Ghana on screen. Fastest and most private, but the country floats with no world around it.",
     sources: {},
     layers: []
@@ -1324,7 +1341,7 @@ const STORY = [
    State and map
 --------------------------------------------------------------------------- */
 
-const fmt = (v) => (v === null || v === undefined || v === "" ? "-"
+const fmt = (v) => (v === null || v === undefined || v === "" ? "—"
   : typeof v === "number" ? Math.round(v).toLocaleString() : v);
 
 const state = {
@@ -1452,7 +1469,7 @@ async function addLayer(layer) {
    Binding a click handler per layer meant a point sitting inside a district
    inside a region opened three popups stacked on top of each other. A single
    handler queries everything under the cursor at once and shows one card,
-   with the smallest feature first - which is almost always the one the reader
+   with the smallest feature first — which is almost always the one the reader
    meant to click. */
 
 let popup = null;
@@ -1466,7 +1483,7 @@ function bindPopup(layerId, layer) {
 
 function popupSection(title, rows) {
   const body = Object.entries(rows)
-    .filter(([, v]) => v !== undefined && v !== null && v !== "" && v !== "-")
+    .filter(([, v]) => v !== undefined && v !== null && v !== "" && v !== "—")
     .map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join("");
   return `<b>${title}</b><dl>${body}</dl>`;
 }
@@ -1580,9 +1597,156 @@ async function rebuildStyle() {
 }
 
 /* ---------------------------------------------------------------------------
+   Earth observation catalogue
+
+   Compiled from config/catalog.yml, which the pipeline reads too, so the
+   viewer and pipelines/04_fetch_gee.py can never disagree about what exists.
+
+   Entries with a browser block load here over NASA's GIBS, which serves
+   keyless WMTS with CORS. Everything else names the command that fetches it,
+   because a dataset that needs an Earth Engine account should say so rather
+   than appearing as a control that does nothing.
+--------------------------------------------------------------------------- */
+
+const CATALOG = [{"id":"modis_truecolor","title":"MODIS true colour, daily","theme":"imagery","licence":"public domain (NASA)","attribution":"NASA EOSDIS GIBS, MODIS Terra","resolution":"250 m","cadence":"daily","notes":"What the satellite saw that day, cloud included. Ghana's rainy season runs roughly April to October in the south and May to September in the north, and cloud cover in those months is heavy enough that a single date is often unusable. Step back a few days.","browser":{"kind":"wmts_gibs","layer":"MODIS_Terra_CorrectedReflectance_TrueColor","level":9,"format":"jpg","temporal":true}},{"id":"viirs_truecolor","title":"VIIRS true colour, daily","theme":"imagery","licence":"public domain (NASA)","attribution":"NASA EOSDIS GIBS, VIIRS SNPP","resolution":"375 m","cadence":"daily","notes":"A second daily look, useful when the MODIS pass was clouded out.","browser":{"kind":"wmts_gibs","layer":"VIIRS_SNPP_CorrectedReflectance_TrueColor","level":9,"format":"jpg","temporal":true}},{"id":"sentinel2_l2a","title":"Sentinel-2 surface reflectance","theme":"imagery","licence":"Copernicus open licence","attribution":"Contains modified Copernicus Sentinel data","resolution":"10 m","cadence":"5 days","notes":"The workhorse for anything at field or neighbourhood scale. Needs the pipeline: 10 m imagery is far too heavy to stream to a browser.","gee":{"collection":"COPERNICUS/S2_SR_HARMONIZED"}},{"id":"modis_ndvi","title":"Vegetation index, 16-day","theme":"vegetation","licence":"public domain (NASA)","attribution":"NASA EOSDIS GIBS, MODIS Terra NDVI","resolution":"250 m","cadence":"16 days","notes":"Greenness, not crop yield and not land cover. High NDVI over Ghana's forest zone in August says the canopy is photosynthesising, which is unremarkable; the interesting signal is the difference between one year and the same date in another.","browser":{"kind":"wmts_gibs","layer":"MODIS_Terra_NDVI_16Day","level":8,"format":"png","temporal":true}},{"id":"hansen_treecover","title":"Tree cover and forest loss","theme":"vegetation","licence":"CC-BY-4.0","attribution":"Hansen/UMD/Google/USGS/NASA","resolution":"30 m","cadence":"annual","notes":"Tree cover, not forest. The dataset counts cocoa shade trees and oil palm plantations as cover, which matters enormously in Ghana's cocoa belt where the distinction between forest and farm is the whole question.","gee":{"collection":"UMD/hansen/global_forest_change_2023_v1_11"}},{"id":"esa_worldcover","title":"Land cover, 10 m","theme":"landcover","licence":"CC-BY-4.0","attribution":"ESA WorldCover project, Contains modified Copernicus data","resolution":"10 m","cadence":"annual","notes":"Eleven classes. The most usable national land cover for Ghana.","gee":{"collection":"ESA/WorldCover/v200"}},{"id":"dynamic_world","title":"Dynamic World, near real time land cover","theme":"landcover","licence":"CC-BY-4.0","attribution":"Google Dynamic World, World Resources Institute","resolution":"10 m","cadence":"5 days","notes":"Per-Sentinel-2-pass land cover, so change can be watched rather than inferred between annual snapshots.","gee":{"collection":"GOOGLE/DYNAMICWORLD/V1"}},{"id":"imerg_precipitation","title":"Rainfall rate","theme":"climate","licence":"public domain (NASA)","attribution":"NASA GPM IMERG","resolution":"10 km","cadence":"30 minutes","notes":"Satellite-estimated rain, not gauge measurement. Good for watching a storm cross the country; poor for a rainfall total anyone will be held to. CHIRPS is the better record for that.","browser":{"kind":"wmts_gibs","layer":"IMERG_Precipitation_Rate","level":6,"format":"png","temporal":true}},{"id":"chirps_rainfall","title":"CHIRPS rainfall","theme":"climate","licence":"public domain","attribution":"CHIRPS, Climate Hazards Center, UC Santa Barbara","resolution":"5 km","cadence":"daily and monthly","notes":"Blends satellite estimates with station records, which makes it the usual choice for seasonal rainfall in West Africa.","gee":{"collection":"UCSB-CHG/CHIRPS/DAILY"}},{"id":"modis_lst","title":"Land surface temperature, day","theme":"climate","licence":"public domain (NASA)","attribution":"NASA EOSDIS GIBS, MODIS Terra LST","resolution":"1 km","cadence":"daily","notes":"Ground temperature, which is not air temperature and runs far hotter over bare soil and tarmac. Useful for urban heat in Accra and Kumasi; not a substitute for a thermometer.","browser":{"kind":"wmts_gibs","layer":"MODIS_Terra_Land_Surface_Temp_Day","level":7,"format":"png","temporal":true}},{"id":"jrc_surface_water","title":"Surface water occurrence","theme":"water","licence":"CC-BY-4.0","attribution":"JRC Global Surface Water, Pekel et al. 2016","resolution":"30 m","cadence":"static, 1984-2021","notes":"How often water was seen at each pixel over 37 years. The closest thing to a flood-prone map available without a hydraulic model, and it must be described as observed history rather than risk.","gee":{"collection":"JRC/GSW1_4/GlobalSurfaceWater"}},{"id":"modis_fires","title":"Active fire detections","theme":"hazard","licence":"public domain (NASA)","attribution":"NASA EOSDIS GIBS, MODIS Thermal Anomalies","resolution":"1 km","cadence":"daily","notes":"Heat detected from orbit, which in Ghana between December and February is mostly agricultural burning and bush fire. A detection is a hot pixel, not a confirmed fire, and small fires under the pixel size are missed.","browser":{"kind":"wmts_gibs","layer":"MODIS_Terra_Thermal_Anomalies_All","level":7,"format":"png","temporal":true}},{"id":"burned_area","title":"Burned area, monthly","theme":"hazard","licence":"public domain (NASA)","attribution":"NASA MODIS MCD64A1","resolution":"500 m","cadence":"monthly","notes":"Where fire actually burned, as opposed to where heat was detected.","gee":{"collection":"MODIS/061/MCD64A1"}},{"id":"viirs_nightlights","title":"Night lights","theme":"nightlights","licence":"public domain (NASA)","attribution":"NASA EOSDIS GIBS, VIIRS Day Night Band","resolution":"500 m","cadence":"daily","notes":"Lit area is a rough proxy for electrification and economic activity, and a poor one where lighting is intermittent. Ghana's load shedding shows up as places going dark that have not depopulated.","browser":{"kind":"wmts_gibs","layer":"VIIRS_SNPP_DayNightBand_At_Sensor_Radiance","level":8,"format":"png","temporal":true}},{"id":"viirs_annual_lights","title":"Night lights, annual composite","theme":"nightlights","licence":"public domain (NOAA)","attribution":"Earth Observation Group, Payne Institute, Colorado School of Mines","resolution":"500 m","cadence":"annual","notes":"Cloud-free annual composite. The one to use for change over years.","gee":{"collection":"NOAA/VIIRS/DNB/ANNUAL_V22"}},{"id":"copernicus_dem","title":"Copernicus DEM GLO-30","theme":"terrain","licence":"Copernicus DEM licence","attribution":"© DLR e.V. 2010-2014, © Airbus Defence and Space GmbH","resolution":"30 m","cadence":"static","notes":"Better than SRTM for Ghana, void-filled. The viewer's own relief uses Terrarium tiles instead, which need no account; this is the version the pipeline loads for slope, aspect and watershed work.","gee":{"collection":"COPERNICUS/DEM/GLO30"}},{"id":"worldpop_population","title":"Population, 100 m","theme":"population","licence":"CC-BY-4.0","attribution":"WorldPop, University of Southampton","resolution":"100 m","cadence":"annual","notes":"Modelled, not counted: census totals distributed by settlement pattern. A cell value is an estimate of how many people the model puts there, and should never be read as a headcount for a specific place.","gee":{"collection":"WorldPop/GP/100m/pop"}},{"id":"ghsl_built","title":"Built-up surface","theme":"population","licence":"CC-BY-4.0","attribution":"European Commission JRC, Global Human Settlement Layer","resolution":"100 m","cadence":"5 years, 1975-2030","notes":"Built surface in square metres per cell, back to 1975. The clearest record of how far Accra and Kumasi have spread.","gee":{"collection":"JRC/GHSL/P2023A/GHS_BUILT_S"}}];
+
+const GIBS = "https://gibs.earthdata.nasa.gov/wmts/epsg3857/best";
+
+function gibsTiles(browser, date) {
+  const time = browser.temporal ? date : "default";
+  return `${GIBS}/${browser.layer}/default/${time}` +
+         `/GoogleMapsCompatible_Level${browser.level}/{z}/{y}/{x}.${browser.format}`;
+}
+
+const catalogState = { loaded: new Map() };   // dataset id -> map source id
+
+function catalogDate() {
+  const input = document.getElementById("catalog-date");
+  return input.value || defaultCatalogDate();
+}
+
+/* Three days back by default: today's pass is often not published yet, and a
+   reader clicking a layer that returns nothing concludes it is broken. */
+function defaultCatalogDate() {
+  const d = new Date();
+  d.setDate(d.getDate() - 3);
+  return d.toISOString().slice(0, 10);
+}
+
+function toggleCatalogLayer(id) {
+  const entry = CATALOG.find((e) => e.id === id);
+  if (!entry?.browser) return;
+
+  const status = document.getElementById(`catalog-status-${id}`);
+  const sourceId = `eo-${id}`;
+
+  if (catalogState.loaded.has(id)) {
+    if (map.getLayer(sourceId)) map.removeLayer(sourceId);
+    if (map.getSource(sourceId)) map.removeSource(sourceId);
+    catalogState.loaded.delete(id);
+    status.textContent = "";
+    renderCatalog();
+    renderStylePane();
+    return;
+  }
+
+  const tiles = entry.browser.kind === "xyz"
+    ? entry.browser.url
+    : gibsTiles(entry.browser, catalogDate());
+
+  map.addSource(sourceId, {
+    type: "raster", tiles: [tiles], tileSize: 256, maxzoom: 9,
+    attribution: entry.attribution
+  });
+
+  // Above the basemap, below the vector data, so boundaries stay readable.
+  const firstVector = map.getStyle().layers
+    .find((l) => l.type !== "raster" && l.type !== "background" && l.id !== "hillshade")?.id;
+
+  map.addLayer({
+    id: sourceId, type: "raster", source: sourceId,
+    paint: { "raster-opacity": 0.8 }
+  }, firstVector);
+
+  catalogState.loaded.set(id, sourceId);
+  status.textContent = entry.browser.temporal
+    ? `Loaded for ${catalogDate()}.`
+    : "Loaded.";
+
+  // A tile 404 is normal for a date with no pass; say so rather than leaving
+  // an empty layer and no explanation.
+  map.once("error", (e) => {
+    if (e.sourceId === sourceId) {
+      status.textContent = "No tiles for that date. Try a few days earlier.";
+    }
+  });
+
+  renderCatalog();
+  renderStylePane();
+}
+
+function renderCatalog() {
+  const host = document.getElementById("catalog-list");
+  const search = document.getElementById("catalog-search").value.trim().toLowerCase();
+
+  const matches = CATALOG.filter((e) => !search ||
+    [e.title, e.theme, e.id, e.notes, e.attribution].join(" ").toLowerCase().includes(search));
+
+  if (!matches.length) {
+    host.innerHTML = `<div class="hint">Nothing matches. The catalogue holds
+      ${CATALOG.length} datasets across imagery, vegetation, climate, land
+      cover, terrain, population, night lights, water and hazard.</div>`;
+    return;
+  }
+
+  const themes = [...new Set(matches.map((e) => e.theme))].sort();
+
+  host.innerHTML = themes.map((theme) => `
+    <h3>${theme}</h3>
+    ${matches.filter((e) => e.theme === theme).map((entry) => {
+      const on = catalogState.loaded.has(entry.id);
+      const inViewer = Boolean(entry.browser);
+      return `
+        <div style="padding:11px 0;border-bottom:1px solid var(--border)">
+          <div style="display:flex;align-items:center;gap:10px">
+            <span style="flex:1;font-size:14.5px;color:${on ? "var(--text)" : "var(--text-2)"};font-weight:${on ? 600 : 400}">
+              ${entry.title}</span>
+            <span class="meta" style="font-family:var(--font-mono);font-size:11px;color:var(--text-3)">
+              ${entry.resolution}</span>
+            ${inViewer
+              ? `<button class="btn btn-quiet" data-catalog="${entry.id}" style="height:30px">${on ? "Remove" : "Load"}</button>`
+              : `<span class="meta" style="font-family:var(--font-mono);font-size:10.5px;color:var(--text-3)">pipeline</span>`}
+          </div>
+          <p class="legend-note" style="margin:6px 0 0">${entry.notes}</p>
+          <p class="legend-note" style="margin:4px 0 0;color:var(--text-3)">
+            ${entry.cadence} · ${entry.licence} · ${entry.attribution}</p>
+          ${inViewer ? "" : `
+            <p class="legend-note" style="margin:5px 0 0">
+              <code style="font-family:var(--font-mono);font-size:11.5px;color:var(--accent)">python pipelines/04_fetch_gee.py ${entry.id}</code></p>`}
+          <p class="legend-note" id="catalog-status-${entry.id}" style="margin:4px 0 0;color:var(--text-2)"></p>
+        </div>`;
+    }).join("")}`).join("");
+
+  for (const btn of host.querySelectorAll("[data-catalog]")) {
+    btn.addEventListener("click", () => toggleCatalogLayer(btn.dataset.catalog));
+  }
+}
+
+document.getElementById("catalog-search").addEventListener("input", renderCatalog);
+document.getElementById("catalog-date").value = defaultCatalogDate();
+document.getElementById("catalog-date").addEventListener("change", () => {
+  // Reload whatever is on, so the date applies without hunting for each layer.
+  for (const id of [...catalogState.loaded.keys()]) {
+    toggleCatalogLayer(id);
+    toggleCatalogLayer(id);
+  }
+});
+renderCatalog();
+
+/* ---------------------------------------------------------------------------
    Terrain
 
-   Elevation comes from the Terrarium tiles on AWS Open Data - SRTM and other
+   Elevation comes from the Terrarium tiles on AWS Open Data — SRTM and other
    public sources encoded into RGB, free, keyless and CORS-enabled. That gives
    three things at once: hillshade under the data, real 3D relief, and an
    elevation reading anywhere the reader clicks.
@@ -1632,7 +1796,7 @@ function applyTerrain() {
 }
 
 /* Elevation under a point, in metres. Returns null when terrain is off or the
-   tile for that spot has not loaded - which is honest, rather than reporting a
+   tile for that spot has not loaded — which is honest, rather than reporting a
    confident zero. */
 function terrainElevationAt(lngLat) {
   if (!state.terrain) return null;
@@ -2051,7 +2215,7 @@ function setStatus(text, isError = false) {
    DuckDB compiled to WebAssembly has no spatial extension, so the page
    computes a small set of spatial attributes for every feature as it loads.
    Those columns plus the SQL macros below cover the spatial questions people
-   actually ask - distance, nearest, within a radius, bounding-box overlap -
+   actually ask — distance, nearest, within a radius, bounding-box overlap —
    without needing a server, an extension, or a local install. */
 
 function flatten(coordinates, out = []) {
@@ -2104,7 +2268,7 @@ function centroidOf(geometry) {
 
    Data is handed over as CSV, not JSON. read_csv_auto is part of the core
    engine, while read_json_auto needs the json extension, which is not
-   guaranteed to be present in every WebAssembly build - and when it is
+   guaranteed to be present in every WebAssembly build — and when it is
    missing, every view fails to create and the console reports only that no
    table exists.
 
@@ -2252,7 +2416,7 @@ async function initDuckDB() {
       throw new Error(failures.join(" · ") || "no tables could be loaded");
     }
     if (failures.length) console.warn("Some layers did not load:", failures);
-    setStatus(`Ready - ${loaded.join(", ")}`
+    setStatus(`Ready — ${loaded.join(", ")}`
       + (state.spatial ? " · spatial functions available on shape"
                        : " · spatial macros only"));
   } catch (err) {
@@ -2301,7 +2465,7 @@ function renderInto(host, rows) {
 }
 
 function cell(v) {
-  if (v === null || v === undefined) return "-";
+  if (v === null || v === undefined) return "—";
   if (typeof v === "bigint") return v.toLocaleString();
   if (typeof v === "number") return Number.isInteger(v) ? v.toLocaleString() : v.toFixed(2);
   return String(v).slice(0, 48);
@@ -2550,7 +2714,7 @@ async function askProvider(question, { provider, key, model, baseUrl }) {
    Adapted from GeoLibre's assistant guard: mask string and comment literals
    first so a keyword inside a quoted value does not trip the test, then require
    the statement to open with SELECT or WITH and hold no side-effecting keyword
-   anywhere - which is what catches a data-modifying CTE such as
+   anywhere — which is what catches a data-modifying CTE such as
    WITH x AS (DELETE ...) SELECT ...
 
    SQL typed by hand in the Query tab is not checked. That database lives in the
@@ -2758,7 +2922,7 @@ async function askExecute(toMap = false) {
 }
 
 /* Provider settings. The key lives in this browser and is sent only to the
-   provider the reader picked - never to this site. */
+   provider the reader picked — never to this site. */
 
 const keyInput = document.getElementById("api-key");
 const keyStatus = document.getElementById("key-status");
@@ -2886,7 +3050,7 @@ document.getElementById("download-geojson").addEventListener("click", () => {
    Every drawn layer, published or produced in this session, gets the same set
    of controls: colour, opacity, stroke width, height, and a graduated ramp
    over any numeric column it carries. A result that cannot be restyled is
-   only half an answer - the reader has to be able to make the map say what
+   only half an answer — the reader has to be able to make the map say what
    they found.
 --------------------------------------------------------------------------- */
 
@@ -3027,7 +3191,7 @@ function renderStylePane() {
         ${fields.length ? `
           <label class="legend-note" style="display:block;margin-bottom:4px">Graduate by</label>
           <select data-style="field" data-key="${target.key}" style="width:100%;height:32px;margin-bottom:11px">
-            <option value="">Nothing - one colour</option>
+            <option value="">Nothing — one colour</option>
             ${fields.map((f) => `<option value="${f}"${st.field === f ? " selected" : ""}>${f}</option>`).join("")}
           </select>` : ""}
 
@@ -3135,7 +3299,7 @@ async function loadTurf() {
 const TOOLS = {
   buffer: {
     label: "Buffer",
-    note: "A zone of the given radius around each feature. Useful for catchments - 5 km is the CHPS planning distance.",
+    note: "A zone of the given radius around each feature. Useful for catchments — 5 km is the CHPS planning distance.",
     param: "Radius, km",
     value: 5,
     run: (t, fc, km) => t.buffer(fc, km, { units: "kilometers" })
@@ -3183,7 +3347,7 @@ const TOOLS = {
   },
   voronoi: {
     label: "Voronoi catchments",
-    note: "Divides the country into the area closest to each input point. A first approximation of service catchments - it ignores roads, rivers and travel time.",
+    note: "Divides the country into the area closest to each input point. A first approximation of service catchments — it ignores roads, rivers and travel time.",
     param: null,
     run: (t, fc) => {
       const points = t.featureCollection(fc.features.map((f) =>
@@ -3193,11 +3357,11 @@ const TOOLS = {
   },
   elevation: {
     label: "Sample elevation",
-    note: "Reads ground height from the terrain tiles at each feature's centre and attaches it as elevation_m. Needs 3D relief switched on in the Map tab, and only samples where the tiles have loaded - so zoom to the area first.",
+    note: "Reads ground height from the terrain tiles at each feature's centre and attaches it as elevation_m. Needs 3D relief switched on in the Map tab, and only samples where the tiles have loaded — so zoom to the area first.",
     param: null,
     run: (t, fc) => {
       if (!state.terrain) {
-        throw new Error("Switch on 3D relief in the Map tab first - elevation is read from the loaded terrain tiles.");
+        throw new Error("Switch on 3D relief in the Map tab first — elevation is read from the loaded terrain tiles.");
       }
 
       let sampled = 0;
@@ -3223,7 +3387,7 @@ const TOOLS = {
   },
   measure: {
     label: "Measure",
-    note: "Area in square kilometres and perimeter in kilometres for each feature. No new geometry - the input is returned with the measurements attached.",
+    note: "Area in square kilometres and perimeter in kilometres for each feature. No new geometry — the input is returned with the measurements attached.",
     param: null,
     run: (t, fc) => t.featureCollection(fc.features.map((f) => ({
       ...f,
@@ -3538,7 +3702,7 @@ async function fetchLive(id) {
   }
 
   const b = map.getBounds();
-  // Overpass wants south,west,north,east - the opposite order to almost
+  // Overpass wants south,west,north,east — the opposite order to almost
   // everything else, and the commonest mistake when querying it.
   const bbox = [b.getSouth(), b.getWest(), b.getNorth(), b.getEast()]
     .map((v) => v.toFixed(5)).join(",");
@@ -3604,7 +3768,7 @@ async function fetchLive(id) {
       const withHeight = collection.features.filter((f) => f.properties.height_m != null).length;
       const share = Math.round(withHeight / collection.features.length * 100);
       summary += ` · ${share}% have a height in OSM`;
-      if (share < 20) summary += " - a 3D view here will be mostly flat";
+      if (share < 20) summary += " — a 3D view here will be mostly flat";
     }
 
     host.textContent = summary + (registered ? ` · ghana.${source.table}` : "");
@@ -3724,7 +3888,7 @@ function refreshLiveAreas() {
     button.title = ok ? "" : "Zoom in further";
 
     line.textContent = ok
-      ? `View covers ${Math.round(area).toLocaleString()} km² - ready.`
+      ? `View covers ${Math.round(area).toLocaleString()} km² — ready.`
       : `View covers ${Math.round(area).toLocaleString()} km². ` +
         `Zoom in below ${source.maxAreaKm2.toLocaleString()} km².`;
     line.style.color = ok ? "var(--teal, #3E8E7E)" : "var(--text-3)";

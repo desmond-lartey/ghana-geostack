@@ -13,9 +13,9 @@ CREATE EXTENSION IF NOT EXISTS pgcrypto;           -- gen_random_uuid()
 -- Optional, install if the image provides them. Failure here is not fatal.
 DO $$
 BEGIN
-    BEGIN CREATE EXTENSION IF NOT EXISTS h3;      EXCEPTION WHEN OTHERS THEN RAISE NOTICE 'h3 extension unavailable - H3 rollups will run in DuckDB instead'; END;
+    BEGIN CREATE EXTENSION IF NOT EXISTS h3;      EXCEPTION WHEN OTHERS THEN RAISE NOTICE 'h3 extension unavailable — H3 rollups will run in DuckDB instead'; END;
     BEGIN CREATE EXTENSION IF NOT EXISTS h3_postgis; EXCEPTION WHEN OTHERS THEN NULL; END;
-    BEGIN CREATE EXTENSION IF NOT EXISTS pgrouting;  EXCEPTION WHEN OTHERS THEN RAISE NOTICE 'pgrouting unavailable - network routing disabled'; END;
+    BEGIN CREATE EXTENSION IF NOT EXISTS pgrouting;  EXCEPTION WHEN OTHERS THEN RAISE NOTICE 'pgrouting unavailable — network routing disabled'; END;
 END
 $$;
 

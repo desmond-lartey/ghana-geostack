@@ -17,7 +17,7 @@ repo_name: desmond-lartey/ghana-geostack
 
 copyright: >-
   Code released under the MIT licence. Data remains under the licence of its
-  producer - see <a href="project/licensing/">Data licensing</a>.
+  producer — see <a href="project/licensing/">Data licensing</a>.
 
 docs_dir: docs
 site_dir: site

@@ -1,0 +1,362 @@
+# catalog.yml — Earth observation datasets for Ghana.
+#
+# One catalogue, two consumers:
+#
+#   web/index.html      shows the Data tab. Entries with a `browser` block load
+#                       straight into the map, keyless, with no pipeline.
+#   pipelines/04_fetch_gee.py
+#                       reads `gee` blocks and exports a Ghana-clipped raster.
+#
+# Adding a dataset means adding it here once. Neither consumer holds its own
+# list, so they cannot drift apart.
+#
+# Fields
+#   id           stable snake_case key
+#   title        what to show a reader
+#   theme        imagery | vegetation | climate | terrain | landcover |
+#                population | hazard | nightlights | water
+#   licence      SPDX id, or the short name the provider uses
+#   attribution  the exact credit line a published map must carry
+#   resolution   native pixel size
+#   cadence      how often a new observation arrives
+#   browser:     optional — loadable in the viewer with no account
+#     kind         wmts_gibs | xyz
+#     layer        GIBS layer identifier, for kind wmts_gibs
+#     level        GIBS GoogleMapsCompatible level; wrong level means blank tiles
+#     format       jpg | png
+#     temporal     true when the layer takes a date
+#     url          full template, for kind xyz
+#   gee:         optional — for the pipeline
+#     collection   Earth Engine collection or image id
+#     bands        bands to keep
+#     reducer      median | mean | max | min | mosaic
+#     scale        export resolution in metres
+#   notes        what the data does not tell you. Written for the reader who
+#                will quote a number off the map without reading further.
+
+version: 1
+
+# GIBS serves keyless WMTS from NASA. Layer identifiers and matrix levels are
+# taken from the GIBS capabilities document; if a layer renders blank, the
+# level is the first thing to check.
+gibs_template: >-
+  https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/{layer}/default/{time}/
+  GoogleMapsCompatible_Level{level}/{z}/{y}/{x}.{format}
+
+datasets:
+
+  # ── Imagery ────────────────────────────────────────────────────────────
+
+  - id: modis_truecolor
+    title: MODIS true colour, daily
+    theme: imagery
+    licence: public domain (NASA)
+    attribution: "NASA EOSDIS GIBS, MODIS Terra"
+    resolution: 250 m
+    cadence: daily
+    browser:
+      kind: wmts_gibs
+      layer: MODIS_Terra_CorrectedReflectance_TrueColor
+      level: 9
+      format: jpg
+      temporal: true
+    notes: >
+      What the satellite saw that day, cloud included. Ghana's rainy season
+      runs roughly April to October in the south and May to September in the
+      north, and cloud cover in those months is heavy enough that a single
+      date is often unusable. Step back a few days.
+
+  - id: viirs_truecolor
+    title: VIIRS true colour, daily
+    theme: imagery
+    licence: public domain (NASA)
+    attribution: "NASA EOSDIS GIBS, VIIRS SNPP"
+    resolution: 375 m
+    cadence: daily
+    browser:
+      kind: wmts_gibs
+      layer: VIIRS_SNPP_CorrectedReflectance_TrueColor
+      level: 9
+      format: jpg
+      temporal: true
+    notes: A second daily look, useful when the MODIS pass was clouded out.
+
+  - id: sentinel2_l2a
+    title: Sentinel-2 surface reflectance
+    theme: imagery
+    licence: Copernicus open licence
+    attribution: "Contains modified Copernicus Sentinel data"
+    resolution: 10 m
+    cadence: 5 days
+    gee:
+      collection: COPERNICUS/S2_SR_HARMONIZED
+      bands: [B2, B3, B4, B8, B11, B12]
+      reducer: median
+      scale: 10
+    notes: >
+      The workhorse for anything at field or neighbourhood scale. Needs the
+      pipeline: 10 m imagery is far too heavy to stream to a browser.
+
+  # ── Vegetation ─────────────────────────────────────────────────────────
+
+  - id: modis_ndvi
+    title: Vegetation index, 16-day
+    theme: vegetation
+    licence: public domain (NASA)
+    attribution: "NASA EOSDIS GIBS, MODIS Terra NDVI"
+    resolution: 250 m
+    cadence: 16 days
+    browser:
+      kind: wmts_gibs
+      layer: MODIS_Terra_NDVI_16Day
+      level: 8
+      format: png
+      temporal: true
+    notes: >
+      Greenness, not crop yield and not land cover. High NDVI over Ghana's
+      forest zone in August says the canopy is photosynthesising, which is
+      unremarkable; the interesting signal is the difference between one year
+      and the same date in another.
+
+  - id: hansen_treecover
+    title: Tree cover and forest loss
+    theme: vegetation
+    licence: CC-BY-4.0
+    attribution: "Hansen/UMD/Google/USGS/NASA"
+    resolution: 30 m
+    cadence: annual
+    gee:
+      collection: UMD/hansen/global_forest_change_2023_v1_11
+      bands: [treecover2000, loss, lossyear, gain]
+      reducer: mosaic
+      scale: 30
+    notes: >
+      Tree cover, not forest. The dataset counts cocoa shade trees and oil
+      palm plantations as cover, which matters enormously in Ghana's cocoa
+      belt where the distinction between forest and farm is the whole
+      question.
+
+  # ── Land cover ─────────────────────────────────────────────────────────
+
+  - id: esa_worldcover
+    title: Land cover, 10 m
+    theme: landcover
+    licence: CC-BY-4.0
+    attribution: "ESA WorldCover project, Contains modified Copernicus data"
+    resolution: 10 m
+    cadence: annual
+    gee:
+      collection: ESA/WorldCover/v200
+      bands: [Map]
+      reducer: mosaic
+      scale: 10
+    notes: Eleven classes. The most usable national land cover for Ghana.
+
+  - id: dynamic_world
+    title: Dynamic World, near real time land cover
+    theme: landcover
+    licence: CC-BY-4.0
+    attribution: "Google Dynamic World, World Resources Institute"
+    resolution: 10 m
+    cadence: 5 days
+    gee:
+      collection: GOOGLE/DYNAMICWORLD/V1
+      bands: [label, built, trees, crops, water]
+      reducer: mode
+      scale: 10
+    notes: >
+      Per-Sentinel-2-pass land cover, so change can be watched rather than
+      inferred between annual snapshots.
+
+  # ── Climate and water ──────────────────────────────────────────────────
+
+  - id: imerg_precipitation
+    title: Rainfall rate
+    theme: climate
+    licence: public domain (NASA)
+    attribution: "NASA GPM IMERG"
+    resolution: 10 km
+    cadence: 30 minutes
+    browser:
+      kind: wmts_gibs
+      layer: IMERG_Precipitation_Rate
+      level: 6
+      format: png
+      temporal: true
+    notes: >
+      Satellite-estimated rain, not gauge measurement. Good for watching a
+      storm cross the country; poor for a rainfall total anyone will be held
+      to. CHIRPS is the better record for that.
+
+  - id: chirps_rainfall
+    title: CHIRPS rainfall
+    theme: climate
+    licence: public domain
+    attribution: "CHIRPS, Climate Hazards Center, UC Santa Barbara"
+    resolution: 5 km
+    cadence: daily and monthly
+    gee:
+      collection: UCSB-CHG/CHIRPS/DAILY
+      bands: [precipitation]
+      reducer: sum
+      scale: 5000
+    notes: >
+      Blends satellite estimates with station records, which makes it the
+      usual choice for seasonal rainfall in West Africa.
+
+  - id: modis_lst
+    title: Land surface temperature, day
+    theme: climate
+    licence: public domain (NASA)
+    attribution: "NASA EOSDIS GIBS, MODIS Terra LST"
+    resolution: 1 km
+    cadence: daily
+    browser:
+      kind: wmts_gibs
+      layer: MODIS_Terra_Land_Surface_Temp_Day
+      level: 7
+      format: png
+      temporal: true
+    notes: >
+      Ground temperature, which is not air temperature and runs far hotter
+      over bare soil and tarmac. Useful for urban heat in Accra and Kumasi;
+      not a substitute for a thermometer.
+
+  - id: jrc_surface_water
+    title: Surface water occurrence
+    theme: water
+    licence: CC-BY-4.0
+    attribution: "JRC Global Surface Water, Pekel et al. 2016"
+    resolution: 30 m
+    cadence: static, 1984-2021
+    gee:
+      collection: JRC/GSW1_4/GlobalSurfaceWater
+      bands: [occurrence, seasonality, recurrence]
+      reducer: mosaic
+      scale: 30
+    notes: >
+      How often water was seen at each pixel over 37 years. The closest thing
+      to a flood-prone map available without a hydraulic model, and it must be
+      described as observed history rather than risk.
+
+  # ── Fire and hazard ────────────────────────────────────────────────────
+
+  - id: modis_fires
+    title: Active fire detections
+    theme: hazard
+    licence: public domain (NASA)
+    attribution: "NASA EOSDIS GIBS, MODIS Thermal Anomalies"
+    resolution: 1 km
+    cadence: daily
+    browser:
+      kind: wmts_gibs
+      layer: MODIS_Terra_Thermal_Anomalies_All
+      level: 7
+      format: png
+      temporal: true
+    notes: >
+      Heat detected from orbit, which in Ghana between December and February
+      is mostly agricultural burning and bush fire. A detection is a hot pixel,
+      not a confirmed fire, and small fires under the pixel size are missed.
+
+  - id: burned_area
+    title: Burned area, monthly
+    theme: hazard
+    licence: public domain (NASA)
+    attribution: "NASA MODIS MCD64A1"
+    resolution: 500 m
+    cadence: monthly
+    gee:
+      collection: MODIS/061/MCD64A1
+      bands: [BurnDate, Uncertainty]
+      reducer: max
+      scale: 500
+    notes: Where fire actually burned, as opposed to where heat was detected.
+
+  # ── Night lights ───────────────────────────────────────────────────────
+
+  - id: viirs_nightlights
+    title: Night lights
+    theme: nightlights
+    licence: public domain (NASA)
+    attribution: "NASA EOSDIS GIBS, VIIRS Day Night Band"
+    resolution: 500 m
+    cadence: daily
+    browser:
+      kind: wmts_gibs
+      layer: VIIRS_SNPP_DayNightBand_At_Sensor_Radiance
+      level: 8
+      format: png
+      temporal: true
+    notes: >
+      Lit area is a rough proxy for electrification and economic activity, and
+      a poor one where lighting is intermittent. Ghana's load shedding shows up
+      as places going dark that have not depopulated.
+
+  - id: viirs_annual_lights
+    title: Night lights, annual composite
+    theme: nightlights
+    licence: public domain (NOAA)
+    attribution: "Earth Observation Group, Payne Institute, Colorado School of Mines"
+    resolution: 500 m
+    cadence: annual
+    gee:
+      collection: NOAA/VIIRS/DNB/ANNUAL_V22
+      bands: [average, cf_cvg]
+      reducer: mean
+      scale: 500
+    notes: Cloud-free annual composite. The one to use for change over years.
+
+  # ── Terrain ────────────────────────────────────────────────────────────
+
+  - id: copernicus_dem
+    title: Copernicus DEM GLO-30
+    theme: terrain
+    licence: Copernicus DEM licence
+    attribution: "© DLR e.V. 2010-2014, © Airbus Defence and Space GmbH"
+    resolution: 30 m
+    cadence: static
+    gee:
+      collection: COPERNICUS/DEM/GLO30
+      bands: [DEM]
+      reducer: mosaic
+      scale: 30
+    notes: >
+      Better than SRTM for Ghana, void-filled. The viewer's own relief uses
+      Terrarium tiles instead, which need no account; this is the version the
+      pipeline loads for slope, aspect and watershed work.
+
+  # ── Population ─────────────────────────────────────────────────────────
+
+  - id: worldpop_population
+    title: Population, 100 m
+    theme: population
+    licence: CC-BY-4.0
+    attribution: "WorldPop, University of Southampton"
+    resolution: 100 m
+    cadence: annual
+    gee:
+      collection: WorldPop/GP/100m/pop
+      bands: [population]
+      reducer: mosaic
+      scale: 100
+    notes: >
+      Modelled, not counted: census totals distributed by settlement pattern.
+      A cell value is an estimate of how many people the model puts there, and
+      should never be read as a headcount for a specific place.
+
+  - id: ghsl_built
+    title: Built-up surface
+    theme: population
+    licence: CC-BY-4.0
+    attribution: "European Commission JRC, Global Human Settlement Layer"
+    resolution: 100 m
+    cadence: 5 years, 1975-2030
+    gee:
+      collection: JRC/GHSL/P2023A/GHS_BUILT_S
+      bands: [built_surface]
+      reducer: mosaic
+      scale: 100
+    notes: >
+      Built surface in square metres per cell, back to 1975. The clearest
+      record of how far Accra and Kumasi have spread.

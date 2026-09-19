@@ -1,4 +1,4 @@
-"""Step 40 - quality control.
+"""Step 40 — quality control.
 
 Runs db/qc/checks.sql, then reads meta.qc_result back and decides whether the
 build passes. Errors fail the run with a non-zero exit code so CI stops;

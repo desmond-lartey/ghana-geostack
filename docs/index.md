@@ -24,7 +24,7 @@ and the source at [github.com/desmond-lartey/ghana-geostack](https://github.com/
 - **Consolidates Ghana's spatial data** into one database with one coordinate
   system, one catalogue and one set of conventions, rather than a dozen portals
   in a dozen formats.
-- **Ships the administrative boundaries** - 16 regions, 260 districts and 177
+- **Ships the administrative boundaries** — 16 regions, 260 districts and 177
   capitals from the Ghana Common Operational Dataset, p-coded at every level and
   openly licensed.
 - **Validates every result in SQL** before it is published. Row counts, areas,
@@ -109,14 +109,14 @@ Pages, is covered in [Deployment](deployment.md).
 - No hydraulic flood model. Exposure derives from observed surface water and
   terrain, and carries no return period or depth.
 - No cadastral or land-tenure data.
-- Facility attributes are thin - no bed counts, staffing or opening hours.
+- Facility attributes are thin — no bed counts, staffing or opening hours.
 - Population is modelled from census totals rather than counted.
 
 Planned work is listed in the [Roadmap](project/roadmap.md).
 
 ## Licence
 
-Code is MIT licensed. Data is not - each dataset retains the licence of its
+Code is MIT licensed. Data is not — each dataset retains the licence of its
 producer, and several restrict redistribution. Read
 [Data licensing](project/licensing.md) before publishing anything derived from
 this platform.

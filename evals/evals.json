@@ -39,7 +39,7 @@
       "prompt": "Which districts have the most buildings at risk of flooding?",
       "assertions": [
         "Agent queried analysis.district_flood_summary or rebuilt the equivalent",
-        "Agent explicitly corrected or qualified 'at risk of flooding' - the layer is observed historical surface water plus low terrain, not a modelled flood risk with a return period",
+        "Agent explicitly corrected or qualified 'at risk of flooding' — the layer is observed historical surface water plus low terrain, not a modelled flood risk with a return period",
         "Agent reported a rate (pct_exposed) alongside or instead of a raw count, because district areas vary by two orders of magnitude",
         "Agent did not present a district choropleth of a raw count without comment"
       ]
