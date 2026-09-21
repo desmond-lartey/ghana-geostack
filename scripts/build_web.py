@@ -170,36 +170,11 @@ def report() -> None:
     print(f"\nBuilt public/ — {count} files, {total / 1e6:.1f} MB")
 
 
-def index_earth_engine() -> None:
-    """Refresh the Earth Engine catalogue index, if the network allows.
-
-    Deliberately advisory. The viewer searches this index when it is present
-    and says so plainly when it is not, so a slow or unreachable Google must
-    never take the deployment down with it.
-    """
-    import subprocess
-
-    try:
-        result = subprocess.run(
-            [sys.executable, str(ROOT / "scripts" / "build_ee_catalog.py")],
-            capture_output=True, text=True, timeout=600)
-    except (subprocess.TimeoutExpired, OSError) as exc:
-        log(f"Earth Engine index skipped ({type(exc).__name__})")
-        return
-
-    for line in result.stderr.strip().splitlines():
-        log(line.strip())
-
-    if result.returncode != 0:
-        log("Earth Engine index skipped; the viewer falls back to the curated catalogue")
-
-
 def main() -> None:
     print("Building the static site")
     clean()
     copy_viewer()
     copy_data()
-    index_earth_engine()
     write_metadata()
     report()
 
