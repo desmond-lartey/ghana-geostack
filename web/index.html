@@ -11,7 +11,7 @@
 <meta name="gh:data-root" content="../data">
 <meta name="gh:tiles-url" content="">
 <meta name="gh:ask-url" content="/api/ask">
-<meta name="gh:overpass-url" content="https://overpass-api.de/api/interpreter,https://overpass.kumi.systems/api/interpreter,https://overpass.private.coffee/api/interpreter">
+<meta name="gh:overpass-url" content="https://overpass-api.de/api/interpreter,https://overpass.kumi.systems/api/interpreter,https://overpass.private.coffee/api/interpreter,https://overpass.osm.ch/api/interpreter,https://overpass.osm.jp/api/interpreter">
 
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="icon" href="favicon-32.png" sizes="32x32">
@@ -3606,7 +3606,7 @@ const LIVE_SOURCES = {
   node["healthcare"](${bbox});
   way["healthcare"](${bbox});
 );
-out center tags;`
+out center;`
   },
   education: {
     label: "Schools",
@@ -3620,7 +3620,7 @@ out center tags;`
   node["amenity"~"^(school|college|university|kindergarten)$"](${bbox});
   way["amenity"~"^(school|college|university|kindergarten)$"](${bbox});
 );
-out center tags;`
+out center;`
   },
   market: {
     label: "Markets and shops",
@@ -3636,7 +3636,7 @@ out center tags;`
   node["shop"="supermarket"](${bbox});
   way["shop"="supermarket"](${bbox});
 );
-out center tags;`
+out center;`
   },
   water: {
     label: "Water points",
@@ -3650,7 +3650,7 @@ out center tags;`
   node["amenity"~"^(drinking_water|water_point)$"](${bbox});
   node["man_made"~"^(water_well|water_tap|borehole)$"](${bbox});
 );
-out tags;`
+out body;`
   },
   road: {
     label: "Roads",
@@ -3661,7 +3661,7 @@ out tags;`
     note: "Classified roads. Zoom to a district or a town before fetching.",
     query: (bbox) => `[out:json][timeout:90];
 way["highway"~"^(motorway|trunk|primary|secondary|tertiary)$"](${bbox});
-out geom tags;`
+out geom;`
   },
   building: {
     label: "Buildings",
@@ -3675,7 +3675,7 @@ out geom tags;`
     note: "Footprints with height where OSM has it. Switch to 3D for a skyline. Zoom to a town first.",
     query: (bbox) => `[out:json][timeout:90];
 way["building"](${bbox});
-out geom tags;`
+out geom;`
   }
 };
 
@@ -3765,40 +3765,95 @@ async function fetchLive(id) {
   const problems = [];
   let payload = null;
 
+  // Each endpoint gets 30 seconds rather than 90. Five instances at 90 seconds
+  // is seven and a half minutes of a panel that looks frozen; the instances
+  // that are going to answer answer quickly, and the ones that are not are not
+  // worth waiting on.
+  const TIMEOUT_MS = 30000;
+
+  // POST is right for a long query, but a request blocked by CORS, a captive
+  // proxy or an extension fails identically to one that never left the
+  // machine. GET is a different enough path that it sometimes succeeds where
+  // POST did not, and it costs one extra try.
+  async function attempt(endpoint, method) {
+    const request = method === "GET"
+      ? [`${endpoint}?${body}`, { signal: AbortSignal.timeout(TIMEOUT_MS) }]
+      : [endpoint, {
+          method: "POST",
+          headers: { "content-type": "application/x-www-form-urlencoded" },
+          body,
+          signal: AbortSignal.timeout(TIMEOUT_MS)
+        }];
+
+    const response = await fetch(...request);
+
+    if (!response.ok) {
+      // Overpass explains itself in the body on a 400: a syntax error, an
+      // area that is too large, a rate limit. That text is the whole
+      // diagnosis, so it is kept rather than reduced to a status code.
+      let detail = "";
+      try {
+        detail = (await response.text())
+          .replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().slice(0, 160);
+      } catch { /* body unreadable, the status still tells us something */ }
+
+      const label = response.status === 429 ? "rate limited"
+                  : response.status === 504 ? "overloaded"
+                  : `HTTP ${response.status}`;
+      throw new Error(detail ? `${label} — ${detail}` : label);
+    }
+
+    return response.json();
+  }
+
   for (const [index, endpoint] of OVERPASS.entries()) {
     const shortName = new URL(endpoint).hostname;
     host.textContent = index === 0
       ? `Fetching from ${shortName}…`
-      : `${shortName} (attempt ${index + 1} of ${OVERPASS.length})…`;
+      : `${shortName} (${index + 1} of ${OVERPASS.length})…`;
 
-    try {
-      const response = await fetch(endpoint, {
-        method: "POST",
-        headers: { "content-type": "application/x-www-form-urlencoded" },
-        body,
-        signal: AbortSignal.timeout(90000)
-      });
-
-      if (response.status === 429 || response.status === 504) {
-        problems.push(`${shortName}: busy`);
-        continue;
+    for (const method of ["POST", "GET"]) {
+      try {
+        payload = await attempt(endpoint, method);
+        break;
+      } catch (err) {
+        const why = err.name === "TimeoutError"
+          ? `no answer in ${TIMEOUT_MS / 1000}s`
+          : err.name === "TypeError"
+            // A bare TypeError from fetch is the browser refusing to make or
+            // complete the request at all. The page never learns why — the
+            // reason is in the console, not in the exception.
+            ? "blocked by the browser (CORS, an extension, or the network)"
+            : (err.message || String(err));
+        problems.push(`${shortName} ${method}: ${why}`);
       }
-      if (!response.ok) {
-        problems.push(`${shortName}: HTTP ${response.status}`);
-        continue;
-      }
-
-      payload = await response.json();
-      break;
-    } catch (err) {
-      // A bare "Failed to fetch" means the request never left, or never came
-      // back: the instance is down, blocked, or the policy refused it.
-      problems.push(`${shortName}: ${err.name === "TimeoutError" ? "timed out" : (err.message ?? err)}`);
     }
+    if (payload) break;
   }
 
   if (!payload) {
-    host.textContent = `Could not reach OpenStreetMap. ${problems.join(" · ")}`;
+    // Every attempt, listed. A single truncated line in a narrow panel is why
+    // this looked like "nothing happens" rather than a named failure.
+    const list = problems.map((line) =>
+      `<li style="margin:2px 0">${line.replace(/</g, "&lt;")}</li>`).join("");
+
+    host.innerHTML =
+      `<strong>Could not reach OpenStreetMap.</strong>` +
+      `<ul style="margin:6px 0 6px 16px;padding:0;font-size:11px;line-height:1.5">${list}</ul>` +
+      `<button data-live-copy="${id}" style="font:inherit;font-size:11px;padding:3px 8px;` +
+      `border:1px solid var(--line);background:none;color:var(--accent);` +
+      `border-radius:4px;cursor:pointer">Copy this report</button>` +
+      `<div style="margin-top:6px;font-size:11px;opacity:.75">If every line says ` +
+      `<em>blocked by the browser</em>, the request is being stopped before it leaves — ` +
+      `an extension or the network, not OpenStreetMap.</div>`;
+
+    host.querySelector(`[data-live-copy="${id}"]`)?.addEventListener("click", (ev) => {
+      navigator.clipboard.writeText(
+        [`Layer: ${source.label}`, `Bbox: ${bbox}`, `Query:`, source.query(bbox),
+         "", "Attempts:", ...problems].join("\n"));
+      ev.target.textContent = "Copied";
+    });
+
     console.error("Overpass attempts failed:", problems);
     return;
   }
