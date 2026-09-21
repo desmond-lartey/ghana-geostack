@@ -7,6 +7,9 @@ standard library only, so the Vercel build image needs nothing installed.
 Configuration comes from the environment, which is how it is set in the Vercel
 project settings:
 
+    EE_CLIENT_ID  the site's Google OAuth client id, so visitors can sign
+                  in to Earth Engine without registering anything themselves.
+                  Public by design; not a secret.
     TILES_URL     public pg_tileserv endpoint. Leave unset for a
                   boundaries-only deployment, which is the safe default —
                   the viewer detects the absence and disables the layers that
@@ -32,6 +35,13 @@ ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "public"
 
 TILES_URL = os.getenv("TILES_URL", "").strip()
+
+# The site's own Earth Engine OAuth client. One client identifies this
+# application to Google; every visitor then signs in as themselves against
+# it. A client id is public by design — it travels in the page and in every
+# sign-in request — so it belongs in the build, not in a box each visitor
+# has to fill in. Leave it unset and the panel explains how to make one.
+EE_CLIENT_ID = os.getenv("EE_CLIENT_ID", "").strip()
 SITE_URL = os.getenv("SITE_URL", "").strip().rstrip("/")
 INCLUDE_EXPORTS = os.getenv("INCLUDE_EXPORTS", "1") != "0"
 
@@ -91,15 +101,28 @@ def copy_viewer() -> None:
 
     catalog = compiled_catalog()
     if catalog:
+        # Same hazard as the meta tags above: the compiled catalogue contains
+        # backslashes (an escaped quote inside a note, for one), and a
+        # replacement template would eat them.
         html = re.sub(r"const CATALOG = \[.*?\];\n",
-                      f"const CATALOG = {catalog};\n", html, count=1, flags=re.S)
+                      lambda _: f"const CATALOG = {catalog};\n",
+                      html, count=1, flags=re.S)
         log(f"catalogue recompiled from config/catalog.yml ({len(catalog) / 1024:.0f} KB)")
 
+    # Values are substituted through a function rather than a replacement
+    # template. A template re-reads backslashes and \1-style group references
+    # out of the *value*, so an id beginning with digits — \1 followed by
+    # "90828671167" reads as group 19 — crashes the build, and a value
+    # containing a backslash is silently mangled. A function is handed the
+    # value verbatim.
+    def set_meta(name: str, value: str, doc: str) -> str:
+        pattern = rf'(<meta name="{re.escape(name)}" content=")[^"]*(">)'
+        return re.sub(pattern, lambda m: m.group(1) + value + m.group(2), doc)
+
     # In the built site the data sits beside the page rather than one level up.
-    html = re.sub(r'(<meta name="gh:data-root" content=")[^"]*(">)',
-                  r"\1./data\2", html)
-    html = re.sub(r'(<meta name="gh:tiles-url" content=")[^"]*(">)',
-                  rf'\1{TILES_URL}\2', html)
+    html = set_meta("gh:data-root", "./data", html)
+    html = set_meta("gh:tiles-url", TILES_URL, html)
+    html = set_meta("gh:ee-client-id", EE_CLIENT_ID, html)
 
     (OUT / "index.html").write_text(html, encoding="utf-8")
 
@@ -108,7 +131,9 @@ def copy_viewer() -> None:
         if source_icon.exists():
             shutil.copy2(source_icon, OUT / icon)
     log(f"index.html ({len(html) / 1024:.0f} KB)"
-        + (f", tiles -> {TILES_URL}" if TILES_URL else ", boundaries only"))
+        + (f", tiles -> {TILES_URL}" if TILES_URL else ", boundaries only")
+        + (", Earth Engine client configured" if EE_CLIENT_ID
+           else ", no Earth Engine client (set EE_CLIENT_ID)"))
 
 
 def copy_data() -> None:

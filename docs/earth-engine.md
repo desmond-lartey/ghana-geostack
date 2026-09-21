@@ -14,23 +14,27 @@ are theirs.
 
 ## What you need
 
-Two things, and a project id alone is not enough.
+**If you are using a deployment someone else runs:** your own Earth Engine
+project, and nothing else. Press *Sign in with Google*, approve the access, and
+you are in. The site carries its own sign-in registration; you do not register
+anything.
 
-| | What it is | Where it comes from |
-| --- | --- | --- |
-| **Cloud project id** | The project registered for Earth Engine | `code.earthengine.google.com`, or an existing project |
-| **OAuth client id** | Permission for *this website* to sign you in | Google Cloud console → Credentials |
+The project is yours because Earth Engine runs the work against it — that is
+whose quota is spent and whose terms apply. It is free for non-commercial use;
+register one at `code.earthengine.google.com`.
 
-The second one catches people out. Earth Engine will not accept an anonymous
-browser, and a project id is a name, not a credential. The OAuth client is what
-says "this particular site may ask this particular person to sign in".
+**If you run the site yourself**, register one OAuth client for it, once. A
+client id identifies the *application* to Google, not the person, so one serves
+every visitor. It is public by design — it appears in the page source and in
+every sign-in request — and is set at build time, not typed in by users.
 
-### Creating the OAuth client
+### Registering the site's client
 
-1. Open the Google Cloud console for the project registered with Earth Engine.
-2. **APIs & Services → Credentials → Create credentials → OAuth client ID**.
-3. Application type: **Web application**.
-4. Under **Authorised JavaScript origins**, add the address the viewer is
+1. In the Google Cloud console, open the project you want the client to belong
+   to. This need not be the project anyone runs analyses against.
+2. **APIs & Services → Credentials → Create credentials → OAuth client ID**,
+   type **Web application**.
+3. Under **Authorised JavaScript origins**, add the address the viewer is
    served from, with no trailing slash:
 
    ```
@@ -39,16 +43,27 @@ says "this particular site may ask this particular person to sign in".
    ```
 
    Add the local one too if you run `make serve`. An origin that is not listed
-   is refused, and the error Google returns says only `idpiframe_initialization_failed`,
-   which is not a helpful sentence.
-5. Copy the client id. It looks like
-   `000000000000-abcdefg.apps.googleusercontent.com`.
+   is refused, and Google's error says only `idpiframe_initialization_failed`.
+4. Set the client id as `EE_CLIENT_ID` in the build — in Vercel, Settings →
+   Environment Variables — and redeploy. The panel then asks visitors for
+   nothing but their project.
 
-Both values are kept in your browser's local storage. Nothing is sent anywhere
-but Google, and the scope requested is `earthengine.readonly` — this page
-cannot write to your assets or start exports.
+   ```bash
+   EE_CLIENT_ID=000000000000-abc.apps.googleusercontent.com make web
+   ```
 
----
+   The client **secret** is not used. The browser flow has no way to keep one,
+   so there is nothing to protect and nothing to leak.
+
+5. **Decide who may sign in.** While the consent screen is in *Testing*, only
+   the accounts listed under **Audience → Test users** can sign in; everyone
+   else is refused with `access_denied`. To open it to the public, publish the
+   consent screen. `earthengine.readonly` is a sensitive scope, so Google may
+   require verification before an unlisted user can grant it — worth starting
+   early if the site is meant for others.
+
+If `EE_CLIENT_ID` is not set, the panel says so and offers a box to paste one
+into, so a fresh clone still works for the person running it.
 
 ## Using it
 
@@ -131,6 +146,12 @@ more than one you clicked.
 
 ## When it does not work
 
+The **Log** tab records every fetch, every layer drawn and every error, newest
+first, with a button that copies the lot. It is the first place to look, and
+the right thing to paste when reporting a problem: "it did not work" and a log
+are very different messages.
+
+
 **"Sign-in failed"** — almost always the authorised JavaScript origins. The
 address in the browser's URL bar must appear there exactly, including
 `https://` and any port, and without a trailing slash.
@@ -142,6 +163,12 @@ Earth Engine, or the Earth Engine API is not enabled on it.
 the image count before drawing, so a zero there is the answer. After that,
 check the band: a band name that does not exist in the collection produces an
 empty image rather than an error.
+
+**"Could not load the Earth Engine library"** — the client library is pinned
+to an exact version, because Google Hosted Libraries has no `latest` path. If
+that version is ever withdrawn the URL returns 404 and the panel cannot start.
+The error names the URL it tried; open it, and if it 404s, find a version that
+does not and change `EE_API` in `web/index.html`.
 
 **Search says the index is missing** — the catalogue index is built at deploy
 time by `scripts/build_ee_catalog.py`. If Google was unreachable during the

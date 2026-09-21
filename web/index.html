@@ -10,6 +10,7 @@
      repository as-is; scripts/build_web.py rewrites them for a static host. -->
 <meta name="gh:data-root" content="../data">
 <meta name="gh:tiles-url" content="">
+<meta name="gh:ee-client-id" content="">
 <meta name="gh:ask-url" content="/api/ask">
 <meta name="gh:overpass-url" content="https://overpass-api.de/api/interpreter,https://overpass.kumi.systems/api/interpreter,https://overpass.private.coffee/api/interpreter,https://overpass.osm.ch/api/interpreter,https://overpass.osm.jp/api/interpreter">
 
@@ -801,6 +802,7 @@ td { font-family: var(--font-mono); font-size: 12.5px; font-variant-numeric: tab
       <button class="tab" role="tab" id="tab-data"     aria-selected="false" aria-controls="pane-data">Data</button>
       <button class="tab" role="tab" id="tab-query"    aria-selected="false" aria-controls="pane-query">Query</button>
       <button class="tab" role="tab" id="tab-settings" aria-selected="false" aria-controls="pane-settings">Map</button>
+      <button class="tab" role="tab" id="tab-log"      aria-selected="false" aria-controls="pane-log">Log</button>
       <button class="tab" role="tab" id="tab-sources"  aria-selected="false" aria-controls="pane-sources">About</button>
     </div>
   </div>
@@ -879,20 +881,28 @@ td { font-family: var(--font-mono); font-size: 12.5px; font-variant-numeric: tab
           Engine account, so the quota and the terms are yours.</p>
 
         <div class="field">
-          <label for="ee-project">Cloud project ID</label>
+          <label for="ee-project">Your Earth Engine project</label>
           <input id="ee-project" type="text" spellcheck="false" placeholder="my-ee-project"
                  style="width:100%;height:38px;padding:0 11px;border-radius:var(--radius);border:1px solid var(--border);background:var(--surface-2);color:var(--text);font-family:var(--font-mono);font-size:13px">
+          <p class="legend-note">The Cloud project you registered with Earth
+            Engine. Work runs against it, so this one is yours and cannot be
+            shared. Get one free for non-commercial use at
+            <code>code.earthengine.google.com</code>.</p>
         </div>
 
-        <div class="field">
-          <label for="ee-client">OAuth client ID</label>
+        <!-- The site's own OAuth client, set at build time. Visible only when
+             the deployment has not configured one, which is the case for
+             someone running their own copy. -->
+        <div class="field" id="ee-client-field" hidden>
+          <label for="ee-client">OAuth client ID for this site</label>
           <input id="ee-client" type="text" spellcheck="false"
                  placeholder="000000000000-xxxx.apps.googleusercontent.com"
                  style="width:100%;height:38px;padding:0 11px;border-radius:var(--radius);border:1px solid var(--border);background:var(--surface-2);color:var(--text);font-family:var(--font-mono);font-size:13px">
-          <p class="legend-note">A project ID on its own cannot sign you in.
-            Earth Engine needs a web OAuth client whose authorised JavaScript
-            origin includes this site.
-            <a id="ee-help-toggle" href="#" style="color:var(--accent)">How to get one</a>.</p>
+          <p class="legend-note">This deployment has no OAuth client configured,
+            so it cannot offer a sign-in of its own and is asking you for one.
+            If you run this site, set <code>EE_CLIENT_ID</code> once in the
+            build and nobody is asked again.
+            <a id="ee-help-toggle" href="#" style="color:var(--accent)">How to make one</a>.</p>
         </div>
 
         <div id="ee-help" hidden class="legend-note"
@@ -906,6 +916,10 @@ td { font-family: var(--font-mono); font-size: 12.5px; font-variant-numeric: tab
             <li>Under <strong>Authorised JavaScript origins</strong> add
                 <code id="ee-origin"></code>.</li>
             <li>Copy the client ID it gives you into the box above.</li>
+            <li><strong>Audience → Test users → Add users</strong>, and add the
+                Google account you will sign in with. While the consent screen
+                is in testing, only listed accounts may sign in; everyone else
+                is refused with <code>access_denied</code>.</li>
           </ol>
           <p style="margin:8px 0 0">Both values stay in this browser. Nothing is
             sent anywhere except Google, and the sign-in is read-only.</p>
@@ -939,6 +953,17 @@ td { font-family: var(--font-mono); font-size: 12.5px; font-variant-numeric: tab
         looks empty, step back two or three.</p>
     </div>
     <div id="catalog-list"></div>
+  </div>
+
+  <div class="tabpanel" id="pane-log" role="tabpanel" aria-labelledby="tab-log">
+    <h3>What this page has done</h3>
+    <p class="legend-note">Every fetch, layer and error, newest first. Useful when
+      something did not work and you want to say exactly what happened.</p>
+    <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap">
+      <button class="btn btn-quiet" id="log-copy">Copy the log</button>
+      <button class="btn btn-quiet" id="log-clear">Clear</button>
+    </div>
+    <div id="log-list"></div>
   </div>
 
   <div class="tabpanel" id="pane-query" role="tabpanel" aria-labelledby="tab-query">
@@ -1116,6 +1141,50 @@ ORDER BY km2 DESC;</textarea>
    So the page notices it died, turns those three off, and reloads once. If the
    map then works, the cause is one of the three and the page says so. That is
    a diagnosis rather than a guess, and it leaves a working map either way. */
+/* A running log of what the page did.
+
+   Borrowed from the Savana QGIS plugin, which gives every panel a Log tab.
+   Half the trouble in this viewer has been failures that left no trace: a
+   fetch that returned nothing, a layer that drew blank, a library that never
+   loaded. Each was invisible after the fact, so diagnosing it meant
+   reproducing it. A log makes the last hundred events readable and copyable,
+   which is the difference between "it did not work" and a fixable report.
+
+   It lives in the classic script so it is recording before the module loads,
+   and it is capped so a long session cannot grow without bound. */
+window.__ghLog = [];
+
+window.ghLog = function (kind, message, detail) {
+  const entry = {
+    at: new Date().toISOString().slice(11, 19),
+    kind,                                  // ok | error | busy | info
+    message: String(message),
+    detail: detail === undefined ? "" : String(detail).slice(0, 500)
+  };
+  window.__ghLog.push(entry);
+  if (window.__ghLog.length > 200) window.__ghLog.shift();
+  window.dispatchEvent(new CustomEvent("gh:logged", { detail: entry }));
+  return entry;
+};
+
+// The browser's own complaints belong in the same place as ours.
+(function captureConsole() {
+  for (const level of ["warn", "error"]) {
+    const original = console[level];
+    console[level] = function (...args) {
+      try {
+        window.ghLog(level === "error" ? "error" : "info",
+                     args[0] instanceof Error ? args[0].message : String(args[0]),
+                     args.slice(1).map((a) => {
+                       try { return a instanceof Error ? a.message : JSON.stringify(a); }
+                       catch { return String(a); }
+                     }).join(" "));
+      } catch { /* never let logging break the thing it logs */ }
+      original.apply(console, args);
+    };
+  }
+})();
+
 window.__ghSafeMode = (() => {
   try { return localStorage.getItem("gh:safemode") === "1"; } catch { return false; }
 })();
@@ -1135,6 +1204,7 @@ function ghEnterSafeMode(reason) {
   let shown = false;
 
   function show(what, detail) {
+    window.ghLog?.("error", what, detail);
     if (shown) return;
     shown = true;
     const bar = document.createElement("div");
@@ -1908,6 +1978,11 @@ function toggleCatalogLayer(id) {
 
     const nativeZoom = entry.browser.kind === "wmts_gibs" ? entry.browser.level : 18;
     const tooClose = map.getZoom() > nativeZoom + 2;
+
+    window.ghLog?.(tilesArrived ? "ok" : "error",
+      `${entry.title}: ${tilesArrived} tiles drawn, ${tilesFailed} failed`,
+      entry.browser.temporal ? `date ${catalogDate()}, zoom ${map.getZoom().toFixed(1)}`
+                             : `zoom ${map.getZoom().toFixed(1)}`);
 
     if (tilesArrived === 0 && tilesFailed > 0) {
       status.innerHTML = entry.browser.temporal
@@ -4029,6 +4104,7 @@ async function fetchLive(id) {
     for (const method of ["POST", "GET"]) {
       try {
         payload = await attempt(endpoint, method);
+        window.ghLog?.("ok", `${source.label}: answered by ${shortName} (${method})`);
         break;
       } catch (err) {
         const why = err.name === "TimeoutError"
@@ -4040,6 +4116,7 @@ async function fetchLive(id) {
             ? "blocked by the browser (CORS, an extension, or the network)"
             : (err.message || String(err));
         problems.push(`${shortName} ${method}: ${why}`);
+        window.ghLog?.("error", `${source.label}: ${shortName} ${method} failed`, why);
       }
     }
     if (payload) break;
@@ -4298,6 +4375,61 @@ document.getElementById("sql").addEventListener("keydown", (e) => {
 setTheme(state.theme);
 initDuckDB();
 
+/* ── The Log pane ──────────────────────────────────────────────────────────
+   The recorder itself lives in the classic script at the top of the page, so
+   it is capturing before this module runs. This is only the reading of it. */
+
+const LOG_TONE = {
+  ok:    "var(--teal, #3E8E7E)",
+  error: "var(--clay)",
+  busy:  "var(--gold)",
+  info:  "var(--text-3)"
+};
+
+function renderLog() {
+  const host = document.getElementById("log-list");
+  if (!host) return;
+
+  const entries = (window.__ghLog || []).slice().reverse();
+  if (!entries.length) {
+    host.innerHTML = `<p class="hint">Nothing yet. Load a layer or run a fetch
+      and it will appear here.</p>`;
+    return;
+  }
+
+  host.innerHTML = entries.map((e) => `
+    <div style="padding:7px 0;border-bottom:1px solid var(--border);font-size:12.5px">
+      <div style="display:flex;gap:8px;align-items:baseline">
+        <span style="font-family:var(--font-mono);font-size:11px;opacity:.55">${e.at}</span>
+        <span style="color:${LOG_TONE[e.kind] || LOG_TONE.info}">${escapeHtml(e.message)}</span>
+      </div>
+      ${e.detail ? `<div style="font-family:var(--font-mono);font-size:11px;opacity:.6;
+        margin-top:2px;word-break:break-word">${escapeHtml(e.detail)}</div>` : ""}
+    </div>`).join("");
+}
+
+// Re-render only while the pane is actually being looked at.
+addEventListener("gh:logged", () => {
+  if (document.getElementById("pane-log")?.dataset.active === "true") renderLog();
+});
+
+document.getElementById("tab-log")?.addEventListener("click", renderLog);
+
+document.getElementById("log-copy")?.addEventListener("click", (event) => {
+  const text = (window.__ghLog || [])
+    .map((e) => `${e.at} [${e.kind}] ${e.message}${e.detail ? " — " + e.detail : ""}`)
+    .join("\n");
+  navigator.clipboard.writeText(
+    `Ghana GeoStack log\n${location.href}\n${navigator.userAgent}\n\n${text}`);
+  event.target.textContent = "Copied";
+  setTimeout(() => { event.target.textContent = "Copy the log"; }, 1500);
+});
+
+document.getElementById("log-clear")?.addEventListener("click", () => {
+  window.__ghLog.length = 0;
+  renderLog();
+});
+
 /* ── Earth Engine ──────────────────────────────────────────────────────────
    Search the whole Earth Engine catalogue, draw any of it over Ghana, and
    reduce it to a table the rest of this page can query and style.
@@ -4309,7 +4441,25 @@ initDuckDB();
    their own OAuth client, because a Cloud project id alone cannot sign
    anybody in.                                                              */
 
-const EE_API = "https://ajax.googleapis.com/ajax/libs/earthengine/0.1.408/earthengine-api.min.js";
+// Pinned to the version in Google's own client-side sample, and checked to
+// exist on the CDN. Google Hosted Libraries serves exact versions only —
+// there is no "latest" path — so a wrong number here is a plain 404 and
+// the panel is dead. Verify any bump by opening the URL before shipping it.
+const EE_API = "https://ajax.googleapis.com/ajax/libs/earthengine/0.1.365/earthengine-api.min.js";
+
+/* The site's OAuth client, stamped in at build time from EE_CLIENT_ID.
+
+   A client id identifies the *application* to Google, not the person. One
+   client belongs to this deployment, and every visitor signs in as themselves
+   against it, granting read-only access to their own Earth Engine account —
+   which is the flow people expect: press the button, approve, done. Asking
+   each visitor to register their own client, as this panel first did, is like
+   asking every reader of a website to register the website.
+
+   It is public by design: it travels in the page source and in every sign-in
+   request. The client *secret* is a different thing and is never used here,
+   because the browser flow does not need one. */
+const EE_SITE_CLIENT = meta("gh:ee-client-id", "");
 const EE_STORE = "ghana-geostack.ee";
 
 // Ghana's own outline, server-side, so the clip costs one filter rather than
@@ -4339,6 +4489,8 @@ function saveEeCredentials(project, client) {
 
 function eeStatus(message, tone) {
   const host = document.getElementById("ee-status");
+  window.ghLog?.(tone === "error" ? "error" : "info",
+                 "Earth Engine: " + message.replace(/<[^>]+>/g, " ").trim());
   if (!host) return;
   host.innerHTML = message;
   host.style.color = tone === "error" ? "var(--clay)" : "";
@@ -4374,10 +4526,17 @@ function loadScript(src) {
 
 async function connectEarthEngine() {
   const project = document.getElementById("ee-project").value.trim();
-  const client = document.getElementById("ee-client").value.trim();
+  // The deployment's client wins; the typed box exists only for a deployment
+  // that has none, and for anyone self-hosting.
+  const client = EE_SITE_CLIENT || document.getElementById("ee-client").value.trim();
 
-  if (!project || !client) {
-    eeStatus("Both the project id and the OAuth client id are needed.", "error");
+  if (!project) {
+    eeStatus("Enter the Cloud project you registered with Earth Engine.", "error");
+    return;
+  }
+  if (!client) {
+    eeStatus("This site has no Earth Engine sign-in configured. " +
+             "Its owner needs to set EE_CLIENT_ID in the build.", "error");
     return;
   }
   saveEeCredentials(project, client);
@@ -4386,7 +4545,10 @@ async function connectEarthEngine() {
   try {
     await loadScript(EE_API);
   } catch (err) {
-    eeStatus(`${err.message}. Check that ajax.googleapis.com is reachable.`, "error");
+    eeStatus(
+      `${err.message}.<br><span style="opacity:.8">Tried <code style="font-size:11px">${EE_API}</code>. ` +
+      `A 404 there means the pinned version no longer exists on the CDN; ` +
+      `anything else means the host is unreachable from this network.</span>`, "error");
     return;
   }
 
@@ -4401,8 +4563,14 @@ async function connectEarthEngine() {
       () => resolve(),
       (err) => {
         eeStatus(
-          `Sign-in failed: ${err}. The commonest cause is this site's address ` +
-          `missing from the client's authorised JavaScript origins.`, "error");
+          `Sign-in failed: ${err}.<br><span style="opacity:.85">` +
+          (EE_SITE_CLIENT
+            ? `If this says <code>access_denied</code>, this site's Google consent ` +
+              `screen is still in testing and only its listed test users may sign ` +
+              `in. Its owner has to publish the consent screen, or add you.`
+            : `The commonest cause is this site's address missing from the ` +
+              `client's authorised JavaScript origins.`) +
+          `</span>`, "error");
         resolve("failed");
       },
       ["https://www.googleapis.com/auth/earthengine.readonly"],
@@ -4614,6 +4782,9 @@ function isoYearsBefore(iso, years) {
 
 function eeDetailStatus(message, tone) {
   const host = document.getElementById("ee-detail-status");
+  window.ghLog?.(tone === "error" ? "error" : "info",
+                 (eeState.selected?.id || "Earth Engine") + ": " +
+                 message.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().slice(0, 160));
   if (!host) return;
   host.innerHTML = message;
   host.style.color = tone === "error" ? "var(--clay)" : "";
@@ -4672,7 +4843,11 @@ function buildEeImage(d, form) {
 /* ── Drawing it ────────────────────────────────────────────────────────── */
 
 async function addEeLayer(d) {
-  if (!eeState.ready) { eeDetailStatus("Not connected.", "error"); return; }
+  if (!eeState.ready) {
+    eeDetailStatus("Connect to Earth Engine first — the panel at the top of this tab.",
+                   "error");
+    return;
+  }
 
   const form = readEeForm(d);
   eeDetailStatus("Asking Earth Engine for tiles…");
@@ -4706,8 +4881,11 @@ async function addEeLayer(d) {
     const mapInfo = await new Promise((resolve, reject) =>
       layer.getMap({}, (info, err) => err ? reject(new Error(err)) : resolve(info)));
 
+    // Newer clients hand back a ready url template; older ones only a mapid.
+    // Both shapes are supported, the second matching the form used in the
+    // Savana plugin, so this is not pinned to one earthengine-api release.
     const template = mapInfo.urlFormat
-      || `https://earthengine.googleapis.com/v1/${mapInfo.mapid}/tiles/{z}/{x}/{y}`;
+      || `https://earthengine.googleapis.com/v1alpha/${mapInfo.mapid}/tiles/{z}/{x}/{y}`;
 
     const sourceId = `ee-${d.id.replace(/[^a-z0-9]/gi, "-").toLowerCase()}`;
     removeEeLayer(d.id);
@@ -4725,8 +4903,13 @@ async function addEeLayer(d) {
     eeState.layers.set(d.id, sourceId);
 
     eeDetailStatus(
-      `Drawn. <button class="btn btn-quiet" id="ee-remove">Remove</button>
-       <button class="btn btn-quiet" id="ee-opacity">Fade</button>`);
+      `<strong>Drawn.</strong> This is a picture — Earth Engine rendered these
+       tiles on its own servers, so nothing here can be queried or measured.
+       <em>Summarise</em> is what turns it into numbers.
+       <div style="margin-top:6px;display:flex;gap:8px">
+         <button class="btn btn-quiet" id="ee-remove">Remove</button>
+         <button class="btn btn-quiet" id="ee-opacity">Fade</button>
+       </div>`);
     document.getElementById("ee-remove").addEventListener("click", () => {
       removeEeLayer(d.id); eeDetailStatus("Removed.");
     });
@@ -4755,7 +4938,11 @@ function removeEeLayer(id) {
    the Query tab and the Style tab pick it up with no further plumbing.     */
 
 async function summariseEe(d, level) {
-  if (!eeState.ready) { eeDetailStatus("Not connected.", "error"); return; }
+  if (!eeState.ready) {
+    eeDetailStatus("Connect to Earth Engine first — the panel at the top of this tab.",
+                   "error");
+    return;
+  }
 
   const form = readEeForm(d);
   const stat = form.reducer === "sum" ? "sum" : "mean";
@@ -4852,6 +5039,15 @@ async function summariseEe(d, level) {
   const saved = eeCredentials();
   if (saved.project) document.getElementById("ee-project").value = saved.project;
   if (saved.client) document.getElementById("ee-client").value = saved.client;
+
+  // Ask for a client id only when this deployment cannot supply one.
+  const clientField = document.getElementById("ee-client-field");
+  if (clientField) clientField.hidden = Boolean(EE_SITE_CLIENT);
+
+  const signinLabel = document.getElementById("ee-signin");
+  if (signinLabel && EE_SITE_CLIENT) {
+    signinLabel.textContent = "Sign in with Google";
+  }
 
   const origin = document.getElementById("ee-origin");
   if (origin) origin.textContent = location.origin;

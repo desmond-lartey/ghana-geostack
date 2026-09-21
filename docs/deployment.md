@@ -32,6 +32,7 @@ Set these under **Settings → Environment Variables**. All are optional.
 
 | Variable | Effect |
 | --- | --- |
+| `EE_CLIENT_ID` | The site's Google OAuth client id. Set it and visitors sign in to Earth Engine with one button; unset and the panel asks each of them for a client id. Public by design, not a secret — see [Earth Engine in the browser](earth-engine.md) |
 | `TILES_URL` | Public pg_tileserv endpoint. Unset means a boundaries-only deployment |
 | `SITE_URL` | Canonical URL, used to write `sitemap.xml` |
 | `INCLUDE_EXPORTS` | Set to `0` to leave GeoParquet out of the deployment |
