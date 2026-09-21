@@ -4441,11 +4441,23 @@ document.getElementById("log-clear")?.addEventListener("click", () => {
    their own OAuth client, because a Cloud project id alone cannot sign
    anybody in.                                                              */
 
-// Pinned to the version in Google's own client-side sample, and checked to
-// exist on the CDN. Google Hosted Libraries serves exact versions only —
-// there is no "latest" path — so a wrong number here is a plain 404 and
-// the panel is dead. Verify any bump by opening the URL before shipping it.
-const EE_API = "https://ajax.googleapis.com/ajax/libs/earthengine/0.1.365/earthengine-api.min.js";
+// 0.1.388 or later is required, not merely preferred. Up to 0.1.387 the
+// library signed users in through gapi.auth2, the Google Sign-In JavaScript
+// platform library, which Google has since shut down: the call simply never
+// calls back, so the panel waits for a popup that will never open. The
+// 0.1.388 release notes record the move to Google Identity Services.
+//
+// Google Hosted Libraries serves exact versions only — there is no "latest"
+// path — so a wrong number here is a plain 404. Verify any bump by opening
+// the URL, and check the release notes before going below this version.
+const EE_API = "https://ajax.googleapis.com/ajax/libs/earthengine/0.1.388/earthengine-api.min.js";
+
+// Google Identity Services. The library loads this itself when it needs to,
+// but loading it first makes a blocked or unreachable accounts.google.com
+// show up as a named failure here rather than as a sign-in that hangs.
+const EE_GIS = "https://accounts.google.com/gsi/client";
+
+const EE_SCOPE = "https://www.googleapis.com/auth/earthengine.readonly";
 
 /* The site's OAuth client, stamped in at build time from EE_CLIENT_ID.
 
@@ -4543,6 +4555,12 @@ async function connectEarthEngine() {
 
   eeStatus("Loading the Earth Engine library…");
   try {
+    // Google Identity Services first. The Earth Engine library pulls it in
+    // itself, but loading it here means a blocked accounts.google.com is a
+    // named failure at this line rather than a sign-in that never answers.
+    await loadScript(EE_GIS).catch(() => {
+      throw new Error("could not load Google's sign-in library from accounts.google.com");
+    });
     await loadScript(EE_API);
   } catch (err) {
     eeStatus(
@@ -4552,37 +4570,13 @@ async function connectEarthEngine() {
     return;
   }
 
-  eeStatus("Waiting for Google sign-in…");
+  eeStatus("Checking with Google…");
 
-  // authenticateViaOauth tries silently first and only shows the popup when
-  // it has to, which is why the failure path below is a normal outcome
-  // rather than an error.
-  await new Promise((resolve) => {
-    ee.data.authenticateViaOauth(
-      client,
-      () => resolve(),
-      (err) => {
-        eeStatus(
-          `Sign-in failed: ${err}.<br><span style="opacity:.85">` +
-          (EE_SITE_CLIENT
-            ? `If this says <code>access_denied</code>, this site's Google consent ` +
-              `screen is still in testing and only its listed test users may sign ` +
-              `in. Its owner has to publish the consent screen, or add you.`
-            : `The commonest cause is this site's address missing from the ` +
-              `client's authorised JavaScript origins.`) +
-          `</span>`, "error");
-        resolve("failed");
-      },
-      ["https://www.googleapis.com/auth/earthengine.readonly"],
-      () => {
-        eeStatus("Sign-in needed — press Connect again and allow the popup.", "error");
-        resolve("failed");
-      },
-      true
-    );
-  });
-
-  if (!ee.data.getAuthToken || !ee.data.getAuthToken()) return;
+  const auth = await eeAuthenticate(client);
+  if (!auth.ok) {
+    eeStatus(auth.why, "error");
+    return;
+  }
 
   eeStatus("Initialising…");
   await new Promise((resolve) => {
@@ -4611,6 +4605,85 @@ async function connectEarthEngine() {
       "You can still use the curated catalogue below.";
 
   renderEeResults();
+}
+
+/* Signing in.
+
+   Two steps, because browsers allow a popup only from a click.
+
+   authenticateViaOauth configures the client and tries a silent sign-in: it
+   succeeds outright for someone already signed in who has granted access
+   before. When it cannot, it calls onImmediateFailed — which is a normal
+   outcome, not an error. At that point the sign-in has to be interactive, and
+   the click that started all this is long gone, so a fresh button is offered
+   and its click calls authenticateViaPopup. This is the shape of Google's own
+   client-side sample, which reveals a hidden sign-in button at the same point.
+
+   Everything resolves through one settle function with a watchdog, because
+   the failure that brought us here was a call that never came back at all and
+   left the panel saying "waiting" for as long as anyone cared to look. */
+
+function eeAuthenticate(client) {
+  return new Promise((resolve) => {
+    let settled = false;
+
+    const finish = (ok, why) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(watchdog);
+      resolve({ ok, why });
+    };
+
+    const watchdog = setTimeout(() => finish(false,
+      "Google did not answer within 30 seconds.<br>" +
+      '<span style="opacity:.85">Nothing came back at all, which usually means ' +
+      "accounts.google.com is blocked here, or a privacy extension is stopping " +
+      "the sign-in. The Log tab may name it.</span>"), 30000);
+
+    const failed = (err) => finish(false,
+      `Sign-in failed: ${String(err)}.<br><span style="opacity:.85">` +
+      (EE_SITE_CLIENT
+        ? "If this says <code>access_denied</code>, this site's Google consent " +
+          "screen is still in testing and only its listed test users may sign in. " +
+          "Its owner has to publish the consent screen, or add you to it."
+        : "The commonest cause is this site's address missing from the client's " +
+          "authorised JavaScript origins.") + "</span>");
+
+    try {
+      ee.data.authenticateViaOauth(
+        client,
+        () => finish(true),
+        failed,
+        [EE_SCOPE],
+        () => offerPopupSignIn(finish, failed),
+        true
+      );
+    } catch (err) {
+      finish(false, `The sign-in call itself failed: ${err.message || err}`);
+    }
+  });
+}
+
+function offerPopupSignIn(finish, failed) {
+  eeStatus(
+    "Google needs you to approve access." +
+    '<div style="margin-top:8px"><button class="btn btn-primary" id="ee-popup">' +
+    "Continue with Google</button></div>" +
+    '<div style="margin-top:6px;font-size:11px;opacity:.75">Opens a Google window. ' +
+    "If nothing appears, allow popups for this site and press it again.</div>");
+
+  const button = document.getElementById("ee-popup");
+  if (!button) { finish(false, "Could not show the sign-in button."); return; }
+
+  button.addEventListener("click", () => {
+    eeStatus("Opening Google…");
+    try {
+      // Called straight from the click, so the popup is not blocked.
+      ee.data.authenticateViaPopup(() => finish(true), failed);
+    } catch (err) {
+      finish(false, `Could not open the sign-in window: ${err.message || err}`);
+    }
+  }, { once: true });
 }
 
 /* ── Search ────────────────────────────────────────────────────────────── */

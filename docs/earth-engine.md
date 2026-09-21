@@ -152,9 +152,29 @@ the right thing to paste when reporting a problem: "it did not work" and a log
 are very different messages.
 
 
+**Sign-in sits on "Checking with Google" and never moves** — if this ever
+returns after thirty seconds with "Google did not answer", nothing came back
+from the sign-in call at all. Check that `accounts.google.com` is reachable and
+that no privacy extension is blocking it.
+
+If it hangs indefinitely on an older build, the cause was the client library
+version. Up to 0.1.387 it signed users in through `gapi.auth2`, Google's
+Sign-In JavaScript platform library, which has been shut down — the call never
+calls back, so the panel waits for a popup that will never open. `EE_API` must
+point at **0.1.388 or later**, the release that moved to Google Identity
+Services.
+
+**"Google needs you to approve access"** — expected, not a fault. A silent
+sign-in only works for someone already signed in who has granted access before.
+Otherwise the sign-in must be interactive, and browsers open a popup only from
+a click, so the panel offers a button. If pressing it does nothing, allow
+popups for this site.
+
 **"Sign-in failed"** — almost always the authorised JavaScript origins. The
 address in the browser's URL bar must appear there exactly, including
-`https://` and any port, and without a trailing slash.
+`https://` and any port, and without a trailing slash. If it says
+`access_denied`, the consent screen is still in testing and you are not on its
+test-user list.
 
 **"Earth Engine refused the project"** — the project is not registered for
 Earth Engine, or the Earth Engine API is not enabled on it.
