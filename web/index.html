@@ -1106,6 +1106,31 @@ ORDER BY km2 DESC;</textarea>
 /* Deliberately NOT a module: a reporter that lives inside the module
    cannot report the module failing to load, which is the failure that
    leaves a blank map and no explanation. */
+/* Safe mode.
+
+   Three things this page does at load are the newest and least settled parts
+   of the map library: globe projection, a terrain mesh, and hillshade from a
+   remote DEM. When the map dies during rendering there is no way to catch it
+   from inside — the throw happens in a render frame, not in our call stack.
+
+   So the page notices it died, turns those three off, and reloads once. If the
+   map then works, the cause is one of the three and the page says so. That is
+   a diagnosis rather than a guess, and it leaves a working map either way. */
+window.__ghSafeMode = (() => {
+  try { return localStorage.getItem("gh:safemode") === "1"; } catch { return false; }
+})();
+
+function ghEnterSafeMode(reason) {
+  try {
+    if (sessionStorage.getItem("gh:recovered") === "1") return false;  // once only
+    sessionStorage.setItem("gh:recovered", "1");
+    sessionStorage.setItem("gh:recovered-why", String(reason).slice(0, 300));
+    localStorage.setItem("gh:safemode", "1");
+  } catch { return false; }
+  location.reload();
+  return true;
+}
+
 (function surfaceErrors() {
   let shown = false;
 
@@ -1147,6 +1172,9 @@ ORDER BY km2 DESC;</textarea>
            "offline network or a content policy that omits that host all look " +
            "like this. The browser console has the underlying reason.");
     } else if (e.message) {
+      // A map-library error is recoverable; try safe mode before complaining.
+      const fromMap = /maplibre|terrain|globe/i.test(`${e.message} ${e.filename || ""}`);
+      if (fromMap && !window.__ghSafeMode && ghEnterSafeMode(e.message)) return;
       show("The page hit an error", `${e.message} (${e.filename || "?"}:${e.lineno || "?"})`);
     }
   }, true);
@@ -1158,6 +1186,7 @@ ORDER BY km2 DESC;</textarea>
   // handlers above will not catch if the failure was silent.
   addEventListener("load", () => setTimeout(() => {
     if (!document.querySelector(".maplibregl-canvas")) {
+      if (!window.__ghSafeMode && ghEnterSafeMode("no canvas after 10s")) return;
       show("The map did not start",
            "The map library loaded no canvas. Check the browser console, and " +
            "whether cdn.jsdelivr.net is reachable from this network.");
@@ -1478,6 +1507,15 @@ const state = {
   tilesOk: false
 };
 
+// Safe mode overrides whatever was saved. It is deliberately blunt: the three
+// features it disables are the ones that can kill the render loop, and a plain
+// flat map that works beats a clever one that does not.
+if (window.__ghSafeMode) {
+  state.projection = "mercator";
+  state.terrain = false;
+  state.hillshade = false;
+}
+
 document.documentElement.dataset.theme = state.theme;
 
 function colours() { return PALETTE[state.theme]; }
@@ -1517,7 +1555,55 @@ map.on("load", async () => {
   applyTerrain();
   setDimension(state.threeD);
   renderLayerList(); renderLegend();
+  announceSafeMode();
 });
+
+/* If the map reached this point in safe mode, it previously did not. Saying so
+   turns a silent downgrade into the one useful fact: which feature broke it. */
+function announceSafeMode() {
+  if (!window.__ghSafeMode) return;
+
+  let why = "";
+  try { why = sessionStorage.getItem("gh:recovered-why") || ""; } catch { /* blocked */ }
+
+  const bar = document.createElement("div");
+  bar.setAttribute("role", "status");
+  bar.style.cssText =
+    "position:fixed;inset:auto 12px 12px 12px;z-index:9998;max-width:720px;margin:0 auto;" +
+    "padding:12px 14px;border-radius:10px;border:1px solid var(--border-2);" +
+    "background:var(--surface);color:var(--text);font-size:13px;line-height:1.5;" +
+    "box-shadow:var(--shadow)";
+  bar.innerHTML =
+    `<strong>Running in safe mode.</strong> The map crashed on the previous load, so
+     the globe projection, 3D terrain and hillshade are off. Everything else works.
+     ${why ? `<div style="margin-top:5px;font-family:var(--font-mono);font-size:11px;opacity:.7">${
+       why.replace(/</g, "&lt;")}</div>` : ""}
+     <div style="margin-top:9px;display:flex;gap:8px;flex-wrap:wrap">
+       <button class="btn btn-quiet" id="gh-safe-off">Turn the effects back on</button>
+       <button class="btn btn-quiet" id="gh-safe-keep">Keep it off</button>
+     </div>`;
+  document.body.appendChild(bar);
+
+  bar.querySelector("#gh-safe-off").addEventListener("click", () => {
+    try {
+      localStorage.removeItem("gh:safemode");
+      sessionStorage.removeItem("gh:recovered");
+    } catch { /* blocked */ }
+    location.reload();
+  });
+  bar.querySelector("#gh-safe-keep").addEventListener("click", () => {
+    // Keeping it off means those settings stop being restored at all, so the
+    // next visit is a normal load rather than another recovery.
+    try {
+      store.set("projection", "mercator");
+      store.set("terrain", "0");
+      store.set("hillshade", "0");
+      localStorage.removeItem("gh:safemode");
+      sessionStorage.removeItem("gh:recovered");
+    } catch { /* blocked */ }
+    bar.remove();
+  });
+}
 
 function applyProjection() {
   try { map.setProjection({ type: state.projection }); } catch { /* older runtime */ }
@@ -1942,6 +2028,14 @@ function addTerrainSource() {
 }
 
 function applyTerrain() {
+  // The elevation source was previously added on every load, so every visitor
+  // carried the terrain machinery and its attribution whether or not they had
+  // asked for relief. It is added when something actually needs it.
+  if (!state.terrain && !state.hillshade) {
+    if (map.getLayer("hillshade")) map.removeLayer("hillshade");
+    try { map.setTerrain(null); } catch { /* nothing to clear */ }
+    return;
+  }
   addTerrainSource();
 
   if (map.getLayer("hillshade")) map.removeLayer("hillshade");
