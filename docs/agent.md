@@ -23,6 +23,10 @@ treated, and the model is given that list and left to work.
 | `run_sql` | Run a read-only query and return the rows |
 | `show_result_on_map` | Draw the last result |
 | `style_by_column` | Colour it by a numeric column, optionally in 3D |
+| `search_earth_engine` | Search the catalogue by keyword, with bands and class lists |
+| `add_earth_engine_layer` | Draw a dataset over Ghana, with its own colours and legend |
+| `land_cover_areas` | Square kilometres of each class per region, for classified data |
+| `summarise_earth_engine` | Reduce a continuous dataset onto regions or districts |
 
 The reading tools come first deliberately. An agent that can see the map before
 changing it makes far better decisions than one working blind, and the
@@ -44,6 +48,11 @@ With a key, try:
 - *Show me Ashanti and colour the districts by population*
 - *What is the largest district by area in the Northern Region?*
 - *Zoom to Tamale*
+- *Fetch ESA WorldCover, add it to the map, and compute land cover area per region*
+
+That last one is four tools in sequence: it searches the catalogue, draws the
+layer with the producer's colours and a legend, counts pixels per class per
+region on Google's machines, and queries the resulting table.
 
 It reports each step as it goes — which tool, which turn — and the **Log** tab
 keeps every call and its arguments.
@@ -61,11 +70,14 @@ no bound is a way to spend your money while you watch a spinner.
 **Read-only SQL.** `run_sql` refuses anything that is not a `SELECT` or `WITH`,
 by the same check the Query tab uses.
 
-**A confirmation gate** for tools marked as needing one, which shows the tool
-and its arguments and waits. Nothing currently needs it — none of the nine
-tools is destructive or spends anyone's quota. It exists because the Earth
-Engine tools will need it the moment they are added, and a gate built after the
-fact is a gate built in a hurry.
+**A confirmation gate.** The three Earth Engine tools spend your own quota on
+Google's machines, so each shows the tool and its arguments and waits for you.
+The other ten are local and instant and run freely.
+
+**The right tool for the kind of raster.** `land_cover_areas` refuses a
+continuous dataset and `summarise_earth_engine` refuses a classified one, each
+naming the other. The average of two class codes is not a number that means
+anything, and an agent that produces one produces it confidently.
 
 **Geometry is withheld from the model.** A query that selects `geom` keeps it
 for the map, but the model is sent the row count and the attributes only.

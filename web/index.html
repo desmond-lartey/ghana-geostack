@@ -4587,6 +4587,181 @@ const AGENT_TOOLS = {
     }
   },
 
+  /* — Earth Engine. These spend the person's own quota, so they are gated. — */
+
+  search_earth_engine: {
+    category: "earth_engine",
+    description: "Search the Earth Engine catalogue by keyword. Returns the " +
+                 "real dataset ids, their bands, resolution, date span and " +
+                 "whether they are classified. Call this before adding a " +
+                 "layer rather than guessing an id.",
+    schema: {
+      type: "object",
+      properties: {
+        query: { type: "string", description: "Keywords, e.g. land cover, elevation, rainfall" },
+        limit: { type: "number", description: "How many to return, default 8" }
+      },
+      required: ["query"]
+    },
+    run: async ({ query, limit }) => {
+      const catalog = await loadEeCatalog();
+      if (!catalog.length) {
+        return { error: "The catalogue index is not present in this deployment." };
+      }
+      const words = String(query).toLowerCase().split(/\s+/).filter(Boolean);
+      return catalog
+        .filter((d) => {
+          const hay = `${d.title} ${d.id} ${(d.keywords || []).join(" ")}`.toLowerCase();
+          return words.every((w) => hay.includes(w));
+        })
+        .slice(0, Math.min(limit ?? 8, 20))
+        .map((d) => ({
+          id: d.id, title: d.title, type: d.type,
+          resolution_m: d.resolution_m, start: d.start, end: d.end,
+          bands: (d.bands || []).map((b) => b.name),
+          classified: Boolean(d.classes),
+          classes: d.classes ? d.classes.names : undefined,
+          covers_ghana: d.covers_ghana
+        }));
+    }
+  },
+
+  add_earth_engine_layer: {
+    category: "earth_engine",
+    description: "Draw an Earth Engine dataset over Ghana. A classified " +
+                 "dataset is rendered with the producer's own colours and gets " +
+                 "a legend automatically; for anything else give a band and a " +
+                 "range. Use search_earth_engine first to get the id.",
+    schema: {
+      type: "object",
+      properties: {
+        dataset_id: { type: "string", description: "Exact Earth Engine id" },
+        start: { type: "string", description: "Start date, YYYY-MM-DD" },
+        end: { type: "string", description: "End date, YYYY-MM-DD" },
+        band: { type: "string", description: "Band to draw, for unclassified data" },
+        min: { type: "number" },
+        max: { type: "number" },
+        palette: { type: "string",
+                   description: "A named palette: " + Object.keys(EE_PALETTES).join(", ") },
+        reducer: { type: "string", description: "median, mean, max, min, sum or mosaic" }
+      },
+      required: ["dataset_id"]
+    },
+    run: async ({ dataset_id, start, end, band, min, max, palette, reducer }) => {
+      if (!eeState.ready) {
+        return { error: "Earth Engine is not connected. The person must sign in " +
+                        "on the Data tab first — you cannot do it for them." };
+      }
+      const catalog = await loadEeCatalog();
+      const dataset = catalog.find((d) => d.id === dataset_id);
+      if (!dataset) {
+        return { error: `No dataset "${dataset_id}". Use search_earth_engine.` };
+      }
+
+      showEeDataset(dataset_id);
+      await new Promise((r) => setTimeout(r, 60));   // let the form render
+
+      const set = (id, value) => {
+        const el = document.getElementById(id);
+        if (el && value !== undefined && value !== null && value !== "") el.value = value;
+      };
+      set("ee-start", start); set("ee-end", end);
+      set("ee-bands", band); set("ee-reducer", reducer);
+      set("ee-min", min); set("ee-max", max);
+      if (palette && EE_PALETTES[palette]) set("ee-palette", EE_PALETTES[palette].join(", "));
+
+      await addEeLayer(dataset);
+
+      return {
+        drawn: dataset.title,
+        classified: Boolean(dataset.classes),
+        classes: dataset.classes ? dataset.classes.names : undefined,
+        note: "This is a rendered picture, not data. To get numbers from it " +
+              "call summarise_earth_engine or land_cover_areas."
+      };
+    }
+  },
+
+  land_cover_areas: {
+    category: "earth_engine",
+    description: "For a CLASSIFIED dataset such as ESA WorldCover, compute how " +
+                 "many square kilometres of each class each region or district " +
+                 "holds, and its share of that zone. The result becomes a " +
+                 "queryable table. This is the right tool for land cover; a " +
+                 "mean or sum of class codes is meaningless.",
+    schema: {
+      type: "object",
+      properties: {
+        dataset_id: { type: "string" },
+        level: { type: "string", description: "region or district" }
+      },
+      required: ["dataset_id"]
+    },
+    run: async ({ dataset_id, level }) => {
+      if (!eeState.ready) return { error: "Earth Engine is not connected." };
+      const catalog = await loadEeCatalog();
+      const dataset = catalog.find((d) => d.id === dataset_id);
+      if (!dataset) return { error: `No dataset "${dataset_id}".` };
+      if (!dataset.classes) {
+        return { error: `${dataset_id} is not classified. Use summarise_earth_engine.` };
+      }
+
+      showEeDataset(dataset_id);
+      await new Promise((r) => setTimeout(r, 60));
+
+      const outcome = await runClassAreas(dataset, level === "district" ? "district" : "region");
+      if (!outcome) return { error: "The computation did not produce a table." };
+
+      lastAgentSql =
+        `SELECT ${outcome.nameColumn}, class_name, area_km2, pct_of_zone\n` +
+        `FROM ghana.${outcome.table}\nORDER BY area_km2 DESC;`;
+
+      return { table: `ghana.${outcome.table}`, rows: outcome.rows,
+               columns: [outcome.nameColumn, "class_name", "class_value",
+                         "area_km2", "pct_of_zone"],
+               next: "Query it with run_sql to answer the actual question." };
+    }
+  },
+
+  summarise_earth_engine: {
+    category: "earth_engine",
+    description: "For an UNCLASSIFIED dataset — elevation, temperature, " +
+                 "rainfall, population — reduce it onto regions or districts " +
+                 "and return a queryable table. Choose sum for counts and " +
+                 "rainfall, mean for temperature and cover.",
+    schema: {
+      type: "object",
+      properties: {
+        dataset_id: { type: "string" },
+        level: { type: "string", description: "region or district" },
+        band: { type: "string" },
+        statistic: { type: "string", description: "sum or mean" },
+        start: { type: "string" }, end: { type: "string" }
+      },
+      required: ["dataset_id"]
+    },
+    run: async ({ dataset_id, level, band, statistic, start, end }) => {
+      if (!eeState.ready) return { error: "Earth Engine is not connected." };
+      const catalog = await loadEeCatalog();
+      const dataset = catalog.find((d) => d.id === dataset_id);
+      if (!dataset) return { error: `No dataset "${dataset_id}".` };
+      if (dataset.classes) {
+        return { error: `${dataset_id} is classified. Use land_cover_areas.` };
+      }
+
+      showEeDataset(dataset_id);
+      await new Promise((r) => setTimeout(r, 60));
+      const set = (id, v) => { const el = document.getElementById(id);
+                               if (el && v) el.value = v; };
+      set("ee-bands", band); set("ee-start", start); set("ee-end", end);
+      set("ee-reducer", statistic === "sum" ? "sum" : "median");
+
+      await summariseEe(dataset, level === "district" ? "district" : "region");
+      return { note: "Summarised. The table name is in the Data tab and the " +
+                     "Log; query it with run_sql." };
+    }
+  },
+
   /* — Querying. Read-only, checked before it runs. — */
 
   run_sql: {
@@ -4688,7 +4863,11 @@ const AGENT_TOOLS = {
    asks first. GeoAgent marks this per tool with requires_confirmation and
    destructive; nothing here is destructive yet, so the gate is a single list
    and the machinery is in place for when something is. */
-const TOOLS_NEEDING_CONFIRMATION = new Set([]);
+const TOOLS_NEEDING_CONFIRMATION = new Set([
+  "add_earth_engine_layer",
+  "land_cover_areas",
+  "summarise_earth_engine"
+]);
 
 let lastAgentRows = null;
 let lastAgentSql = null;
@@ -4789,6 +4968,13 @@ How to work:
   p-code column, then show_result_on_map, then style_by_column if the answer
   is a quantity rather than a place.
 - Prefer zoom_to_place over guessing coordinates.
+- For satellite data: search_earth_engine first, then add_earth_engine_layer to
+  show it. To get numbers from it, land_cover_areas for a CLASSIFIED dataset
+  such as land cover, summarise_earth_engine for a continuous one such as
+  elevation or rainfall. A mean of class codes is meaningless, so never use the
+  wrong one. Both land in a table you then query with run_sql.
+- The Earth Engine tools ask the person for permission and spend their quota,
+  so do not call them speculatively.
 - Check get_map_state before moving the map if the person said "here" or "this
   area".
 
@@ -5323,6 +5509,99 @@ function escapeHtml(value) {
     ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 }
 
+/* Palettes for Earth Engine layers.
+
+   Two different problems wear the same word.
+
+   A CONTINUOUS dataset — elevation, temperature, rainfall — needs a ramp, and
+   which ramp is a real choice: a perceptually uniform one shows the data, a
+   rainbow invents structure that is not there. These are the usual scientific
+   ramps plus a few that suit terrain and water.
+
+   A CATEGORICAL dataset — land cover, burn severity, crop type — needs no ramp
+   at all. It ships a class table: this value is Tree cover and it is this
+   green, because the producer said so. Stretching class codes 10 to 95 across
+   a colour ramp produces a picture where the colours mean nothing. The class
+   table is used instead, and the classes are remapped to consecutive numbers
+   first because they are rarely consecutive to begin with. */
+
+const EE_PALETTES = {
+  viridis:  ["440154", "414487", "2a788e", "22a884", "7ad151", "fde725"],
+  magma:    ["000004", "3b0f70", "8c2981", "de4968", "fe9f6d", "fcfdbf"],
+  inferno:  ["000004", "420a68", "932667", "dd513a", "fca50a", "fcffa4"],
+  turbo:    ["30123b", "4145ab", "1ae4b6", "a4fc3b", "fb8022", "7a0403"],
+  terrain:  ["333333", "0a7d0a", "b7cf7a", "cfb53b", "8b5a2b", "ffffff"],
+  elevation:["1a3a5c", "2e7d32", "a5d6a7", "fff59d", "bf8040", "ffffff"],
+  water:    ["f7fbff", "c6dbef", "6baed6", "2171b5", "08306b"],
+  heat:     ["000080", "0080ff", "80ff80", "ffff00", "ff8000", "ff0000"],
+  vegetation:["a50026", "d73027", "fdae61", "ffffbf", "a6d96a", "1a9850"],
+  greys:    ["000000", "404040", "808080", "c0c0c0", "ffffff"]
+};
+
+const EE_PALETTE_NOTE = {
+  viridis:  "Perceptually uniform. The safe default for any quantity.",
+  magma:    "Perceptually uniform, dark to light. Good on a dark basemap.",
+  inferno:  "Perceptually uniform, high contrast at the top of the range.",
+  turbo:    "High contrast, not perceptually uniform. Good for spotting detail.",
+  terrain:  "Land-shaped: green lowland through brown upland to white peaks.",
+  elevation:"Water, lowland, upland, snow. For a DEM shown as a map.",
+  water:    "Pale to deep blue. For depth, occurrence and rainfall.",
+  heat:     "Cold to hot. For temperature, where that reading is intended.",
+  vegetation:"Red through yellow to green, as NDVI is conventionally shown.",
+  greys:    "No colour. Honest for anything where colour would imply meaning."
+};
+
+/* Earth Engine cannot paint class 10 and class 95 from a six-colour palette
+   unless the values are made consecutive first, so they are remapped to
+   0…n-1 and the palette lines up with them. */
+function eeClassImage(image, classes) {
+  return image.select([classes.band])
+    .remap(classes.values, classes.values.map((_, i) => i))
+    .rename("class_index");
+}
+
+function eeClassVis(classes) {
+  return { min: 0, max: classes.values.length - 1, palette: classes.colours };
+}
+
+/* A legend, which a class table makes possible and a colour ramp does not. */
+function renderEeLegend(host, dataset, form) {
+  if (!host) return;
+
+  if (dataset.classes) {
+    const c = dataset.classes;
+    host.innerHTML =
+      `<div style="margin-top:8px">
+         <div style="font-size:11px;opacity:.7;margin-bottom:4px">
+           ${c.names.length} classes, coloured by the producer</div>
+         ${c.names.map((name, i) => `
+           <div style="display:flex;gap:7px;align-items:center;margin:2px 0;font-size:11.5px">
+             <span style="width:13px;height:13px;border-radius:3px;flex:none;
+                          background:#${escapeHtml(c.colours[i])};
+                          border:1px solid rgba(0,0,0,.25)"></span>
+             <span>${escapeHtml(name)}</span>
+             <span style="opacity:.45;font-family:var(--font-mono);font-size:10px">
+               ${c.values[i]}</span>
+           </div>`).join("")}
+       </div>`;
+    return;
+  }
+
+  const stops = form.palette.length ? form.palette : null;
+  if (!stops) { host.innerHTML = ""; return; }
+
+  host.innerHTML =
+    `<div style="margin-top:8px">
+       <div style="height:11px;border-radius:3px;border:1px solid var(--border);
+                   background:linear-gradient(to right,${
+                     stops.map((s) => "#" + s.replace(/^#/, "")).join(",")})"></div>
+       <div style="display:flex;justify-content:space-between;font-size:10.5px;
+                   font-family:var(--font-mono);opacity:.7;margin-top:2px">
+         <span>${escapeHtml(form.min)}</span><span>${escapeHtml(form.max)}</span>
+       </div>
+     </div>`;
+}
+
 /* ── One dataset: dates, compositing, styling ──────────────────────────── */
 
 function showEeDataset(id) {
@@ -5351,6 +5630,11 @@ function showEeDataset(id) {
 
       ${d.covers_ghana ? "" : `<p class="legend-note" style="color:var(--clay)">
         This dataset's footprint does not cover Ghana. It will draw nothing here.</p>`}
+
+      ${d.classes ? `<p class="legend-note">This is a classified dataset. It carries
+        its own legend — ${d.classes.names.length} classes with the producer's colours —
+        so there is no range or palette to choose. <em>Land cover area by region</em>
+        measures how much of each class each region holds.</p>` : ""}
 
       ${d.type === "table" ? `<p class="legend-note">A vector collection. Draw it to
         see its features; the summary tools below apply to rasters.</p>` : `
@@ -5399,26 +5683,79 @@ function showEeDataset(id) {
           </div>
         </div>
         <div class="field">
-          <label for="ee-palette">Palette</label>
+          <label for="ee-palette-pick">Palette</label>
+          <select id="ee-palette-pick" style="width:100%;height:34px;border-radius:var(--radius);border:1px solid var(--border);background:var(--surface-2);color:var(--text);font-size:13px">
+            <option value="">${vis.palette ? "The producer's own" : "None — greyscale"}</option>
+            ${Object.keys(EE_PALETTES).map((k) =>
+              `<option value="${k}">${k}</option>`).join("")}
+            <option value="custom">Custom…</option>
+          </select>
+          <p class="legend-note" id="ee-palette-note">${vis.label
+            ? "Pre-filled with the producer's own suggested rendering."
+            : "This dataset ships no suggested rendering, so pick one."}</p>
           <input id="ee-palette" type="text" spellcheck="false"
                  value="${escapeHtml((vis.palette || []).join(", "))}"
-                 placeholder="leave empty for greyscale, or for a true-colour band set"
-                 style="width:100%;height:34px;padding:0 10px;border-radius:var(--radius);border:1px solid var(--border);background:var(--surface-2);color:var(--text);font-family:var(--font-mono);font-size:12px">
-          <p class="legend-note">${vis.label
-            ? "Pre-filled with the producer's own suggested rendering."
-            : "This dataset ships no suggested rendering, so these are guesses."}</p>
+                 placeholder="comma-separated hex colours"
+                 style="width:100%;height:34px;margin-top:6px;padding:0 10px;border-radius:var(--radius);border:1px solid var(--border);background:var(--surface-2);color:var(--text);font-family:var(--font-mono);font-size:12px">
         </div>`}
+
+      <div id="ee-legend"></div>
 
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px">
         <button class="btn btn-primary" id="ee-add">Add to map</button>
         ${d.type === "table" ? "" : `
+        ${d.classes ? `
+        <button class="btn btn-secondary" id="ee-class-region">Land cover area by region</button>
+        <button class="btn btn-secondary" id="ee-class-district">By district</button>` : `
         <button class="btn btn-secondary" id="ee-zonal-region">Summarise by region</button>
-        <button class="btn btn-secondary" id="ee-zonal-district">Summarise by district</button>`}
+        <button class="btn btn-secondary" id="ee-zonal-district">Summarise by district</button>`}`}
       </div>
       <div id="ee-detail-status" class="hint" style="margin-top:8px"></div>
     </div>`;
 
+  const picker = document.getElementById("ee-palette-pick");
+  const hexBox = document.getElementById("ee-palette");
+  const note = document.getElementById("ee-palette-note");
+
+  picker?.addEventListener("change", () => {
+    const choice = picker.value;
+
+    if (choice === "custom") {
+      hexBox.focus();
+      if (note) note.textContent = "Comma-separated hex colours, light to dark.";
+    } else if (choice && EE_PALETTES[choice]) {
+      // The hex box stays the single source of truth, so a named palette and a
+      // hand-typed one can never disagree about what is actually drawn.
+      hexBox.value = EE_PALETTES[choice].join(", ");
+      if (note) note.textContent = EE_PALETTE_NOTE[choice] ?? "";
+    } else {
+      hexBox.value = (d.vis?.palette ?? []).join(", ");
+      if (note) note.textContent = d.vis?.palette
+        ? "The producer's own suggested rendering."
+        : "No palette: a single band draws as greyscale.";
+    }
+    renderEeLegend(document.getElementById("ee-legend"), d, readEeForm(d));
+  });
+
+  hexBox?.addEventListener("input", () =>
+    renderEeLegend(document.getElementById("ee-legend"), d, readEeForm(d)));
+
+  for (const id of ["ee-min", "ee-max"]) {
+    document.getElementById(id)?.addEventListener("input", () =>
+      renderEeLegend(document.getElementById("ee-legend"), d, readEeForm(d)));
+  }
+
+  // Draw the legend immediately, so the colours are visible before the layer is.
+  renderEeLegend(document.getElementById("ee-legend"), d, readEeForm(d));
+
   document.getElementById("ee-add").addEventListener("click", () => addEeLayer(d));
+  document.getElementById("ee-class-region")
+    ?.addEventListener("click", () => runClassAreas(d, "region").catch((err) =>
+      eeDetailStatus(`Earth Engine refused it: ${escapeHtml(err.message || err)}`, "error")));
+  document.getElementById("ee-class-district")
+    ?.addEventListener("click", () => runClassAreas(d, "district").catch((err) =>
+      eeDetailStatus(`Earth Engine refused it: ${escapeHtml(err.message || err)}`, "error")));
+
   document.getElementById("ee-zonal-region")
     ?.addEventListener("click", () => summariseEe(d, "region"));
   document.getElementById("ee-zonal-district")
@@ -5480,7 +5817,9 @@ function buildEeImage(d, form) {
   const region = ghana.geometry();
 
   if (d.type === "image") {
-    return { image: ee.Image(d.id).clip(region), region };
+    const base = ee.Image(d.id);
+    return { image: (d.classes ? eeClassImage(base, d.classes) : base).clip(region),
+             region, classed: Boolean(d.classes) };
   }
 
   let collection = ee.ImageCollection(d.id).filterBounds(region);
@@ -5492,7 +5831,11 @@ function buildEeImage(d, form) {
     min: (c) => c.min(), sum: (c) => c.sum(), mosaic: (c) => c.mosaic()
   }[form.reducer] || ((c) => c.median());
 
-  return { image: reduce(collection).clip(region), region, collection };
+  const composite = reduce(collection);
+  return {
+    image: (d.classes ? eeClassImage(composite, d.classes) : composite).clip(region),
+    region, collection, classed: Boolean(d.classes)
+  };
 }
 
 /* ── Drawing it ────────────────────────────────────────────────────────── */
@@ -5519,6 +5862,9 @@ async function addEeLayer(d) {
       // with no passes over Ghana — and it fails silently as blank tiles, so
       // it is checked before anything is drawn.
       const built = buildEeImage(d, form);
+      // A class table replaces the min, max and palette entirely: the values
+      // have been remapped to 0…n-1, so the producer's colours line up.
+      const vis = built.classed ? eeClassVis(d.classes) : eeVisParams(form);
       if (built.collection) {
         const n = await new Promise((resolve) =>
           built.collection.size().evaluate((v, err) => resolve(err ? null : v)));
@@ -5530,7 +5876,7 @@ async function addEeLayer(d) {
         }
         if (n !== null) eeDetailStatus(`${n} images found. Building the composite…`);
       }
-      layer = built.image.visualize(eeVisParams(form));
+      layer = built.image.visualize(vis);
     }
 
     const mapInfo = await new Promise((resolve, reject) =>
@@ -5556,6 +5902,8 @@ async function addEeLayer(d) {
                    paint: { "raster-opacity": 0.85 } }, firstVector);
 
     eeState.layers.set(d.id, sourceId);
+
+    renderEeLegend(document.getElementById("ee-legend"), d, form);
 
     eeDetailStatus(
       `<strong>Drawn.</strong> This is a picture — Earth Engine rendered these
@@ -5682,6 +6030,117 @@ async function summariseEe(d, level) {
   } catch (err) {
     eeDetailStatus(`Earth Engine refused it: ${escapeHtml(err.message || err)}`, "error");
   }
+}
+
+/* ── Class areas by zone ───────────────────────────────────────────────────
+
+   How much of each region is forest, cropland, built-up, water. A mean or a
+   sum is meaningless on a classified raster — the average of "tree cover" and
+   "mangroves" is nothing — so the reduction counts pixels per class instead
+   and multiplies by pixel area.
+
+   ee.Reducer.frequencyHistogram gives {classValue: pixelCount} per zone. The
+   count is of the REMAPPED index, so it is read back through the class table
+   to recover the producer's label. Area is the count times the square of the
+   native resolution, which is right for an equal-area projection and close
+   enough at Ghana's latitude for a figure quoted to three significant digits.  */
+
+async function classAreasByZone(dataset, level) {
+  const form = readEeForm(dataset);
+  const classes = dataset.classes;
+  const scale = Math.max(dataset.resolution_m || 100, 10);
+
+  const asset = level === "region"
+    ? "projects/sat-io/open-datasets/geoboundaries/CGAZ_ADM1"
+    : "projects/sat-io/open-datasets/geoboundaries/CGAZ_ADM2";
+  const nameColumn = level === "region" ? "adm1_name" : "adm2_name";
+
+  const zones = ee.FeatureCollection(asset).filter(ee.Filter.eq("shapeGroup", "GHA"));
+  const { image } = buildEeImage(dataset, form);
+
+  const counted = image.reduceRegions({
+    collection: zones,
+    reducer: ee.Reducer.frequencyHistogram(),
+    scale,
+    tileScale: 4
+  });
+
+  const raw = await new Promise((resolve, reject) =>
+    counted.select(["shapeName", "histogram"], null, false)
+      .evaluate((value, err) => err ? reject(new Error(err)) : resolve(value)));
+
+  const pixelKm2 = (scale * scale) / 1e6;
+  const rows = [];
+
+  for (const feature of raw?.features ?? []) {
+    const zone = feature.properties?.shapeName;
+    const histogram = feature.properties?.histogram;
+    if (!zone || !histogram) continue;
+
+    const total = Object.values(histogram).reduce((a, b) => a + b, 0);
+    if (!total) continue;
+
+    for (const [index, count] of Object.entries(histogram)) {
+      const i = Number(index);
+      if (!Number.isInteger(i) || i < 0 || i >= classes.names.length) continue;
+      rows.push({
+        [nameColumn]: zone,
+        class_name: classes.names[i],
+        class_value: classes.values[i],
+        area_km2: Number((count * pixelKm2).toFixed(2)),
+        pct_of_zone: Number(((count / total) * 100).toFixed(2))
+      });
+    }
+  }
+  return { rows, nameColumn, scale };
+}
+
+/* Run it, land it in the database, and say something true about the result. */
+async function runClassAreas(dataset, level) {
+  if (!eeState.ready) {
+    eeDetailStatus("Connect to Earth Engine first.", "error");
+    return null;
+  }
+  if (!dataset.classes) {
+    eeDetailStatus("This dataset has no class table, so there are no class " +
+                   "areas to compute. Use Summarise instead.", "error");
+    return null;
+  }
+
+  eeDetailStatus(`Counting pixels per class in every ${level}. At ` +
+                 `${dataset.resolution_m} m over Ghana this takes a minute or two.`);
+
+  const { rows, nameColumn, scale } = await classAreasByZone(dataset, level);
+  if (!rows.length) {
+    eeDetailStatus("The reduction returned nothing. Check the date range.", "error");
+    return null;
+  }
+
+  const table = `ee_${dataset.id.split("/").pop().toLowerCase()
+                       .replace(/[^a-z0-9]/g, "_")}_class_${level}`;
+  const columns = [nameColumn, "class_name", "class_value", "area_km2", "pct_of_zone"];
+  const csv = [columns.join(",")]
+    .concat(rows.map((r) => columns.map((c) => csvEscape(r[c])).join(",")))
+    .join("\n");
+
+  await duckDb.registerFileText(`${table}.csv`, csv);
+  await conn.query(
+    `CREATE OR REPLACE TABLE ghana.${table} AS
+     SELECT * FROM read_csv_auto('${table}.csv', header = true);`);
+
+  const zones = new Set(rows.map((r) => r[nameColumn])).size;
+  const biggest = [...rows].sort((a, b) => b.area_km2 - a.area_km2)[0];
+
+  eeDetailStatus(
+    `<strong>${rows.length} rows — ${zones} ${level}s by class.</strong>
+     Largest single block: ${escapeHtml(biggest.class_name)} in
+     ${escapeHtml(biggest[nameColumn])}, ${biggest.area_km2.toLocaleString()} km².
+     <br>Queryable as <code style="font-family:var(--font-mono);color:var(--accent)">ghana.${table}</code>
+     <div style="margin-top:6px;font-size:11px;opacity:.7">Counted at ${scale} m.
+       Areas are pixel counts times pixel area, so a class thinner than one
+       pixel is not represented at all.</div>`);
+
+  return { table, nameColumn, rows: rows.length };
 }
 
 /* ── Wiring ────────────────────────────────────────────────────────────── */

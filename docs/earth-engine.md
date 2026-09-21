@@ -103,6 +103,61 @@ layer that failed.
 
 ---
 
+## Palettes and legends
+
+A dataset comes with its own rendering, and which kind it is changes everything.
+
+**A classified dataset** — land cover, burn severity, crop type — ships a class
+table: this value is Tree cover and it is this green, because the producer said
+so. There is no range or palette to choose, and choosing one would be wrong.
+Class values are rarely consecutive (WorldCover runs 10, 20, 30 … 95), so they
+are remapped to 0…n-1 before drawing, which is the only way a palette lines up
+with them. A legend is drawn from the same table, because a class table makes
+one possible and a colour ramp does not.
+
+**A continuous dataset** — elevation, temperature, rainfall — needs a ramp, and
+which ramp is a real choice. Ten are offered with a note on each:
+
+| Palette | When |
+| --- | --- |
+| `viridis`, `magma`, `inferno` | Perceptually uniform. The safe default for a quantity |
+| `turbo` | High contrast for spotting detail; not perceptually uniform |
+| `terrain`, `elevation` | Land-shaped, for a DEM shown as a map |
+| `water` | Pale to deep blue, for depth, occurrence and rainfall |
+| `heat` | Cold to hot, where that reading is intended |
+| `vegetation` | Red through green, as NDVI is conventionally shown |
+| `greys` | No colour, for anything where colour would imply meaning |
+
+Picking one fills the hex box, which stays the single source of truth, so a
+named palette and a hand-typed one can never disagree about what is drawn. The
+legend updates as you type.
+
+---
+
+## Land cover area by region
+
+For a classified dataset the summarise buttons are replaced by **Land cover
+area by region** and **by district**, because a mean or a sum of class codes is
+meaningless — the average of Tree cover and Mangroves is nothing.
+
+It counts pixels per class per zone and multiplies by pixel area, giving one
+row per zone per class with `area_km2` and `pct_of_zone`, in a queryable table:
+
+```sql
+SELECT adm1_name, class_name, area_km2, pct_of_zone
+FROM ghana.ee_v200_class_region
+WHERE class_name = 'Tree cover'
+ORDER BY area_km2 DESC;
+```
+
+Two things to know about the numbers. They are pixel counts times pixel area,
+so a class thinner than one pixel is not represented at all — a hedgerow
+between two fields is simply absent at 10 m. And the count is of the remapped
+index, read back through the class table, so the class values in the output are
+the producer's own.
+
+---
+
 ## The part that matters
 
 A raster on the map is a picture. **Summarise by region** and **Summarise by

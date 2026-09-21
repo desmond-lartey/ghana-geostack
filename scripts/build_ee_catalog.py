@@ -164,11 +164,31 @@ def summarise(document: dict) -> dict | None:
         return None
 
     summaries = document.get("summaries") or {}
-    bands = [
-        {"name": b.get("name"), "description": (b.get("description") or "")[:120]}
-        for b in (summaries.get("eo:bands") or [])
-        if b.get("name")
-    ]
+
+    bands = []
+    classes = None
+    for band in (summaries.get("eo:bands") or []):
+        if not band.get("name"):
+            continue
+        entry = {"name": band["name"],
+                 "description": (band.get("description") or "")[:120]}
+
+        # A class table is the dataset's real legend. Land cover, burn severity,
+        # crop type and every other categorical raster ships one, and without it
+        # the only option is to stretch integer class codes across a colour ramp
+        # and produce a picture that means nothing.
+        table = band.get("gee:classes")
+        if table:
+            entry["classes"] = len(table)
+            if classes is None:
+                classes = {
+                    "band": band["name"],
+                    "values": [c.get("value") for c in table],
+                    "colours": [str(c.get("color") or "888888").lstrip("#") for c in table],
+                    "names": [(c.get("description") or str(c.get("value")))[:48]
+                              for c in table],
+                }
+        bands.append(entry)
 
     gsd = summaries.get("gsd") or []
     if isinstance(gsd, dict):          # some entries give a min/max object
@@ -208,6 +228,8 @@ def summarise(document: dict) -> dict | None:
     vis = default_visualisation(document)
     if vis:
         entry["vis"] = vis
+    if classes:
+        entry["classes"] = classes
 
     return {k: v for k, v in entry.items() if v not in (None, [], "")}
 
