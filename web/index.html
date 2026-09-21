@@ -870,7 +870,63 @@ td { font-family: var(--font-mono); font-size: 12.5px; font-variant-numeric: tab
   <div class="tabpanel" id="pane-style" role="tabpanel" aria-labelledby="tab-style"></div>
 
   <div class="tabpanel" id="pane-data" role="tabpanel" aria-labelledby="tab-data">
-    <h3>Earth observation catalogue</h3>
+
+    <h3>Earth Engine</h3>
+    <div id="ee-panel">
+      <div id="ee-connect">
+        <p class="legend-note" style="margin-top:0">Search the full Earth Engine
+          catalogue and draw any of it over Ghana. Runs against your own Earth
+          Engine account, so the quota and the terms are yours.</p>
+
+        <div class="field">
+          <label for="ee-project">Cloud project ID</label>
+          <input id="ee-project" type="text" spellcheck="false" placeholder="my-ee-project"
+                 style="width:100%;height:38px;padding:0 11px;border-radius:var(--radius);border:1px solid var(--border);background:var(--surface-2);color:var(--text);font-family:var(--font-mono);font-size:13px">
+        </div>
+
+        <div class="field">
+          <label for="ee-client">OAuth client ID</label>
+          <input id="ee-client" type="text" spellcheck="false"
+                 placeholder="000000000000-xxxx.apps.googleusercontent.com"
+                 style="width:100%;height:38px;padding:0 11px;border-radius:var(--radius);border:1px solid var(--border);background:var(--surface-2);color:var(--text);font-family:var(--font-mono);font-size:13px">
+          <p class="legend-note">A project ID on its own cannot sign you in.
+            Earth Engine needs a web OAuth client whose authorised JavaScript
+            origin includes this site.
+            <a id="ee-help-toggle" href="#" style="color:var(--accent)">How to get one</a>.</p>
+        </div>
+
+        <div id="ee-help" hidden class="legend-note"
+             style="border-left:2px solid var(--border);padding-left:10px;margin-bottom:10px">
+          <ol style="margin:0 0 0 16px;padding:0;line-height:1.6">
+            <li>In the Google Cloud console, pick the project already registered
+                for Earth Engine, or register one at
+                <code>code.earthengine.google.com</code>.</li>
+            <li>APIs &amp; Services → Credentials → Create credentials →
+                <strong>OAuth client ID</strong> → Web application.</li>
+            <li>Under <strong>Authorised JavaScript origins</strong> add
+                <code id="ee-origin"></code>.</li>
+            <li>Copy the client ID it gives you into the box above.</li>
+          </ol>
+          <p style="margin:8px 0 0">Both values stay in this browser. Nothing is
+            sent anywhere except Google, and the sign-in is read-only.</p>
+        </div>
+
+        <button id="ee-signin" class="btn">Connect to Earth Engine</button>
+        <div id="ee-status" class="hint" style="margin-top:8px"></div>
+      </div>
+
+      <div id="ee-search" hidden>
+        <div class="field">
+          <input id="ee-query" type="search" placeholder="Search elevation, population, rainfall…"
+                 style="width:100%;height:38px;padding:0 11px;border-radius:var(--radius);border:1px solid var(--border);background:var(--surface-2);color:var(--text);font-size:14px">
+          <p class="legend-note" id="ee-count"></p>
+        </div>
+        <div id="ee-results"></div>
+        <div id="ee-detail"></div>
+      </div>
+    </div>
+
+    <h3 style="margin-top:22px">Earth observation catalogue</h3>
     <div class="field">
       <input id="catalog-search" type="search" placeholder="Search rainfall, fire, land cover…"
              style="width:100%;height:38px;padding:0 11px;border-radius:var(--radius);border:1px solid var(--border);background:var(--surface-2);color:var(--text);font-size:14px">
@@ -4079,6 +4135,574 @@ document.getElementById("mapit").addEventListener("click", mapResult);
 document.getElementById("sql").addEventListener("keydown", (e) => {
   if ((e.metaKey || e.ctrlKey) && e.key === "Enter") runQuery();
 });
+
+
+/* ── Earth Engine ──────────────────────────────────────────────────────────
+   Search the whole Earth Engine catalogue, draw any of it over Ghana, and
+   reduce it to a table the rest of this page can query and style.
+
+   This runs entirely in the browser against the viewer's own Earth Engine
+   account. There is no server here holding a key, which is the only honest
+   way to do it on a static site: a service account credential shipped to a
+   browser is a credential given away. The cost is that each person brings
+   their own OAuth client, because a Cloud project id alone cannot sign
+   anybody in.                                                              */
+
+const EE_API = "https://ajax.googleapis.com/ajax/libs/earthengine/0.1.408/earthengine-api.min.js";
+const EE_STORE = "ghana-geostack.ee";
+
+// Ghana's own outline, server-side, so the clip costs one filter rather than
+// a megabyte of coordinates uploaded with every request.
+const EE_GHANA =
+  `ee.FeatureCollection('FAO/GAUL_SIMPLIFIED_500m/2015/level0')` +
+  `.filter(ee.Filter.eq('ADM0_NAME','Ghana'))`;
+
+const eeState = {
+  ready: false,       // the library is loaded and initialised
+  catalog: [],        // the index written at build time
+  selected: null,
+  layers: new Map()   // dataset id -> map source id
+};
+
+function eeCredentials() {
+  try {
+    return JSON.parse(localStorage.getItem(EE_STORE) || "{}");
+  } catch { return {}; }
+}
+
+function saveEeCredentials(project, client) {
+  try {
+    localStorage.setItem(EE_STORE, JSON.stringify({ project, client }));
+  } catch { /* private browsing; the session still works, it just will not persist */ }
+}
+
+function eeStatus(message, tone) {
+  const host = document.getElementById("ee-status");
+  if (!host) return;
+  host.innerHTML = message;
+  host.style.color = tone === "error" ? "var(--clay)" : "";
+}
+
+/* ── Loading the catalogue index ───────────────────────────────────────── */
+
+async function loadEeCatalog() {
+  if (eeState.catalog.length) return eeState.catalog;
+  try {
+    const response = await fetch(`${DATA_ROOT}/ee-catalog.json`);
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const payload = await response.json();
+    eeState.catalog = payload.datasets || [];
+  } catch {
+    eeState.catalog = [];
+  }
+  return eeState.catalog;
+}
+
+/* ── Loading and initialising the library ──────────────────────────────── */
+
+function loadScript(src) {
+  return new Promise((resolve, reject) => {
+    if (document.querySelector(`script[src="${src}"]`)) return resolve();
+    const tag = document.createElement("script");
+    tag.src = src;
+    tag.onload = () => resolve();
+    tag.onerror = () => reject(new Error("could not load the Earth Engine library"));
+    document.head.appendChild(tag);
+  });
+}
+
+async function connectEarthEngine() {
+  const project = document.getElementById("ee-project").value.trim();
+  const client = document.getElementById("ee-client").value.trim();
+
+  if (!project || !client) {
+    eeStatus("Both the project id and the OAuth client id are needed.", "error");
+    return;
+  }
+  saveEeCredentials(project, client);
+
+  eeStatus("Loading the Earth Engine library…");
+  try {
+    await loadScript(EE_API);
+  } catch (err) {
+    eeStatus(`${err.message}. Check that ajax.googleapis.com is reachable.`, "error");
+    return;
+  }
+
+  eeStatus("Waiting for Google sign-in…");
+
+  // authenticateViaOauth tries silently first and only shows the popup when
+  // it has to, which is why the failure path below is a normal outcome
+  // rather than an error.
+  await new Promise((resolve) => {
+    ee.data.authenticateViaOauth(
+      client,
+      () => resolve(),
+      (err) => {
+        eeStatus(
+          `Sign-in failed: ${err}. The commonest cause is this site's address ` +
+          `missing from the client's authorised JavaScript origins.`, "error");
+        resolve("failed");
+      },
+      ["https://www.googleapis.com/auth/earthengine.readonly"],
+      () => {
+        eeStatus("Sign-in needed — press Connect again and allow the popup.", "error");
+        resolve("failed");
+      },
+      true
+    );
+  });
+
+  if (!ee.data.getAuthToken || !ee.data.getAuthToken()) return;
+
+  eeStatus("Initialising…");
+  await new Promise((resolve) => {
+    ee.initialize(
+      null, null,
+      () => { eeState.ready = true; resolve(); },
+      (err) => {
+        eeStatus(
+          `Earth Engine refused the project: ${err}. Check that ${project} is ` +
+          `registered for Earth Engine and that the API is enabled.`, "error");
+        resolve();
+      },
+      null, project);
+  });
+
+  if (!eeState.ready) return;
+
+  const catalog = await loadEeCatalog();
+  document.getElementById("ee-connect").hidden = true;
+  document.getElementById("ee-search").hidden = false;
+
+  const note = document.getElementById("ee-count");
+  note.textContent = catalog.length
+    ? `${catalog.length.toLocaleString()} datasets indexed. Those covering Ghana come first.`
+    : "The catalogue index is missing from this deployment, so search is unavailable. " +
+      "You can still use the curated catalogue below.";
+
+  renderEeResults();
+}
+
+/* ── Search ────────────────────────────────────────────────────────────── */
+
+function renderEeResults() {
+  const host = document.getElementById("ee-results");
+  const term = document.getElementById("ee-query").value.trim().toLowerCase();
+
+  if (!term) {
+    host.innerHTML = `<p class="hint">Type to search. Try elevation, population,
+      rainfall, land cover, nightlights.</p>`;
+    return;
+  }
+
+  const words = term.split(/\s+/);
+  const matches = eeState.catalog.filter((d) => {
+    const haystack = `${d.title} ${d.id} ${(d.keywords || []).join(" ")} ${d.provider || ""}`
+      .toLowerCase();
+    return words.every((w) => haystack.includes(w));
+  }).slice(0, 40);
+
+  if (!matches.length) {
+    host.innerHTML = `<p class="hint">Nothing matches “${term}”.</p>`;
+    return;
+  }
+
+  host.innerHTML = matches.map((d) => {
+    const span = d.start ? `${d.start.slice(0, 4)}–${d.end ? d.end.slice(0, 4) : "now"}` : "";
+    const facts = [
+      d.resolution_m ? `${d.resolution_m < 1000 ? Math.round(d.resolution_m) + " m"
+                                                : (d.resolution_m / 1000) + " km"}` : "",
+      span,
+      d.type === "table" ? "vector" : "",
+      d.covers_ghana ? "" : "no Ghana coverage"
+    ].filter(Boolean).join(" · ");
+
+    return `<div class="catalog-entry" style="padding:10px 0;border-bottom:1px solid var(--border)">
+      <div style="display:flex;gap:8px;align-items:baseline;justify-content:space-between">
+        <strong style="font-size:13px;line-height:1.35">${escapeHtml(d.title)}</strong>
+        <button class="btn btn-quiet" data-ee-pick="${escapeHtml(d.id)}">Open</button>
+      </div>
+      <div style="font-family:var(--font-mono);font-size:11px;opacity:.7;margin-top:3px">
+        ${escapeHtml(d.id)}</div>
+      ${facts ? `<div style="font-size:11px;opacity:.7;margin-top:2px">${facts}</div>` : ""}
+    </div>`;
+  }).join("");
+
+  host.querySelectorAll("[data-ee-pick]").forEach((button) => {
+    button.addEventListener("click", () => showEeDataset(button.dataset.eePick));
+  });
+}
+
+function escapeHtml(value) {
+  return String(value).replace(/[&<>"]/g, (c) =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+}
+
+/* ── One dataset: dates, compositing, styling ──────────────────────────── */
+
+function showEeDataset(id) {
+  const d = eeState.catalog.find((x) => x.id === id);
+  if (!d) return;
+  eeState.selected = d;
+
+  const host = document.getElementById("ee-detail");
+  const vis = d.vis || {};
+  const bandNames = (d.bands || []).map((b) => b.name);
+
+  // A sensible window rather than the dataset's whole life. Most collections
+  // run to the present, and compositing twenty years of imagery to look at
+  // Ghana once is a long wait for a worse picture.
+  const end = d.end && d.end < todayIso() ? d.end : todayIso();
+  const start = isoYearsBefore(end, 1);
+
+  host.innerHTML = `
+    <div style="margin-top:14px;padding-top:14px;border-top:2px solid var(--border)">
+      <strong style="font-size:13px">${escapeHtml(d.title)}</strong>
+      <p class="legend-note" style="margin:6px 0">${escapeHtml(d.description || "")}</p>
+      <p class="legend-note" style="margin:0 0 10px">
+        ${d.provider ? escapeHtml(d.provider) + " · " : ""}${escapeHtml(d.licence || "see terms")} ·
+        <a href="${d.url}" target="_blank" rel="noopener" style="color:var(--accent)">catalogue page</a>
+      </p>
+
+      ${d.covers_ghana ? "" : `<p class="legend-note" style="color:var(--clay)">
+        This dataset's footprint does not cover Ghana. It will draw nothing here.</p>`}
+
+      ${d.type === "table" ? `<p class="legend-note">A vector collection. Draw it to
+        see its features; the summary tools below apply to rasters.</p>` : `
+        <div class="field">
+          <label for="ee-start">From</label>
+          <input id="ee-start" type="date" value="${start}"
+                 style="width:100%;height:34px;padding:0 10px;border-radius:var(--radius);border:1px solid var(--border);background:var(--surface-2);color:var(--text);font-family:var(--font-mono);font-size:12px">
+        </div>
+        <div class="field">
+          <label for="ee-end">To</label>
+          <input id="ee-end" type="date" value="${end}"
+                 style="width:100%;height:34px;padding:0 10px;border-radius:var(--radius);border:1px solid var(--border);background:var(--surface-2);color:var(--text);font-family:var(--font-mono);font-size:12px">
+        </div>
+        ${d.type === "image_collection" ? `
+        <div class="field">
+          <label for="ee-reducer">Combine the images by</label>
+          <select id="ee-reducer" style="width:100%;height:34px;border-radius:var(--radius);border:1px solid var(--border);background:var(--surface-2);color:var(--text);font-size:13px">
+            <option value="median">median — the usual choice, ignores cloud</option>
+            <option value="mean">mean</option>
+            <option value="max">maximum</option>
+            <option value="min">minimum</option>
+            <option value="mosaic">most recent pixel</option>
+            <option value="sum">sum — for rainfall and counts</option>
+          </select>
+        </div>` : ""}
+
+        ${bandNames.length ? `
+        <div class="field">
+          <label for="ee-bands">Bands</label>
+          <input id="ee-bands" type="text" spellcheck="false"
+                 value="${escapeHtml((vis.bands || bandNames.slice(0, 1)).join(", "))}"
+                 style="width:100%;height:34px;padding:0 10px;border-radius:var(--radius);border:1px solid var(--border);background:var(--surface-2);color:var(--text);font-family:var(--font-mono);font-size:12px">
+          <p class="legend-note">Available: ${bandNames.map(escapeHtml).join(", ")}</p>
+        </div>` : ""}
+
+        <div class="field" style="display:flex;gap:8px">
+          <div style="flex:1">
+            <label for="ee-min">Min</label>
+            <input id="ee-min" type="text" value="${vis.min ?? 0}"
+                   style="width:100%;height:34px;padding:0 10px;border-radius:var(--radius);border:1px solid var(--border);background:var(--surface-2);color:var(--text);font-family:var(--font-mono);font-size:12px">
+          </div>
+          <div style="flex:1">
+            <label for="ee-max">Max</label>
+            <input id="ee-max" type="text" value="${vis.max ?? 100}"
+                   style="width:100%;height:34px;padding:0 10px;border-radius:var(--radius);border:1px solid var(--border);background:var(--surface-2);color:var(--text);font-family:var(--font-mono);font-size:12px">
+          </div>
+        </div>
+        <div class="field">
+          <label for="ee-palette">Palette</label>
+          <input id="ee-palette" type="text" spellcheck="false"
+                 value="${escapeHtml((vis.palette || []).join(", "))}"
+                 placeholder="leave empty for greyscale, or for a true-colour band set"
+                 style="width:100%;height:34px;padding:0 10px;border-radius:var(--radius);border:1px solid var(--border);background:var(--surface-2);color:var(--text);font-family:var(--font-mono);font-size:12px">
+          <p class="legend-note">${vis.label
+            ? "Pre-filled with the producer's own suggested rendering."
+            : "This dataset ships no suggested rendering, so these are guesses."}</p>
+        </div>`}
+
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px">
+        <button class="btn btn-primary" id="ee-add">Add to map</button>
+        ${d.type === "table" ? "" : `
+        <button class="btn btn-secondary" id="ee-zonal-region">Summarise by region</button>
+        <button class="btn btn-secondary" id="ee-zonal-district">Summarise by district</button>`}
+      </div>
+      <div id="ee-detail-status" class="hint" style="margin-top:8px"></div>
+    </div>`;
+
+  document.getElementById("ee-add").addEventListener("click", () => addEeLayer(d));
+  document.getElementById("ee-zonal-region")
+    ?.addEventListener("click", () => summariseEe(d, "region"));
+  document.getElementById("ee-zonal-district")
+    ?.addEventListener("click", () => summariseEe(d, "district"));
+
+  host.scrollIntoView({ behavior: "smooth", block: "nearest" });
+}
+
+function todayIso() { return new Date().toISOString().slice(0, 10); }
+
+function isoYearsBefore(iso, years) {
+  const d = new Date(iso);
+  d.setFullYear(d.getFullYear() - years);
+  return d.toISOString().slice(0, 10);
+}
+
+function eeDetailStatus(message, tone) {
+  const host = document.getElementById("ee-detail-status");
+  if (!host) return;
+  host.innerHTML = message;
+  host.style.color = tone === "error" ? "var(--clay)" : "";
+}
+
+/* ── Building the image ────────────────────────────────────────────────── */
+
+function readEeForm(d) {
+  const value = (id) => document.getElementById(id)?.value.trim() ?? "";
+  const list = (id) => value(id).split(",").map((s) => s.trim()).filter(Boolean);
+
+  return {
+    start: value("ee-start"),
+    end: value("ee-end"),
+    reducer: value("ee-reducer") || "median",
+    bands: list("ee-bands"),
+    min: value("ee-min"),
+    max: value("ee-max"),
+    palette: list("ee-palette")
+  };
+}
+
+function eeVisParams(form) {
+  const vis = {};
+  if (form.bands.length) vis.bands = form.bands;
+  if (form.min !== "") vis.min = form.min.includes(",")
+    ? form.min.split(",").map(Number) : Number(form.min);
+  if (form.max !== "") vis.max = form.max.includes(",")
+    ? form.max.split(",").map(Number) : Number(form.max);
+  // A palette only applies to a single band; Earth Engine rejects the pair.
+  if (form.palette.length && (vis.bands || []).length <= 1) vis.palette = form.palette;
+  return vis;
+}
+
+function buildEeImage(d, form) {
+  const ghana = ee.FeatureCollection("FAO/GAUL_SIMPLIFIED_500m/2015/level0")
+    .filter(ee.Filter.eq("ADM0_NAME", "Ghana"));
+  const region = ghana.geometry();
+
+  if (d.type === "image") {
+    return { image: ee.Image(d.id).clip(region), region };
+  }
+
+  let collection = ee.ImageCollection(d.id).filterBounds(region);
+  if (form.start && form.end) collection = collection.filterDate(form.start, form.end);
+  if (form.bands.length) collection = collection.select(form.bands);
+
+  const reduce = {
+    median: (c) => c.median(), mean: (c) => c.mean(), max: (c) => c.max(),
+    min: (c) => c.min(), sum: (c) => c.sum(), mosaic: (c) => c.mosaic()
+  }[form.reducer] || ((c) => c.median());
+
+  return { image: reduce(collection).clip(region), region, collection };
+}
+
+/* ── Drawing it ────────────────────────────────────────────────────────── */
+
+async function addEeLayer(d) {
+  if (!eeState.ready) { eeDetailStatus("Not connected.", "error"); return; }
+
+  const form = readEeForm(d);
+  eeDetailStatus("Asking Earth Engine for tiles…");
+
+  try {
+    let layer;
+    if (d.type === "table") {
+      layer = ee.FeatureCollection(d.id)
+        .filterBounds(ee.FeatureCollection("FAO/GAUL_SIMPLIFIED_500m/2015/level0")
+          .filter(ee.Filter.eq("ADM0_NAME", "Ghana")).geometry())
+        .style({ color: "E8C67A", fillColor: "00000022", width: 1 });
+    } else {
+      // An empty collection is the commonest disappointment — a date range
+      // with no passes over Ghana — and it fails silently as blank tiles, so
+      // it is checked before anything is drawn.
+      const built = buildEeImage(d, form);
+      if (built.collection) {
+        const n = await new Promise((resolve) =>
+          built.collection.size().evaluate((v, err) => resolve(err ? null : v)));
+        if (n === 0) {
+          eeDetailStatus(
+            `No images between ${form.start} and ${form.end} over Ghana. ` +
+            `This dataset runs ${d.start || "?"} to ${d.end || "now"}.`, "error");
+          return;
+        }
+        if (n !== null) eeDetailStatus(`${n} images found. Building the composite…`);
+      }
+      layer = built.image.visualize(eeVisParams(form));
+    }
+
+    const mapInfo = await new Promise((resolve, reject) =>
+      layer.getMap({}, (info, err) => err ? reject(new Error(err)) : resolve(info)));
+
+    const template = mapInfo.urlFormat
+      || `https://earthengine.googleapis.com/v1/${mapInfo.mapid}/tiles/{z}/{x}/{y}`;
+
+    const sourceId = `ee-${d.id.replace(/[^a-z0-9]/gi, "-").toLowerCase()}`;
+    removeEeLayer(d.id);
+
+    map.addSource(sourceId, {
+      type: "raster", tiles: [template], tileSize: 256,
+      attribution: `${d.provider || "Earth Engine"} via Google Earth Engine`
+    });
+
+    const firstVector = map.getStyle().layers
+      .find((l) => l.type !== "raster" && l.type !== "background" && l.id !== "hillshade")?.id;
+    map.addLayer({ id: sourceId, type: "raster", source: sourceId,
+                   paint: { "raster-opacity": 0.85 } }, firstVector);
+
+    eeState.layers.set(d.id, sourceId);
+
+    eeDetailStatus(
+      `Drawn. <button class="btn btn-quiet" id="ee-remove">Remove</button>
+       <button class="btn btn-quiet" id="ee-opacity">Fade</button>`);
+    document.getElementById("ee-remove").addEventListener("click", () => {
+      removeEeLayer(d.id); eeDetailStatus("Removed.");
+    });
+    document.getElementById("ee-opacity").addEventListener("click", () => {
+      const current = map.getPaintProperty(sourceId, "raster-opacity") ?? 0.85;
+      map.setPaintProperty(sourceId, "raster-opacity", current > 0.5 ? 0.35 : 0.85);
+    });
+
+  } catch (err) {
+    eeDetailStatus(`Earth Engine refused it: ${escapeHtml(err.message || err)}`, "error");
+  }
+}
+
+function removeEeLayer(id) {
+  const sourceId = eeState.layers.get(id);
+  if (!sourceId) return;
+  if (map.getLayer(sourceId)) map.removeLayer(sourceId);
+  if (map.getSource(sourceId)) map.removeSource(sourceId);
+  eeState.layers.delete(id);
+}
+
+/* ── Reducing it to a table ────────────────────────────────────────────── */
+/* The point of the whole panel. A raster on the map is a picture; a raster
+   reduced onto boundaries is a column you can sort, rank, join and argue
+   with. The result lands in the browser database under ghana.ee_<name>, so
+   the Query tab and the Style tab pick it up with no further plumbing.     */
+
+async function summariseEe(d, level) {
+  if (!eeState.ready) { eeDetailStatus("Not connected.", "error"); return; }
+
+  const form = readEeForm(d);
+  const stat = form.reducer === "sum" ? "sum" : "mean";
+
+  eeDetailStatus(`Reducing to ${level}s in Earth Engine. This runs on Google's
+    machines and takes as long as it takes — usually under a minute.`);
+
+  try {
+    const { image } = buildEeImage(d, form);
+
+    // The same boundaries the rest of the site uses, held server-side.
+    // Joining back by name rather than uploading geometry keeps the request
+    // small; the viewer already knows how to attach geometry to a name.
+    const asset = level === "region"
+      ? "projects/sat-io/open-datasets/geoboundaries/CGAZ_ADM1"
+      : "projects/sat-io/open-datasets/geoboundaries/CGAZ_ADM2";
+    const nameColumn = level === "region" ? "adm1_name" : "adm2_name";
+
+    const zones = ee.FeatureCollection(asset)
+      .filter(ee.Filter.eq("shapeGroup", "GHA"));
+
+    const band = form.bands[0] || (d.bands || [])[0]?.name;
+    const single = band ? image.select([band]) : image;
+
+    const reduced = single.reduceRegions({
+      collection: zones,
+      reducer: stat === "sum" ? ee.Reducer.sum() : ee.Reducer.mean(),
+      scale: Math.max(d.resolution_m || 1000, 100),
+      tileScale: 4
+    });
+
+    const rows = await new Promise((resolve, reject) =>
+      reduced.select(["shapeName", stat], null, false)
+        .evaluate((value, err) => err ? reject(new Error(err)) : resolve(value)));
+
+    const features = (rows?.features || [])
+      .map((f) => ({
+        [nameColumn]: f.properties.shapeName,
+        [stat]: f.properties[stat]
+      }))
+      .filter((r) => r[nameColumn] && r[stat] !== null && r[stat] !== undefined);
+
+    if (!features.length) {
+      eeDetailStatus(
+        "The reduction returned nothing. Usually the band is wrong, or the " +
+        "date range has no images over Ghana.", "error");
+      return;
+    }
+
+    const table = `ee_${d.id.split("/").pop().toLowerCase().replace(/[^a-z0-9]/g, "_")}_${level}`;
+    const columns = [nameColumn, stat];
+    const csv = [columns.join(",")]
+      .concat(features.map((r) => columns.map((c) => csvEscape(r[c])).join(",")))
+      .join("\n");
+
+    await duckDb.registerFileText(`${table}.csv`, csv);
+    await conn.query(
+      `CREATE OR REPLACE TABLE ghana.${table} AS
+       SELECT * FROM read_csv_auto('${table}.csv', header = true);`);
+
+    const values = features.map((f) => f[stat]);
+    const total = values.reduce((a, b) => a + b, 0);
+
+    eeDetailStatus(
+      `<strong>${features.length} ${level}s.</strong>
+       ${stat} ranges ${Math.min(...values).toLocaleString(undefined, { maximumFractionDigits: 2 })}
+       to ${Math.max(...values).toLocaleString(undefined, { maximumFractionDigits: 2 })}${
+         stat === "sum" ? `, totalling ${total.toLocaleString(undefined, { maximumFractionDigits: 0 })}` : ""}.
+       <br>Queryable as <code style="font-family:var(--font-mono);color:var(--accent)">ghana.${table}</code>
+       <div style="margin-top:6px"><button class="btn btn-quiet" id="ee-open-query">Open in Query</button></div>`);
+
+    document.getElementById("ee-open-query").addEventListener("click", () => {
+      document.getElementById("sql").value =
+        `SELECT t.${nameColumn}, t.${stat}, b.geom\n` +
+        `FROM ghana.${table} t\n` +
+        `JOIN ghana.${level === "region" ? "region" : "district"} b\n` +
+        `  ON b.${nameColumn} = t.${nameColumn}\n` +
+        `ORDER BY t.${stat} DESC;`;
+      selectTab("query");
+    });
+
+  } catch (err) {
+    eeDetailStatus(`Earth Engine refused it: ${escapeHtml(err.message || err)}`, "error");
+  }
+}
+
+/* ── Wiring ────────────────────────────────────────────────────────────── */
+
+(function initEarthEngine() {
+  const signin = document.getElementById("ee-signin");
+  if (!signin) return;
+
+  const saved = eeCredentials();
+  if (saved.project) document.getElementById("ee-project").value = saved.project;
+  if (saved.client) document.getElementById("ee-client").value = saved.client;
+
+  const origin = document.getElementById("ee-origin");
+  if (origin) origin.textContent = location.origin;
+
+  document.getElementById("ee-help-toggle").addEventListener("click", (event) => {
+    event.preventDefault();
+    const help = document.getElementById("ee-help");
+    help.hidden = !help.hidden;
+  });
+
+  signin.addEventListener("click", connectEarthEngine);
+  document.getElementById("ee-query").addEventListener("input", renderEeResults);
+})();
 
 setTheme(state.theme);
 initDuckDB();
