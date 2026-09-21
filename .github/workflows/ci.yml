@@ -108,3 +108,14 @@ jobs:
           pip install pyyaml
           python scripts/build_web.py
           test -f public/index.html
+
+      # Parsing is not running. A constant referenced before its declaration
+      # parses perfectly and throws on evaluation, taking the page with it —
+      # which is how a blank viewer reached production once already. This
+      # loads the built page in a browser with the map library stubbed, so the
+      # module actually executes.
+      - name: The viewer runs
+        run: |
+          npm install --no-save playwright@1.49
+          npx playwright install --with-deps chromium
+          node tests/smoke_viewer.cjs
