@@ -227,7 +227,7 @@ def convert(shp_path: Path, out_path: Path | None = None,
         return [round_coords(o) for o in obj]
 
     features = []
-    for props, geom in zip(records, shapes):
+    for props, geom in zip(records, shapes, strict=False):
         if geom is None:
             continue
         geom = {**geom, "coordinates": round_coords(geom["coordinates"])}

@@ -8,10 +8,10 @@ Read this before publishing a map, a tileset, an export or an analysis.
 
 ## The obligations, by licence
 
-### ODbL 1.0 - OpenStreetMap, Overture (in part), Microsoft footprints, healthsites.io
+### ODbL 1.0 — OpenStreetMap, Overture (in part), Microsoft footprints, healthsites.io
 
-Share-alike. If you publish a **derived database** - a modified version, a
-subset, an extract, a database built from it - you must publish it under ODbL
+Share-alike. If you publish a **derived database** — a modified version, a
+subset, an extract, a database built from it — you must publish it under ODbL
 too. Producing a map image from it is a "produced work" and only requires
 attribution, not share-alike.
 
@@ -21,13 +21,13 @@ Practical consequence for this project: OSM-derived tables are tagged with
 `source_id = 'osm_ghana'` so that exports can be separated. Do not silently
 merge ODbL data into a layer you intend to license differently.
 
-### CC BY 4.0 - Google Open Buildings, WorldPop, ESA WorldCover, GRID3, JRC
+### CC BY 4.0 — Google Open Buildings, WorldPop, ESA WorldCover, GRID3, JRC
 
 Attribution required, and the credit must be reasonably visible. No
 share-alike, so a derived product may carry a different licence, but the
 credit travels with it.
 
-### GADM - non-commercial only
+### GADM — non-commercial only
 
 **GADM boundaries may not be used commercially and may not be redistributed.**
 They are loaded here with `publishable = false` and the export step will

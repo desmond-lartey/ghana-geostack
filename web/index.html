@@ -25,7 +25,7 @@
 
 <style>
 /* ---------------------------------------------------------------------------
-   Ghana GeoStack - viewer
+   Ghana GeoStack — viewer
 
    Typography is the Source superfamily: Source Serif 4 for headings, Source
    Sans 3 for interface text, JetBrains Mono for figures and SQL. The serif
@@ -1080,7 +1080,7 @@ const store = {
 /* Basemaps.
 
    The default is no basemap at all. The boundaries are the map, they are
-   served from this site, and nothing is requested from a third party - which
+   served from this site, and nothing is requested from a third party — which
    is faster, works offline, and cannot break when somebody else changes their
    terms. The alternatives below are open endpoints that need no API key;
    confirm the terms of whichever you deploy. */
@@ -1134,7 +1134,7 @@ const BASEMAPS = {
     } }]
   },
   none: {
-    label: "None - data only",
+    label: "None — data only",
     note: "No third-party requests, and nothing but Ghana on screen. Fastest and most private, but the country floats with no world around it.",
     sources: {},
     layers: []
@@ -1341,7 +1341,7 @@ const STORY = [
    State and map
 --------------------------------------------------------------------------- */
 
-const fmt = (v) => (v === null || v === undefined || v === "" ? "-"
+const fmt = (v) => (v === null || v === undefined || v === "" ? "—"
   : typeof v === "number" ? Math.round(v).toLocaleString() : v);
 
 const state = {
@@ -1469,7 +1469,7 @@ async function addLayer(layer) {
    Binding a click handler per layer meant a point sitting inside a district
    inside a region opened three popups stacked on top of each other. A single
    handler queries everything under the cursor at once and shows one card,
-   with the smallest feature first - which is almost always the one the reader
+   with the smallest feature first — which is almost always the one the reader
    meant to click. */
 
 let popup = null;
@@ -1483,7 +1483,7 @@ function bindPopup(layerId, layer) {
 
 function popupSection(title, rows) {
   const body = Object.entries(rows)
-    .filter(([, v]) => v !== undefined && v !== null && v !== "" && v !== "-")
+    .filter(([, v]) => v !== undefined && v !== null && v !== "" && v !== "—")
     .map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join("");
   return `<b>${title}</b><dl>${body}</dl>`;
 }
@@ -1654,8 +1654,15 @@ function toggleCatalogLayer(id) {
     ? entry.browser.url
     : gibsTiles(entry.browser, catalogDate());
 
+  // maxzoom must be the level the layer is actually published at. Above it
+  // MapLibre overzooms the deepest real tile instead of requesting one that
+  // does not exist, which is the difference between a blurry layer and a
+  // blank one.
   map.addSource(sourceId, {
-    type: "raster", tiles: [tiles], tileSize: 256, maxzoom: 9,
+    type: "raster",
+    tiles: [tiles],
+    tileSize: 256,
+    maxzoom: entry.browser.kind === "wmts_gibs" ? entry.browser.level : 18,
     attribution: entry.attribution
   });
 
@@ -1669,17 +1676,62 @@ function toggleCatalogLayer(id) {
   }, firstVector);
 
   catalogState.loaded.set(id, sourceId);
-  status.textContent = entry.browser.temporal
-    ? `Loaded for ${catalogDate()}.`
-    : "Loaded.";
 
-  // A tile 404 is normal for a date with no pass; say so rather than leaving
-  // an empty layer and no explanation.
-  map.once("error", (e) => {
-    if (e.sourceId === sourceId) {
-      status.textContent = "No tiles for that date. Try a few days earlier.";
+  /* Watch what the source actually does. A layer that loads no tiles looks
+     identical to one that loaded fine and happens to be transparent, and
+     "nothing happened" is the least useful thing an interface can say. */
+  let tilesArrived = 0;
+  let tilesFailed = 0;
+
+  const onData = (e) => {
+    if (e.sourceId === sourceId && e.tile) tilesArrived += 1;
+  };
+  const onError = (e) => {
+    if (e.sourceId === sourceId) tilesFailed += 1;
+  };
+
+  map.on("sourcedata", onData);
+  map.on("error", onError);
+
+  status.textContent = "Requesting tiles…";
+
+  // Give the tiles a moment, then report what actually happened.
+  setTimeout(() => {
+    map.off("sourcedata", onData);
+    map.off("error", onError);
+
+    const nativeZoom = entry.browser.kind === "wmts_gibs" ? entry.browser.level : 18;
+    const tooClose = map.getZoom() > nativeZoom + 2;
+
+    if (tilesArrived === 0 && tilesFailed > 0) {
+      status.innerHTML = entry.browser.temporal
+        ? `No tiles for ${catalogDate()}. Try a date two or three days earlier.`
+        : "No tiles returned for this view.";
+      return;
     }
-  });
+
+    let message = entry.browser.temporal
+      ? `Drawn for ${catalogDate()}.`
+      : "Drawn.";
+
+    if (tooClose) {
+      message += ` This is ${entry.resolution} data, so it is stretched at this zoom.`;
+    }
+    if (entry.theme === "climate" || entry.theme === "hazard") {
+      message += " Blank areas mean nothing was detected, not missing data.";
+    }
+
+    status.innerHTML = `${message} <button class="btn btn-quiet" data-zoom-fit="${id}"
+      style="height:26px;margin-top:6px">Zoom to its scale</button>`;
+
+    const zoomBtn = status.querySelector("[data-zoom-fit]");
+    if (zoomBtn) {
+      zoomBtn.addEventListener("click", () => {
+        // Back far enough that a coarse global product reads as one.
+        map.easeTo({ center: [-1.09, 7.95], zoom: Math.min(nativeZoom, 6.4), duration: 900 });
+      });
+    }
+  }, 2500);
 
   renderCatalog();
   renderStylePane();
@@ -1746,7 +1798,7 @@ renderCatalog();
 /* ---------------------------------------------------------------------------
    Terrain
 
-   Elevation comes from the Terrarium tiles on AWS Open Data - SRTM and other
+   Elevation comes from the Terrarium tiles on AWS Open Data — SRTM and other
    public sources encoded into RGB, free, keyless and CORS-enabled. That gives
    three things at once: hillshade under the data, real 3D relief, and an
    elevation reading anywhere the reader clicks.
@@ -1796,7 +1848,7 @@ function applyTerrain() {
 }
 
 /* Elevation under a point, in metres. Returns null when terrain is off or the
-   tile for that spot has not loaded - which is honest, rather than reporting a
+   tile for that spot has not loaded — which is honest, rather than reporting a
    confident zero. */
 function terrainElevationAt(lngLat) {
   if (!state.terrain) return null;
@@ -2215,7 +2267,7 @@ function setStatus(text, isError = false) {
    DuckDB compiled to WebAssembly has no spatial extension, so the page
    computes a small set of spatial attributes for every feature as it loads.
    Those columns plus the SQL macros below cover the spatial questions people
-   actually ask - distance, nearest, within a radius, bounding-box overlap -
+   actually ask — distance, nearest, within a radius, bounding-box overlap —
    without needing a server, an extension, or a local install. */
 
 function flatten(coordinates, out = []) {
@@ -2268,7 +2320,7 @@ function centroidOf(geometry) {
 
    Data is handed over as CSV, not JSON. read_csv_auto is part of the core
    engine, while read_json_auto needs the json extension, which is not
-   guaranteed to be present in every WebAssembly build - and when it is
+   guaranteed to be present in every WebAssembly build — and when it is
    missing, every view fails to create and the console reports only that no
    table exists.
 
@@ -2416,7 +2468,7 @@ async function initDuckDB() {
       throw new Error(failures.join(" · ") || "no tables could be loaded");
     }
     if (failures.length) console.warn("Some layers did not load:", failures);
-    setStatus(`Ready - ${loaded.join(", ")}`
+    setStatus(`Ready — ${loaded.join(", ")}`
       + (state.spatial ? " · spatial functions available on shape"
                        : " · spatial macros only"));
   } catch (err) {
@@ -2465,7 +2517,7 @@ function renderInto(host, rows) {
 }
 
 function cell(v) {
-  if (v === null || v === undefined) return "-";
+  if (v === null || v === undefined) return "—";
   if (typeof v === "bigint") return v.toLocaleString();
   if (typeof v === "number") return Number.isInteger(v) ? v.toLocaleString() : v.toFixed(2);
   return String(v).slice(0, 48);
@@ -2714,7 +2766,7 @@ async function askProvider(question, { provider, key, model, baseUrl }) {
    Adapted from GeoLibre's assistant guard: mask string and comment literals
    first so a keyword inside a quoted value does not trip the test, then require
    the statement to open with SELECT or WITH and hold no side-effecting keyword
-   anywhere - which is what catches a data-modifying CTE such as
+   anywhere — which is what catches a data-modifying CTE such as
    WITH x AS (DELETE ...) SELECT ...
 
    SQL typed by hand in the Query tab is not checked. That database lives in the
@@ -2922,7 +2974,7 @@ async function askExecute(toMap = false) {
 }
 
 /* Provider settings. The key lives in this browser and is sent only to the
-   provider the reader picked - never to this site. */
+   provider the reader picked — never to this site. */
 
 const keyInput = document.getElementById("api-key");
 const keyStatus = document.getElementById("key-status");
@@ -3050,7 +3102,7 @@ document.getElementById("download-geojson").addEventListener("click", () => {
    Every drawn layer, published or produced in this session, gets the same set
    of controls: colour, opacity, stroke width, height, and a graduated ramp
    over any numeric column it carries. A result that cannot be restyled is
-   only half an answer - the reader has to be able to make the map say what
+   only half an answer — the reader has to be able to make the map say what
    they found.
 --------------------------------------------------------------------------- */
 
@@ -3191,7 +3243,7 @@ function renderStylePane() {
         ${fields.length ? `
           <label class="legend-note" style="display:block;margin-bottom:4px">Graduate by</label>
           <select data-style="field" data-key="${target.key}" style="width:100%;height:32px;margin-bottom:11px">
-            <option value="">Nothing - one colour</option>
+            <option value="">Nothing — one colour</option>
             ${fields.map((f) => `<option value="${f}"${st.field === f ? " selected" : ""}>${f}</option>`).join("")}
           </select>` : ""}
 
@@ -3299,7 +3351,7 @@ async function loadTurf() {
 const TOOLS = {
   buffer: {
     label: "Buffer",
-    note: "A zone of the given radius around each feature. Useful for catchments - 5 km is the CHPS planning distance.",
+    note: "A zone of the given radius around each feature. Useful for catchments — 5 km is the CHPS planning distance.",
     param: "Radius, km",
     value: 5,
     run: (t, fc, km) => t.buffer(fc, km, { units: "kilometers" })
@@ -3347,7 +3399,7 @@ const TOOLS = {
   },
   voronoi: {
     label: "Voronoi catchments",
-    note: "Divides the country into the area closest to each input point. A first approximation of service catchments - it ignores roads, rivers and travel time.",
+    note: "Divides the country into the area closest to each input point. A first approximation of service catchments — it ignores roads, rivers and travel time.",
     param: null,
     run: (t, fc) => {
       const points = t.featureCollection(fc.features.map((f) =>
@@ -3357,11 +3409,11 @@ const TOOLS = {
   },
   elevation: {
     label: "Sample elevation",
-    note: "Reads ground height from the terrain tiles at each feature's centre and attaches it as elevation_m. Needs 3D relief switched on in the Map tab, and only samples where the tiles have loaded - so zoom to the area first.",
+    note: "Reads ground height from the terrain tiles at each feature's centre and attaches it as elevation_m. Needs 3D relief switched on in the Map tab, and only samples where the tiles have loaded — so zoom to the area first.",
     param: null,
     run: (t, fc) => {
       if (!state.terrain) {
-        throw new Error("Switch on 3D relief in the Map tab first - elevation is read from the loaded terrain tiles.");
+        throw new Error("Switch on 3D relief in the Map tab first — elevation is read from the loaded terrain tiles.");
       }
 
       let sampled = 0;
@@ -3387,7 +3439,7 @@ const TOOLS = {
   },
   measure: {
     label: "Measure",
-    note: "Area in square kilometres and perimeter in kilometres for each feature. No new geometry - the input is returned with the measurements attached.",
+    note: "Area in square kilometres and perimeter in kilometres for each feature. No new geometry — the input is returned with the measurements attached.",
     param: null,
     run: (t, fc) => t.featureCollection(fc.features.map((f) => ({
       ...f,
@@ -3702,7 +3754,7 @@ async function fetchLive(id) {
   }
 
   const b = map.getBounds();
-  // Overpass wants south,west,north,east - the opposite order to almost
+  // Overpass wants south,west,north,east — the opposite order to almost
   // everything else, and the commonest mistake when querying it.
   const bbox = [b.getSouth(), b.getWest(), b.getNorth(), b.getEast()]
     .map((v) => v.toFixed(5)).join(",");
@@ -3768,10 +3820,35 @@ async function fetchLive(id) {
       const withHeight = collection.features.filter((f) => f.properties.height_m != null).length;
       const share = Math.round(withHeight / collection.features.length * 100);
       summary += ` · ${share}% have a height in OSM`;
-      if (share < 20) summary += " - a 3D view here will be mostly flat";
+      if (share < 20) summary += " — a 3D view here will be mostly flat";
     }
 
-    host.textContent = summary + (registered ? ` · ghana.${source.table}` : "");
+    /* Say where the data went. It is on the map, it is a table, and it can be
+       downloaded — none of which is obvious from a layer quietly appearing
+       behind a panel. */
+    host.innerHTML = `${summary}${registered ? ` · queryable as <code style="font-family:var(--font-mono);color:var(--accent)">ghana.${source.table}</code>` : ""}
+      <span style="display:flex;gap:6px;margin-top:7px">
+        <button class="btn btn-quiet" data-live-zoom="${id}" style="height:26px">Zoom to it</button>
+        <button class="btn btn-quiet" data-live-query="${id}" style="height:26px">Open in Query</button>
+      </span>`;
+
+    const bounds = new maplibregl.LngLatBounds();
+    for (const f of collection.features) {
+      const flat = f.geometry.coordinates.flat(Infinity);
+      for (let i = 0; i < flat.length; i += 2) bounds.extend([flat[i], flat[i + 1]]);
+    }
+
+    host.querySelector(`[data-live-zoom="${id}"]`)?.addEventListener("click", () => {
+      if (!bounds.isEmpty()) map.fitBounds(bounds, { padding: 60, duration: 900 });
+    });
+
+    host.querySelector(`[data-live-query="${id}"]`)?.addEventListener("click", () => {
+      document.getElementById("sql").value =
+        `SELECT name, ${source.geometry === "point" ? "lon, lat, " : ""}geom\n` +
+        `FROM ghana.${source.table}\nWHERE name IS NOT NULL\nORDER BY name;`;
+      selectTab("query");
+    });
+
     const clear = document.querySelector(`[data-live-clear="${id}"]`);
     if (clear) clear.style.display = "";
     renderStylePane();
@@ -3888,7 +3965,7 @@ function refreshLiveAreas() {
     button.title = ok ? "" : "Zoom in further";
 
     line.textContent = ok
-      ? `View covers ${Math.round(area).toLocaleString()} km² - ready.`
+      ? `View covers ${Math.round(area).toLocaleString()} km² — ready.`
       : `View covers ${Math.round(area).toLocaleString()} km². ` +
         `Zoom in below ${source.maxAreaKm2.toLocaleString()} km².`;
     line.style.color = ok ? "var(--teal, #3E8E7E)" : "var(--text-3)";

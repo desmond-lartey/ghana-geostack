@@ -61,7 +61,7 @@ def douglas_peucker(points: list[tuple[float, float]], epsilon: float) -> list[t
             keep[index] = True
             stack += [(first, index), (index, last)]
 
-    return [p for p, k in zip(points, keep) if k]
+    return [p for p, k in zip(points, keep, strict=True) if k]
 
 
 def outline(size: int = 32, padding: float = 2.0) -> tuple[list[tuple[float, float]], float]:

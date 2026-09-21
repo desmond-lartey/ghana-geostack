@@ -1,6 +1,6 @@
 -- 003_ghana_functions.sql
 -- Country constants and helpers, so no query ever hardcodes a bbox or an
--- SRID again. Mirrors config/ghana.yml - if you change one, change both.
+-- SRID again. Mirrors config/ghana.yml — if you change one, change both.
 
 BEGIN;
 
@@ -12,7 +12,7 @@ LANGUAGE sql IMMUTABLE PARALLEL SAFE AS $$
 $$;
 COMMENT ON FUNCTION core.gh_bbox() IS
   'Ghana land and coastal envelope in EPSG:4326. Use as the first filter in '
-  'any query against a national table - it is index-accelerated via &&.';
+  'any query against a national table — it is index-accelerated via &&.';
 
 CREATE OR REPLACE FUNCTION core.gh_metric_srid() RETURNS integer
 LANGUAGE sql IMMUTABLE PARALLEL SAFE AS $$ SELECT 32630; $$;

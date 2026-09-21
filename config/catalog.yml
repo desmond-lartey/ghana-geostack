@@ -1,4 +1,4 @@
-# catalog.yml - Earth observation datasets for Ghana.
+# catalog.yml — Earth observation datasets for Ghana.
 #
 # One catalogue, two consumers:
 #
@@ -19,14 +19,14 @@
 #   attribution  the exact credit line a published map must carry
 #   resolution   native pixel size
 #   cadence      how often a new observation arrives
-#   browser:     optional - loadable in the viewer with no account
+#   browser:     optional — loadable in the viewer with no account
 #     kind         wmts_gibs | xyz
 #     layer        GIBS layer identifier, for kind wmts_gibs
 #     level        GIBS GoogleMapsCompatible level; wrong level means blank tiles
 #     format       jpg | png
 #     temporal     true when the layer takes a date
 #     url          full template, for kind xyz
-#   gee:         optional - for the pipeline
+#   gee:         optional — for the pipeline
 #     collection   Earth Engine collection or image id
 #     bands        bands to keep
 #     reducer      median | mean | max | min | mosaic
@@ -360,3 +360,100 @@ datasets:
     notes: >
       Built surface in square metres per cell, back to 1975. The clearest
       record of how far Accra and Kumasi have spread.
+
+  # ── Thermal ────────────────────────────────────────────────────────────
+
+  - id: landsat_lst
+    title: Landsat land surface temperature
+    theme: climate
+    licence: public domain (USGS)
+    attribution: "USGS Landsat Collection 2 Level-2"
+    resolution: 30 m, thermal resampled from 100 m
+    cadence: 16 days
+    gee:
+      collection: LANDSAT/LC09/C02/T1_L2
+      bands: [ST_B10, QA_PIXEL]
+      reducer: median
+      scale: 30
+    notes: >
+      Surface temperature from the thermal band, in Kelvin scaled by 0.00341802
+      with an offset of 149.0. The pipeline converts it to Celsius on load.
+      This is the input for urban heat island work: pair it with land cover to
+      see which surfaces are hot, and with population to see who lives on them.
+      Ground temperature is not air temperature and runs far hotter over tarmac
+      and bare soil.
+
+  - id: landsat8_lst
+    title: Landsat 8 land surface temperature
+    theme: climate
+    licence: public domain (USGS)
+    attribution: "USGS Landsat Collection 2 Level-2"
+    resolution: 30 m, thermal resampled from 100 m
+    cadence: 16 days
+    gee:
+      collection: LANDSAT/LC08/C02/T1_L2
+      bands: [ST_B10, QA_PIXEL]
+      reducer: median
+      scale: 30
+    notes: >
+      The longer record, back to 2013. Use it with Landsat 9 for a denser time
+      series, or on its own for anything before 2021.
+
+  # ── Administrative and hydrological reference ──────────────────────────
+
+  - id: cgaz_admin
+    title: geoBoundaries CGAZ administrative areas
+    theme: admin
+    licence: CC-BY-4.0
+    attribution: "geoBoundaries, William & Mary geoLab"
+    resolution: vector
+    cadence: periodic
+    gee:
+      collection: projects/sat-io/open-datasets/geoboundaries/CGAZ_ADM2
+      bands: []
+      reducer: mosaic
+      scale: 0
+    notes: >
+      The Comprehensive Global Administrative Zones, filtered on shapeGroup
+      'GHA'. Openly licensed and globally consistent, which makes it the right
+      choice for work that crosses borders. This platform's own boundaries come
+      from the Ghana COD instead, because those carry p-codes and match what
+      national statistics are reported against. Useful as a cross-check, and as
+      the join key when combining Ghana with its neighbours.
+
+  - id: hydrosheds_basins
+    title: HydroSHEDS catchments, level 12
+    theme: water
+    licence: HydroSHEDS licence, free with attribution
+    attribution: "HydroSHEDS, WWF"
+    resolution: vector, derived from 15 arc-second terrain
+    cadence: static
+    gee:
+      collection: WWF/HydroSHEDS/v1/Basins/hybas_12
+      bands: []
+      reducer: mosaic
+      scale: 0
+    notes: >
+      Sub-basins at the finest HydroBASINS level, with the topology to route
+      between them: NEXT_DOWN gives the catchment each one drains into. This is
+      the unit hydrology should be summarised on, not districts — water does
+      not respect an administrative boundary, and a flood analysis reported per
+      district hides where the water actually came from.
+
+  - id: global_urban_boundaries
+    title: Global urban boundaries
+    theme: population
+    licence: CC-BY-4.0
+    attribution: "Global Urban Boundaries, Li et al."
+    resolution: 30 m derived
+    cadence: periodic
+    gee:
+      collection: projects/sat-io/open-datasets/GUB/GUB_Global_2020
+      bands: []
+      reducer: mosaic
+      scale: 30
+    notes: >
+      Consistent urban extents, which matter because "urban" has no single
+      definition in Ghana: the built-up area of Accra spreads well past the
+      Accra Metropolitan Assembly boundary. Use this to separate urban from
+      rural when the administrative unit would give the wrong answer.

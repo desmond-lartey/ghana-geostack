@@ -1,4 +1,4 @@
-"""Step 04 - Earth Engine, driven by the catalogue.
+"""Step 04 — Earth Engine, driven by the catalogue.
 
 Exports a Ghana-clipped raster for any dataset in `config/catalog.yml` that
 carries a `gee` block. The collection id, bands, reducer and scale all come
@@ -26,11 +26,8 @@ from __future__ import annotations
 
 import argparse
 import os
-import sys
-from pathlib import Path
 
 import yaml
-
 from common import GH, RAW, ROOT, log, step
 
 CATALOG = ROOT / "config" / "catalog.yml"
@@ -139,6 +136,66 @@ def ghana_geometry(ee, city: str | None):
     return ee.Geometry.Rectangle([w, s, e, n], "EPSG:4326", geodesic=False)
 
 
+def is_vector(entry: dict) -> bool:
+    """A catalogue entry with no bands and no scale is a FeatureCollection."""
+    gee = entry["gee"]
+    return not gee.get("bands") and not gee.get("scale")
+
+
+def fetch_vector(ee, entry: dict, region, scope: str) -> None:
+    """Export a FeatureCollection clipped to Ghana, as GeoJSON.
+
+    Boundaries, catchments and urban extents are vectors, and forcing them
+    through a raster export would throw away exactly the attributes that make
+    them useful — HYBAS_ID and NEXT_DOWN carry the river topology.
+    """
+    collection = ee.FeatureCollection(entry["gee"]["collection"]).filterBounds(region)
+
+    # geoBoundaries CGAZ is global and carries a country code, so filter on it
+    # rather than relying on the spatial intersection alone.
+    if "geoboundaries" in entry["gee"]["collection"].lower():
+        collection = collection.filter(ee.Filter.eq("shapeGroup", "GHA"))
+
+    count = collection.size().getInfo()
+    log.info("%d features intersect Ghana", count)
+    if count == 0:
+        raise SystemExit("Nothing intersects Ghana. Check the collection id.")
+
+    name = f"{entry['id']}_{scope}"
+
+    # Direct download works for a few hundred features; past that the payload
+    # exceeds what getDownloadURL will serve, so Drive takes over.
+    if count > 3000:
+        log.info("%d features is past the direct-download limit — exporting to Drive", count)
+        task = ee.batch.Export.table.toDrive(
+            collection=collection,
+            description=name,
+            folder="ghana-geostack",
+            fileNamePrefix=name,
+            fileFormat="GeoJSON",
+        )
+        task.start()
+        log.info("export started: %s", name)
+        log.info("Watch it at https://code.earthengine.google.com/tasks")
+        return
+
+    import requests
+
+    url = collection.getDownloadURL(filetype="GeoJSON", filename=name)
+    destination = RAW / f"{name}.geojson"
+    log.info("downloading to %s", destination.name)
+
+    with requests.get(url, stream=True, timeout=1800) as response:
+        response.raise_for_status()
+        with open(destination, "wb") as fh:
+            for chunk in response.iter_content(chunk_size=1 << 20):
+                fh.write(chunk)
+
+    log.info("saved %s (%.1f MB)", destination.name, destination.stat().st_size / 1e6)
+    log.info("Summarise a raster onto it with:")
+    log.info("  python pipelines/05_zonal_stats.py <raster> --zones %s", destination)
+
+
 def build_image(ee, entry: dict, region, start: str | None, end: str | None):
     """Reduce a collection to one image, or take an image as it is."""
     gee = entry["gee"]
@@ -170,6 +227,13 @@ def build_image(ee, entry: dict, region, start: str | None, end: str | None):
             collection = collection.map(mask_landsat(ee))
 
         image = getattr(collection.select(bands), REDUCERS[reducer])()
+
+        # QA_PIXEL has done its job once the mask is applied, and carrying it
+        # into the export doubles the file for no benefit.
+        if "QA_PIXEL" in bands:
+            image = image.select([b for b in bands if b != "QA_PIXEL"])
+            log.info("thermal band exported as raw DN — convert with "
+                     "--scale 0.00341802 --offset -124.15 for Celsius")
     except SystemExit:
         raise
     except Exception:
@@ -189,9 +253,19 @@ def mask_sentinel2(ee):
 
 
 def mask_landsat(ee):
+    """Drop cloud, cloud shadow, dilated cloud and cirrus.
+
+    Collection 2 QA_PIXEL bits: 1 dilated cloud, 2 cirrus, 3 cloud,
+    4 cloud shadow. A thermal composite built over cloud reads the cloud top,
+    not the ground, which is tens of degrees out.
+    """
     def apply(image):
         qa = image.select("QA_PIXEL")
-        return image.updateMask(qa.bitwiseAnd(1 << 3).eq(0))
+        clear = (qa.bitwiseAnd(1 << 1).eq(0)
+                 .And(qa.bitwiseAnd(1 << 2).eq(0))
+                 .And(qa.bitwiseAnd(1 << 3).eq(0))
+                 .And(qa.bitwiseAnd(1 << 4).eq(0)))
+        return image.updateMask(clear)
     return apply
 
 
@@ -242,23 +316,29 @@ def main() -> None:
             f"'{args.dataset}' has no Earth Engine entry. Use {route} instead."
         )
 
-    step("04", f"Earth Engine - {entry['title']}")
+    step("04", f"Earth Engine — {entry['title']}")
     log.info("licence: %s", entry["licence"])
     log.info("credit: %s", entry["attribution"])
 
     ee = initialise(args.project)
     region = ghana_geometry(ee, args.city)
+    scope = args.city or "ghana"
+
+    if is_vector(entry):
+        fetch_vector(ee, entry, region, scope)
+        log.info("Step 04 complete.")
+        return
+
     image = build_image(ee, entry, region, args.start, args.end)
 
     scale = args.scale or entry["gee"]["scale"]
     pixels = estimate_pixels(entry, args.city)
     log.info("about %s pixels at %d m", f"{pixels:,}", scale)
 
-    scope = args.city or "ghana"
     name = f"{entry['id']}_{scope}"
 
     if args.drive or pixels > DIRECT_DOWNLOAD_PIXEL_LIMIT:
-        log.info("too large for a direct download - exporting to Drive")
+        log.info("too large for a direct download — exporting to Drive")
         task = ee.batch.Export.image.toDrive(
             image=image,
             description=name,

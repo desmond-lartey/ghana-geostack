@@ -1,20 +1,34 @@
+# Publishes the documentation site to GitHub Pages.
+#
+# Pages must be set to "GitHub Actions" as its source, under
+# Settings -> Pages -> Build and deployment. The environment protection rules
+# allow deployment from the default branch only, so this runs on main.
+
 name: Documentation
 
 on:
   push:
-    branches: [main, master]
+    branches: [main]
+    paths:
+      - "docs/**"
+      - "mkdocs.yml"
+      - "requirements-docs.txt"
+      - "scripts/sync_docs.py"
+      - "skills/**"
+      - "LICENSE-DATA.md"
+      - ".github/workflows/docs.yml"
   workflow_dispatch:
-
-# One deployment at a time; a queued run supersedes a pending one rather than
-# cancelling a deployment already in progress.
-concurrency:
-  group: pages
-  cancel-in-progress: false
 
 permissions:
   contents: read
   pages: write
   id-token: write
+
+# One deployment at a time. A queued run supersedes an older one rather than
+# cancelling the run in progress, so a half-published site is never left.
+concurrency:
+  group: pages
+  cancel-in-progress: false
 
 jobs:
   build:
@@ -22,7 +36,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0        # git-revision-date plugins need full history
+          fetch-depth: 0  # git revision dates for the page footers
 
       - uses: actions/setup-python@v5
         with:
@@ -30,22 +44,21 @@ jobs:
           cache: pip
           cache-dependency-path: requirements-docs.txt
 
-      - name: Install Material for MkDocs
+      - name: Install
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y libcairo2-dev libfreetype6-dev libffi-dev \
-                                  libjpeg-dev libpng-dev libz-dev
+          sudo apt-get install -y -qq libcairo2-dev libfreetype6-dev libffi-dev \
+                                      libjpeg-dev libpng-dev libz-dev
+          python -m pip install --upgrade pip
           pip install -r requirements-docs.txt
 
-      - name: Sync canonical pages into the docs tree
+      - name: Sync generated pages
         run: python scripts/sync_docs.py
 
       - name: Build
-        # --strict fails on a broken internal link rather than shipping one.
         run: mkdocs build --strict
 
       - uses: actions/configure-pages@v5
-
       - uses: actions/upload-pages-artifact@v3
         with:
           path: site

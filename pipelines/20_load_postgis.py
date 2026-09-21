@@ -1,4 +1,4 @@
-"""Step 20 - load into PostGIS.
+"""Step 20 — load into PostGIS.
 
 Replaces the original pipeline's subprocess-and-Windows-path approach with
 something that runs identically on a laptop, a server and CI:
@@ -25,7 +25,6 @@ import subprocess
 from pathlib import Path
 
 import geopandas as gpd
-
 from common import GH, PROCESSED, RAW, ROOT, db, log, source, step
 from common.validate import check_magnitude, check_table
 
@@ -124,7 +123,7 @@ def load_buildings() -> None:
     elif osm.exists():
         path, src_id = osm, "osm_ghana"
     else:
-        log.warning("no building file found - run 02 or 03 first")
+        log.warning("no building file found — run 02 or 03 first")
         return
 
     log.info("loading buildings from %s", path.name)
@@ -144,7 +143,7 @@ def load_buildings() -> None:
 def load_roads() -> None:
     path = RAW / "osm_roads.parquet"
     if not path.exists():
-        log.warning("missing %s - run 02_fetch_osm.py", path.name)
+        log.warning("missing %s — run 02_fetch_osm.py", path.name)
         return
     gdf = gpd.read_parquet(path)
     gdf["source_id"] = "osm_ghana"
@@ -176,7 +175,7 @@ def load_raster(tif: Path, schema: str, table: str, *,
     psql = shutil.which("psql")
     if not (r2p and psql):
         log.warning(
-            "raster2pgsql or psql not on PATH - skipping %s. Install the "
+            "raster2pgsql or psql not on PATH — skipping %s. Install the "
             "PostgreSQL client tools, or load rasters from inside the "
             "container with: docker compose exec postgis raster2pgsql ...",
             tif.name)

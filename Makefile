@@ -103,11 +103,16 @@ docs-build: docs  ## Build the documentation site into site/
 
 # ── Development ───────────────────────────────────────────────────────────
 
+# `ruff format` is offered as `make format` but is not enforced. Several files
+# align columns deliberately — the zonal statistics tables, the catalogue field
+# list — and a blanket reformat destroys that alignment for no gain.
 lint:  ## Check Python style and SQL formatting
-	ruff check pipelines/
-	ruff format --check pipelines/
+	ruff check pipelines/ scripts/
 	@command -v sqlfluff >/dev/null && sqlfluff lint db/ --dialect postgres || \
 	 echo "sqlfluff not installed, skipping SQL lint"
+
+format:  ## Apply the automatic fixes ruff can make safely
+	ruff check pipelines/ scripts/ --fix
 
 test:  ## Run the test suite
 	pytest -q tests/

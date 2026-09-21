@@ -1,14 +1,14 @@
-"""Step 50 - export.
+"""Step 50 — export.
 
 Turns the PostGIS database into artefacts that work without PostGIS:
 
-  * GeoParquet per layer - the interchange format. Reads in QGIS, DuckDB,
+  * GeoParquet per layer — the interchange format. Reads in QGIS, DuckDB,
     GeoPandas, R, Python, ArcGIS Pro and the browser.
-  * ghana.duckdb - one file, with views over every layer. Clone the repo,
+  * ghana.duckdb — one file, with views over every layer. Clone the repo,
     open the file, run SQL. No server, no Docker, works offline. This is the
     path that matters most for anyone working outside a data centre.
-  * PMTiles - a single-file tile archive that a static site can serve.
-  * attribution.md - the licence and credit line for everything exported.
+  * PMTiles — a single-file tile archive that a static site can serve.
+  * attribution.md — the licence and credit line for everything exported.
 
 Only datasets registered as publishable in meta.dataset are exported. That
 gate is the whole point: it makes it structurally difficult to publish data
@@ -27,8 +27,7 @@ import shutil
 import subprocess
 
 import geopandas as gpd
-
-from common import EXPORTS, ROOT, db, log, step
+from common import EXPORTS, db, log, step
 
 
 def publishable_layers() -> list[tuple[str, str, str, str]]:
@@ -54,7 +53,7 @@ def export_geoparquet(schema: str, table: str) -> int:
         (schema, table),
     )
     if geom_col is None:
-        log.warning("%s.%s has no geometry column - skipped", schema, table)
+        log.warning("%s.%s has no geometry column — skipped", schema, table)
         return 0
 
     gdf = gpd.read_postgis(
@@ -121,7 +120,7 @@ def build_pmtiles(layers) -> None:
     """
     if not shutil.which("tippecanoe"):
         log.warning(
-            "tippecanoe not installed - skipping PMTiles. Install it to "
+            "tippecanoe not installed — skipping PMTiles. Install it to "
             "publish tiles from static hosting: "
             "https://github.com/felt/tippecanoe")
         return
@@ -152,7 +151,7 @@ def build_pmtiles(layers) -> None:
         "-zg",                        # guess max zoom from feature density
         "--drop-densest-as-needed",   # keep tiles under the size limit
         "--extend-zooms-if-still-dropping",
-        "--attribution", "Ghana GeoStack - see attribution.md",
+        "--attribution", "Ghana GeoStack — see attribution.md",
         *inputs,
     ]
     log.info("running tippecanoe")
@@ -198,13 +197,13 @@ def main() -> None:
     if not last[0][0]:
         raise SystemExit(
             "The most recent QC run failed. Fix the errors and re-run QC "
-            "before exporting - the export gate exists precisely to stop a "
+            "before exporting — the export gate exists precisely to stop a "
             "broken build reaching the web.")
 
     layers = publishable_layers()
     if args.layer:
         schema, table = args.layer.split(".", 1)
-        layers = [l for l in layers if (l[0], l[1]) == (schema, table)]
+        layers = [row for row in layers if (row[0], row[1]) == (schema, table)]
         if not layers:
             raise SystemExit(
                 f"{args.layer} is not registered as publishable. Check its "

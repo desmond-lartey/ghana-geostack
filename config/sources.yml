@@ -1,4 +1,4 @@
-# sources.yml - the data catalogue.
+# sources.yml — the data catalogue.
 #
 # Adding a dataset means adding an entry here first. The pipelines read this
 # file, the metadata registry (meta.dataset) is populated from it, and the
@@ -25,7 +25,7 @@ sources:
 
   - id: cod_ab_ghana
     theme: admin
-    name: Ghana Common Operational Dataset - administrative boundaries
+    name: Ghana Common Operational Dataset — administrative boundaries
     access: manual
     url: https://data.humdata.org/dataset/cod-ab-gha
     format: shp
@@ -109,7 +109,7 @@ sources:
     attribution: "© Overture Maps Foundation"
     status: ready
     notes: >
-      Queried in place over S3 with DuckDB - no bulk download. Always gate on
+      Queried in place over S3 with DuckDB — no bulk download. Always gate on
       the bbox struct columns before any spatial predicate.
 
   - id: google_open_buildings
@@ -123,7 +123,7 @@ sources:
     status: ready
     notes: >
       Best building coverage for rural Ghana by a wide margin. Includes a
-      per-polygon confidence score - filter on it, do not assume every
+      per-polygon confidence score — filter on it, do not assume every
       polygon is a real structure.
 
   - id: ms_building_footprints
@@ -232,7 +232,7 @@ sources:
     status: ready
     notes: >
       Occurrence and seasonality bands are a usable proxy for flood-prone
-      land where no engineered flood model exists. Say so on the map - it is
+      land where no engineered flood model exists. Say so on the map — it is
       an observation of past water, not a modelled hazard.
 
   - id: firms_fires
@@ -275,7 +275,7 @@ sources:
     url: https://data.humdata.org/group/gha
     format: mixed
     licence: varies per dataset
-    attribution: "per dataset - check before publishing"
+    attribution: "per dataset — check before publishing"
     status: ready
     notes: Always record the per-dataset licence in meta.dataset. Never assume.
 

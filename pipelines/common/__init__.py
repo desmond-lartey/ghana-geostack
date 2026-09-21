@@ -1,7 +1,7 @@
 """Shared helpers for the Ghana GeoStack pipelines."""
 
 from . import db
-from .config import GH, EXPORTS, INTERIM, PROCESSED, RAW, ROOT, BBox, Ghana, source
+from .config import EXPORTS, GH, INTERIM, PROCESSED, RAW, ROOT, BBox, Ghana, source
 from .log import log, step
 
 __all__ = [

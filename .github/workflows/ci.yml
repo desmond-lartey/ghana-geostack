@@ -1,73 +1,110 @@
+# Checks that run on every push and pull request.
+#
+# Deliberately light: style, the unit tests that need no database, and a
+# structural check on the web viewer. The database-backed quality control runs
+# against a live PostGIS instance, which belongs in `make qc` rather than here.
+
 name: CI
 
 on:
   push:
-    branches: [main, master]
+    branches: [main]
   pull_request:
   workflow_dispatch:
 
 jobs:
-  lint:
+  python:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - run: pip install ruff
-      - run: ruff check pipelines/
-      - run: ruff format --check pipelines/
+          cache: pip
 
-  config:
-    # Catches the mistakes that are cheap to make and expensive to find:
-    # a source added without a licence, or ghana.yml and the SQL constants
-    # drifting apart.
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          pip install ruff pytest pyyaml
+
+      - name: Lint
+        run: |
+          ruff check pipelines/ scripts/
+          ruff format --check pipelines/
+
+      - name: Test
+        run: pytest -q tests/
+
+  catalogue:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - run: pip install pyyaml pytest
-      - run: pytest tests/test_config.py -v
 
-  database:
+      - run: pip install pyyaml
+
+      # Every dataset carries a licence and an attribution string. The export
+      # step refuses to publish without them, so a missing one should fail here
+      # rather than three steps into someone's first pipeline run.
+      - name: Every dataset is attributed
+        run: |
+          python - <<'PY'
+          import sys, yaml, pathlib
+
+          catalog = yaml.safe_load(pathlib.Path("config/catalog.yml").read_text())
+          missing = [
+              d.get("id", "<no id>")
+              for d in catalog.get("datasets", [])
+              if not d.get("licence") or not d.get("attribution")
+          ]
+          if missing:
+              sys.exit("Missing licence or attribution: " + ", ".join(missing))
+          print(f"{len(catalog.get('datasets', []))} datasets, all attributed")
+          PY
+
+  web:
     runs-on: ubuntu-latest
-    services:
-      postgis:
-        image: postgis/postgis:16-3.4
-        env:
-          POSTGRES_DB: ghana
-          POSTGRES_USER: ghana
-          POSTGRES_PASSWORD: ghana
-        ports: ["5432:5432"]
-        options: >-
-          --health-cmd "pg_isready -U ghana"
-          --health-interval 10s --health-timeout 5s --health-retries 10
-    env:
-      PGHOST: localhost
-      PGPORT: "5432"
-      PGDATABASE: ghana
-      PGUSER: ghana
-      PGPASSWORD: ghana
     steps:
       - uses: actions/checkout@v4
-      - name: Install the PostgreSQL client
-        run: sudo apt-get update && sudo apt-get install -y postgresql-client
-      - name: Extensions
-        run: psql -h localhost -U ghana -d ghana -f docker/initdb/00_extensions.sql
-      - name: Migrations
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      # The viewer is one self-contained file. A syntax error in it is a blank
+      # page in production, so the script block is parsed here.
+      - name: The viewer parses
         run: |
-          for f in db/migrations/*.sql; do
-            echo "--- $f"
-            psql -h localhost -U ghana -d ghana -v ON_ERROR_STOP=1 -f "$f"
-          done
-      - name: Migrations are idempotent
-        # Running them twice must be a no-op. A migration that only works on an
-        # empty database is a migration that will fail on someone's laptop.
+          node - <<'JS'
+          const fs = require("fs");
+          const { execFileSync } = require("child_process");
+
+          const html = fs.readFileSync("web/index.html", "utf8");
+          const blocks = [...html.matchAll(/<script(?![^>]*src=)[^>]*>([\s\S]*?)<\/script>/g)];
+          if (!blocks.length) { console.error("No inline script found"); process.exit(1); }
+
+          // The viewer's script is an ES module, so it is checked as one:
+          // `new Function` rejects a top-level import.
+          blocks.forEach((block, i) => {
+            const file = `/tmp/viewer-block-${i + 1}.mjs`;
+            fs.writeFileSync(file, block[1]);
+            try {
+              execFileSync("node", ["--check", file], { stdio: "pipe" });
+            } catch (err) {
+              console.error(`Script block ${i + 1} failed to parse:`);
+              console.error(err.stderr.toString());
+              process.exit(1);
+            }
+          });
+          console.log(`${blocks.length} script block(s) parse`);
+          JS
+
+      - name: The site builds
         run: |
-          for f in db/migrations/*.sql; do
-            psql -h localhost -U ghana -d ghana -v ON_ERROR_STOP=1 -f "$f"
-          done
-      - name: Ghana helper functions behave
-        run: psql -h localhost -U ghana -d ghana -v ON_ERROR_STOP=1 -f tests/test_functions.sql
+          pip install pyyaml
+          python scripts/build_web.py
+          test -f public/index.html
