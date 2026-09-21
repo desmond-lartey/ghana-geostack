@@ -55,6 +55,10 @@ every sign-in request — and is set at build time, not typed in by users.
    The client **secret** is not used. The browser flow has no way to keep one,
    so there is nothing to protect and nothing to leak.
 
+   An **API key** is not used either, and is not interchangeable with a client
+   id. If one was created while setting this up, delete it: an unused key is
+   something to lose rather than something to have.
+
 5. **Decide who may sign in.** While the consent screen is in *Testing*, only
    the accounts listed under **Audience → Test users** can sign in; everyone
    else is refused with `access_denied`. To open it to the public, publish the
@@ -163,6 +167,13 @@ Sign-In JavaScript platform library, which has been shut down — the call never
 calls back, so the panel waits for a popup that will never open. `EE_API` must
 point at **0.1.388 or later**, the release that moved to Google Identity
 Services.
+
+**"Google hasn't verified this app"** — expected, not a fault, and the most
+likely place to get stuck because the safe-looking button is the wrong one.
+Google shows this to every test user of an app whose consent screen is still in
+testing. Choose **Continue**, the plain link on the left; *Back to safety*
+cancels the sign-in. It stops appearing once the consent screen is published
+and verified.
 
 **"Google needs you to approve access"** — expected, not a fault. A silent
 sign-in only works for someone already signed in who has granted access before.

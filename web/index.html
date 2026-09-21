@@ -4570,7 +4570,12 @@ async function connectEarthEngine() {
     return;
   }
 
-  eeStatus("Checking with Google…");
+  eeStatus(
+    "Checking with Google…" +
+    '<div style="margin-top:6px;font-size:11px;opacity:.75">If Google says it ' +
+    "<em>hasn't verified this app</em>, that is expected while this site's " +
+    "consent screen is in testing. Choose <strong>Continue</strong> — the plain " +
+    "link, not the blue button.</div>");
 
   const auth = await eeAuthenticate(client);
   if (!auth.ok) {
@@ -4670,7 +4675,10 @@ function offerPopupSignIn(finish, failed) {
     '<div style="margin-top:8px"><button class="btn btn-primary" id="ee-popup">' +
     "Continue with Google</button></div>" +
     '<div style="margin-top:6px;font-size:11px;opacity:.75">Opens a Google window. ' +
-    "If nothing appears, allow popups for this site and press it again.</div>");
+    "If nothing appears, allow popups for this site and press it again. A warning " +
+    "that Google <em>hasn't verified this app</em> is expected while the consent " +
+    "screen is in testing — choose <strong>Continue</strong>, not Back to safety." +
+    "</div>");
 
   const button = document.getElementById("ee-popup");
   if (!button) { finish(false, "Could not show the sign-in button."); return; }
