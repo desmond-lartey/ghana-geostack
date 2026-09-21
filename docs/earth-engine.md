@@ -187,8 +187,21 @@ address in the browser's URL bar must appear there exactly, including
 `access_denied`, the consent screen is still in testing and you are not on its
 test-user list.
 
-**"Earth Engine refused the project"** — the project is not registered for
-Earth Engine, or the Earth Engine API is not enabled on it.
+**"Could not start Earth Engine for &lt;project&gt;"** — the panel asks the
+API directly and reports what it said, because the client library's own message
+for this is `Invalid JSON:` followed by nothing. An empty body is what a browser
+sees when a request is refused before it can be read, so the library names the
+symptom and hides the cause.
+
+The most common answer is that the **Earth Engine API is not enabled on that
+particular project**. Enabling it on one project does nothing for another, and
+the project in this box is the one that matters — not the one the OAuth client
+lives in, and not whichever project the Cloud console happens to have selected.
+The message links straight to the right page when that is the cause.
+
+The other answers it distinguishes: a token that was never set, a project the
+signed-in account cannot use, a project that does not exist, a rejected token,
+and a request that never left the browser at all.
 
 **The layer draws nothing** — check the date range first. The panel reports
 the image count before drawing, so a zero there is the answer. After that,

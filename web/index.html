@@ -818,6 +818,7 @@ td { font-family: var(--font-mono); font-size: 12.5px; font-variant-numeric: tab
       <span id="ask-status">&nbsp;</span>
     </div>
 
+    <div id="ask-confirm" hidden style="margin:10px 0"></div>
     <div id="ask-result" hidden>
       <h3>The query it wrote</h3>
       <p class="legend-note" style="margin:0 0 9px">
@@ -3175,6 +3176,37 @@ async function askQuestion() {
   let message = null;
 
   const ownKey = store.get("apiKey", "");
+
+  // With a key and Anthropic selected, the question goes to the agent, which
+  // can operate the viewer rather than only describe a query for it. The
+  // SQL-only path below remains for every other provider and for the shared
+  // endpoint, so nothing that worked before stops working.
+  if (ownKey && store.get("provider", "anthropic") === "anthropic") {
+    askResult.hidden = true;
+    try {
+      const outcome = await runAgent(
+        question,
+        { key: ownKey, model: store.get("model", ""), baseUrl: store.get("baseUrl", "") },
+        (step) => { askStatus.textContent = step; });
+
+      askStatus.dataset.error = "false";
+      askStatus.textContent = outcome.answer;
+
+      // Leave the query it ran visible and editable rather than hidden.
+      if (lastAgentSql) {
+        askSql.value = lastAgentSql;
+        askResult.hidden = false;
+        askTable.innerHTML = "";
+      }
+      return;
+    } catch (err) {
+      window.ghLog?.("error", "Agent failed", err.message || String(err));
+      askStatus.dataset.error = "true";
+      askStatus.textContent = `The agent could not run: ${err.message ?? err}`;
+      return;
+    }
+  }
+
   if (ownKey) {
     try {
       sql = await askProvider(question, {
@@ -4375,6 +4407,409 @@ document.getElementById("sql").addEventListener("keydown", (e) => {
 setTheme(state.theme);
 initDuckDB();
 
+/* ── The agent's tools ─────────────────────────────────────────────────────
+
+   Modelled on GeoAgent's @geo_tool: every action the model can take is
+   declared once, with the metadata that decides how it is treated — its
+   category, whether it must be confirmed, whether it is destructive, whether
+   it spends someone's quota.
+
+   The point of the registry is that one declaration drives three things that
+   would otherwise drift apart: the schema sent to the model, the gate that
+   asks before running, and the list a person can read to see what this thing
+   is allowed to do. Adding a capability is one entry, not three.
+
+   The Ask tab previously wrote SQL and stopped. These let it act: move the
+   map, show a layer, query the database, style the answer. Reading tools come
+   first deliberately — an agent that can see the map before changing it makes
+   far better decisions than one working blind.                              */
+
+const AGENT_TOOLS = {
+
+  /* — Reading. Free, instant, never confirmed. — */
+
+  get_map_state: {
+    category: "map",
+    description: "Where the map is now: centre, zoom, the visible area in " +
+                 "square kilometres, and the current projection. Call this " +
+                 "before moving the map or fetching anything area-limited.",
+    schema: { type: "object", properties: {} },
+    run: () => {
+      const c = map.getCenter();
+      return {
+        centre: [Number(c.lng.toFixed(4)), Number(c.lat.toFixed(4))],
+        zoom: Number(map.getZoom().toFixed(2)),
+        visible_area_km2: Math.round(viewAreaKm2()),
+        projection: state.projection,
+        three_d: state.threeD
+      };
+    }
+  },
+
+  list_layers: {
+    category: "map",
+    description: "Every layer in the viewer: its id, name, whether it is " +
+                 "currently drawn, and whether it needs a database that may " +
+                 "not be connected.",
+    schema: { type: "object", properties: {} },
+    run: () => LAYERS.map((l) => ({
+      id: l.id,
+      name: l.name,
+      visible: state.active.has(l.id),
+      needs_database: Boolean(l.table && !state.tilesOk)
+    }))
+  },
+
+  list_tables: {
+    category: "data",
+    description: "The tables available to query in the browser database, with " +
+                 "their columns. Call this before writing SQL rather than " +
+                 "assuming a column exists.",
+    schema: { type: "object", properties: {} },
+    run: async () => {
+      const result = await conn.query(
+        "SELECT table_name, column_name, data_type FROM information_schema.columns " +
+        "WHERE table_schema = 'ghana' ORDER BY table_name, ordinal_position;");
+      const tables = {};
+      for (const row of result.toArray().map((r) => r.toJSON())) {
+        (tables[row.table_name] ??= []).push(`${row.column_name} ${row.data_type}`);
+      }
+      return tables;
+    }
+  },
+
+  /* — Acting on the map. Instant and reversible, so not confirmed. — */
+
+  fly_to: {
+    category: "map",
+    description: "Move the map to a longitude and latitude, optionally at a " +
+                 "given zoom. Zoom 6 shows Ghana, 9 a region, 12 a town, 15 a " +
+                 "neighbourhood.",
+    schema: {
+      type: "object",
+      properties: {
+        lon: { type: "number", description: "Longitude, between -3.3 and 1.3 for Ghana" },
+        lat: { type: "number", description: "Latitude, between 4.7 and 11.2 for Ghana" },
+        zoom: { type: "number", description: "Optional zoom level, 0 to 18" }
+      },
+      required: ["lon", "lat"]
+    },
+    run: ({ lon, lat, zoom }) => {
+      map.flyTo({ center: [lon, lat], zoom: zoom ?? map.getZoom(),
+                  duration: 1400, essential: true });
+      return `Moved to ${lon}, ${lat}${zoom ? ` at zoom ${zoom}` : ""}.`;
+    }
+  },
+
+  zoom_to_place: {
+    category: "map",
+    description: "Move the map to a named region or district in Ghana. Use " +
+                 "this rather than guessing coordinates — it looks the place " +
+                 "up in the boundaries and fits the map to its true extent.",
+    schema: {
+      type: "object",
+      properties: {
+        name: { type: "string", description: "A region or district name, such as Ashanti or Tamale" }
+      },
+      required: ["name"]
+    },
+    run: async ({ name }) => {
+      const safe = String(name).replace(/'/g, "''");
+      // The boundary tables carry a precomputed bounding box per feature,
+      // which is why this needs no spatial extension.
+      const result = await conn.query(
+        `SELECT adm1_name AS name, 'region' AS kind,
+                bbox_xmin, bbox_ymin, bbox_xmax, bbox_ymax
+         FROM ghana.region WHERE lower(adm1_name) LIKE lower('%${safe}%')
+         UNION ALL
+         SELECT adm2_name, 'district',
+                bbox_xmin, bbox_ymin, bbox_xmax, bbox_ymax
+         FROM ghana.district WHERE lower(adm2_name) LIKE lower('%${safe}%')
+         LIMIT 1;`);
+      const row = result.toArray()[0]?.toJSON();
+      if (!row) return { error: `No region or district matching "${name}".` };
+
+      map.fitBounds([[row.bbox_xmin, row.bbox_ymin], [row.bbox_xmax, row.bbox_ymax]],
+                    { padding: 60, duration: 1400 });
+      return `Zoomed to ${row.name} (${row.kind}).`;
+    }
+  },
+
+  set_layer_visible: {
+    category: "map",
+    description: "Show or hide one of the viewer's layers. Use list_layers " +
+                 "first to see what exists.",
+    schema: {
+      type: "object",
+      properties: {
+        layer_id: { type: "string", description: "The layer's id from list_layers" },
+        visible: { type: "boolean" }
+      },
+      required: ["layer_id", "visible"]
+    },
+    run: ({ layer_id, visible }) => {
+      if (!LAYERS.some((l) => l.id === layer_id)) {
+        return { error: `No layer "${layer_id}". Call list_layers for the real ids.` };
+      }
+      setLayerVisible(layer_id, visible, true);
+      renderLayerList(); renderLegend();
+      return `${visible ? "Showing" : "Hid"} ${layer_id}.`;
+    }
+  },
+
+  /* — Querying. Read-only, checked before it runs. — */
+
+  run_sql: {
+    category: "data",
+    description: "Run a read-only SQL query against the browser database and " +
+                 "return the rows. Call list_tables first. There is no spatial " +
+                 "extension: use the lon, lat and bounding-box columns, or the " +
+                 "gh_ macros. Selecting the geom column lets the result be drawn.",
+    schema: {
+      type: "object",
+      properties: {
+        sql: { type: "string", description: "A single SELECT or WITH statement" },
+        limit: { type: "number", description: "Rows to return, default 50" }
+      },
+      required: ["sql"]
+    },
+    run: async ({ sql, limit }) => {
+      if (!isReadOnlySql(sql)) {
+        return { error: "Refused: only read-only queries run here." };
+      }
+      const result = await conn.query(sql);
+      const rows = result.toArray().map((r) => r.toJSON());
+      const cap = Math.min(limit ?? 50, 200);
+
+      // Geometry is megabytes of coordinates and worthless to a language
+      // model; it is kept for the map and withheld from the answer.
+      const trimmed = rows.slice(0, cap).map((row) => {
+        const { geom, shape, ...rest } = row;
+        return rest;
+      });
+      lastAgentRows = rows;
+      lastAgentSql = sql;
+      return { row_count: rows.length, returned: trimmed.length, rows: trimmed,
+               has_geometry: rows.length > 0 && "geom" in rows[0] };
+    }
+  },
+
+  show_result_on_map: {
+    category: "map",
+    description: "Draw the rows from the last run_sql on the map. Works when " +
+                 "the query selected a geom column, or columns the viewer can " +
+                 "join geometry to: adm1_name, adm2_name, adm1_pcode, " +
+                 "adm2_pcode, or lon and lat.",
+    schema: { type: "object", properties: {} },
+    run: async () => {
+      if (!lastAgentSql) return { error: "No query has been run yet." };
+      // mapResult reads the Query tab and runs the statement itself, so the
+      // agent's query is put there first. That also leaves it visible and
+      // editable, which is the point: the person can see what was run.
+      document.getElementById("sql").value = lastAgentSql;
+      await mapResult();
+      renderStylePane();
+      return "Drawn on the map. It is in the Query tab if you want to read it.";
+    }
+  },
+
+  style_by_column: {
+    category: "map",
+    description: "Colour the drawn result by a numeric column, so the map " +
+                 "shows the value rather than just the shape. Use after " +
+                 "show_result_on_map.",
+    schema: {
+      type: "object",
+      properties: {
+        column: { type: "string", description: "A numeric column in the result" },
+        palette: { type: "string", description: "One of: " + Object.keys(PALETTES).join(", ") },
+        three_d: { type: "boolean", description: "Also raise the shapes by the value" }
+      },
+      required: ["column"]
+    },
+    run: ({ column, palette, three_d }) => {
+      // The query result is one of the style targets the Style tab builds;
+      // the agent drives the same machinery rather than a parallel one, so
+      // whatever it does is visible and adjustable in that tab afterwards.
+      const target = styleTargets().find((t) => t.key === "qr");
+      if (!target) {
+        return { error: "Nothing is drawn. Call show_result_on_map first." };
+      }
+
+      const fields = numericFields(target.ids);
+      if (!fields.includes(column)) {
+        return { error: `"${column}" is not a numeric column on the drawn result. ` +
+                        `Available: ${fields.join(", ") || "none"}.` };
+      }
+
+      const chosen = palette && PALETTES[palette] ? palette : "warm";
+      styleState.qr = { ...(styleState.qr ?? {}), field: column, palette: chosen };
+
+      if (three_d) setDimension(true);
+      applyStyle(target);
+      renderStylePane();
+      return `Coloured by ${column} using the ${chosen} palette` +
+             `${three_d ? ", raised in 3D" : ""}.`;
+    }
+  }
+};
+
+/* Anything that spends someone else's quota, or takes long enough to matter,
+   asks first. GeoAgent marks this per tool with requires_confirmation and
+   destructive; nothing here is destructive yet, so the gate is a single list
+   and the machinery is in place for when something is. */
+const TOOLS_NEEDING_CONFIRMATION = new Set([]);
+
+let lastAgentRows = null;
+let lastAgentSql = null;
+
+/* ── The loop ──────────────────────────────────────────────────────────────
+
+   The model is given the tools and answers in turns: it asks for a tool, the
+   tool runs here, the result goes back, and it decides what to do next. It
+   stops when it has an answer or when the turn limit is reached.
+
+   The limit is not a formality. A loop with tools and no bound is a way to
+   spend someone's money while they watch a spinner.                        */
+
+const AGENT_MAX_TURNS = 8;
+
+function agentToolSpecs() {
+  return Object.entries(AGENT_TOOLS).map(([name, tool]) => ({
+    name,
+    description: tool.description,
+    input_schema: tool.schema
+  }));
+}
+
+async function runAgentTool(name, input) {
+  const tool = AGENT_TOOLS[name];
+  if (!tool) return { error: `No such tool: ${name}` };
+
+  if (TOOLS_NEEDING_CONFIRMATION.has(name)) {
+    const approved = await confirmAgentTool(name, input);
+    if (!approved) return { error: "The person declined this step." };
+  }
+
+  window.ghLog?.("info", `Agent: ${name}`, JSON.stringify(input ?? {}).slice(0, 200));
+
+  try {
+    const result = await tool.run(input ?? {});
+    return result;
+  } catch (err) {
+    window.ghLog?.("error", `Agent tool ${name} failed`, err.message || String(err));
+    return { error: String(err.message ?? err) };
+  }
+}
+
+function confirmAgentTool(name, input) {
+  return new Promise((resolve) => {
+    const host = document.getElementById("ask-confirm");
+    host.hidden = false;
+    host.innerHTML =
+      `<div style="padding:10px;border:1px solid var(--gold);border-radius:var(--radius)">
+         <strong>Allow this step?</strong>
+         <div style="font-family:var(--font-mono);font-size:11.5px;margin:6px 0;opacity:.85">
+           ${escapeHtml(name)}(${escapeHtml(JSON.stringify(input ?? {}))})</div>
+         <button class="btn btn-primary" id="ask-yes">Run it</button>
+         <button class="btn btn-quiet" id="ask-no">Skip</button>
+       </div>`;
+    const done = (ok) => { host.hidden = true; host.innerHTML = ""; resolve(ok); };
+    document.getElementById("ask-yes").addEventListener("click", () => done(true), { once: true });
+    document.getElementById("ask-no").addEventListener("click", () => done(false), { once: true });
+  });
+}
+
+const AGENT_SYSTEM = `You operate the Ghana GeoStack viewer, a map of Ghana with
+a small database in the browser. Use the tools to answer; do not describe what
+you would do, do it.
+
+Ghana has 16 regions (p-coded GH01 to GH16) and 260 districts. Coordinates are
+longitude then latitude, WGS84. The country spans roughly -3.3 to 1.3 east and
+4.7 to 11.2 north.
+
+How to work:
+- Call list_tables before writing SQL. Do not assume a column exists.
+- There is no spatial extension. Use the lon, lat and bbox_ columns, or the
+  gh_ macros. Never use ST_ functions.
+- To show something on the map: run_sql selecting geom or a joinable name or
+  p-code column, then show_result_on_map, then style_by_column if the answer
+  is a quantity rather than a place.
+- Prefer zoom_to_place over guessing coordinates.
+- Check get_map_state before moving the map if the person said "here" or "this
+  area".
+
+Answer in two or three sentences when you are done. Say what the numbers mean,
+not what you clicked. If a tool returns an error, read it and try a different
+approach rather than repeating the same call.`;
+
+/* One turn of conversation with whichever provider is configured. Only
+   Anthropic's tool format is implemented; the others stay on the old
+   SQL-only path, which the Ask tab falls back to. */
+async function agentTurn(messages, key, model, baseUrl) {
+  const response = await fetch(`${baseUrl || "https://api.anthropic.com"}/v1/messages`, {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      "x-api-key": key,
+      "anthropic-version": "2023-06-01",
+      "anthropic-dangerous-direct-browser-access": "true"
+    },
+    body: JSON.stringify({
+      model: model || "claude-sonnet-4-5",
+      max_tokens: 2048,
+      system: AGENT_SYSTEM,
+      tools: agentToolSpecs(),
+      messages
+    })
+  });
+
+  if (!response.ok) {
+    const body = await response.text().catch(() => "");
+    let detail = body;
+    try { detail = JSON.parse(body)?.error?.message || body; } catch { /* not json */ }
+    throw new Error(`${response.status}: ${String(detail).slice(0, 200)}`);
+  }
+  return response.json();
+}
+
+async function runAgent(question, { key, model, baseUrl }, onStep) {
+  const messages = [{ role: "user", content: question }];
+
+  for (let turn = 1; turn <= AGENT_MAX_TURNS; turn += 1) {
+    onStep(`Thinking (${turn}/${AGENT_MAX_TURNS})`);
+    const reply = await agentTurn(messages, key, model, baseUrl);
+
+    messages.push({ role: "assistant", content: reply.content });
+
+    const calls = (reply.content || []).filter((b) => b.type === "tool_use");
+    if (!calls.length) {
+      const text = (reply.content || [])
+        .filter((b) => b.type === "text").map((b) => b.text).join("\n").trim();
+      return { answer: text || "Done.", turns: turn };
+    }
+
+    const results = [];
+    for (const call of calls) {
+      onStep(`${call.name}…`);
+      const value = await runAgentTool(call.name, call.input);
+      results.push({
+        type: "tool_result",
+        tool_use_id: call.id,
+        content: JSON.stringify(value).slice(0, 12000),
+        is_error: Boolean(value && value.error)
+      });
+    }
+    messages.push({ role: "user", content: results });
+  }
+
+  return {
+    answer: "Stopped after " + AGENT_MAX_TURNS + " steps without reaching an answer. " +
+            "The Log tab shows what it tried.",
+    turns: AGENT_MAX_TURNS
+  };
+}
+
 /* ── The Log pane ──────────────────────────────────────────────────────────
    The recorder itself lives in the classic script at the top of the page, so
    it is capturing before this module runs. This is only the reading of it. */
@@ -4588,10 +5023,14 @@ async function connectEarthEngine() {
     ee.initialize(
       null, null,
       () => { eeState.ready = true; resolve(); },
-      (err) => {
+      async (err) => {
+        eeStatus(`Earth Engine refused the project. Asking it why…`);
+        const why = await eeDiagnose(project);
         eeStatus(
-          `Earth Engine refused the project: ${err}. Check that ${project} is ` +
-          `registered for Earth Engine and that the API is enabled.`, "error");
+          `<strong>Could not start Earth Engine for ${escapeHtml(project)}.</strong>` +
+          `<div style="margin-top:6px">${why}</div>` +
+          `<div style="margin-top:6px;font-size:11px;opacity:.7">` +
+          `The library said: ${escapeHtml(String(err))}</div>`, "error");
         resolve();
       },
       null, project);
@@ -4661,7 +5100,11 @@ function eeAuthenticate(client) {
         failed,
         [EE_SCOPE],
         () => offerPopupSignIn(finish, failed),
-        true
+        // Do NOT suppress the library's own default scopes. Requesting only
+        // earthengine.readonly produces a token that can read Earth Engine but
+        // cannot address a Cloud project, and initialising against a project is
+        // exactly what this does next.
+        false
       );
     } catch (err) {
       finish(false, `The sign-in call itself failed: ${err.message || err}`);
@@ -4692,6 +5135,64 @@ function offerPopupSignIn(finish, failed) {
       finish(false, `Could not open the sign-in window: ${err.message || err}`);
     }
   }, { once: true });
+}
+
+/* When ee.initialize fails, find out what Google actually said.
+
+   The library reports "Invalid JSON: " with nothing after it when the response
+   body was empty, which is what a browser sees when a request is refused
+   before it can be read. That message names the symptom and hides the cause.
+
+   So the failure is followed by one plain authenticated request to the REST
+   API, whose status and error text are readable. A disabled API, a project
+   that is not registered, a missing scope and a blocked host all look
+   identical through the library and completely different here. */
+
+async function eeDiagnose(project) {
+  const token = (ee.data?.getAuthToken && ee.data.getAuthToken()) || "";
+  if (!token) {
+    return "No access token was set, so the sign-in did not complete even " +
+           "though it reported success.";
+  }
+
+  const url = "https://earthengine.googleapis.com/v1/projects/" +
+              encodeURIComponent(project) + "/algorithms";
+
+  let response;
+  try {
+    response = await fetch(url, { headers: { Authorization: token } });
+  } catch (err) {
+    return "The request to earthengine.googleapis.com could not be made at all " +
+           `(${err.message}). That is a blocked host or a content security ` +
+           "policy that does not name it, not an Earth Engine problem.";
+  }
+
+  const body = (await response.text().catch(() => "")).slice(0, 600);
+
+  if (response.ok) {
+    return "The API answered normally, so the project and the token are fine " +
+           "and the failure is inside the client library.";
+  }
+
+  let message = body;
+  try { message = JSON.parse(body)?.error?.message || body; } catch { /* not json */ }
+
+  const hint =
+    response.status === 403 && /has not been used|disabled/i.test(message)
+      ? `<br><br>Enable it here: <a target="_blank" rel="noopener" ` +
+        `style="color:var(--accent)" href="https://console.cloud.google.com/apis/library/` +
+        `earthengine.googleapis.com?project=${encodeURIComponent(project)}">` +
+        `Earth Engine API for ${escapeHtml(project)}</a>, then try again.`
+      : response.status === 403
+        ? "<br><br>The token is valid but not allowed to use this project. " +
+          "Check that the signed-in account has access to it."
+        : response.status === 404
+          ? "<br><br>No such project, or it is not registered with Earth Engine."
+          : response.status === 401
+            ? "<br><br>The token was rejected. Signing in again usually clears this."
+            : "";
+
+  return `Earth Engine returned HTTP ${response.status}: ${escapeHtml(message)}${hint}`;
 }
 
 /* ── Search ────────────────────────────────────────────────────────────── */

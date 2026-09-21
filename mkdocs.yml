@@ -123,6 +123,7 @@ nav:
   - Querying the data: querying.md
   - Earth observation catalogue: catalog.md
   - Earth Engine in the browser: earth-engine.md
+  - Asking questions: agent.md
   - Population, worked through: population.md
   - Data catalogue: skill/data-catalog.md
   - Coordinate systems: skill/crs.md
