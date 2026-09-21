@@ -187,6 +187,15 @@ address in the browser's URL bar must appear there exactly, including
 `access_denied`, the consent screen is still in testing and you are not on its
 test-user list.
 
+**"The library's own request was refused by this site's content security
+policy"**, with a host named — add that host to `connect-src` in `vercel.json`
+and redeploy. Google's client libraries do not use a single address: besides
+`earthengine.googleapis.com` they reach `content-*` and discovery hosts, which
+is why the policy allows `https://*.googleapis.com` rather than a list that
+only has to be incomplete once. A request the policy refuses never reaches the
+network and the caller sees an empty response, which is how `Invalid JSON:`
+with nothing after it is produced.
+
 **"Could not start Earth Engine for &lt;project&gt;"** — the panel asks the
 API directly and reports what it said, because the client library's own message
 for this is `Invalid JSON:` followed by nothing. An empty body is what a browser

@@ -1153,6 +1153,36 @@ ORDER BY km2 DESC;</textarea>
 
    It lives in the classic script so it is recording before the module loads,
    and it is capped so a long session cannot grow without bound. */
+/* Content-security-policy violations, recorded.
+
+   A request the policy refuses never reaches the network, and the code that
+   made it sees an empty response rather than an error — which is exactly how
+   "Invalid JSON: " with nothing after it is produced. The browser does fire an
+   event naming the blocked address and the directive that blocked it, and
+   nothing was listening for it.
+
+   This is the difference between knowing a request failed and knowing which
+   host to add to the policy. */
+window.__ghBlocked = [];
+
+addEventListener("securitypolicyviolation", (event) => {
+  const uri = event.blockedURI || "";
+  const directive = event.effectiveDirective || event.violatedDirective || "";
+
+  // Only external addresses are worth keeping. A page with inline styles
+  // reports one violation per element, which in seconds buries the single
+  // blocked host that actually explains a failure.
+  if (!/^https?:/i.test(uri)) return;
+
+  const key = `${directive} ${uri}`;
+  if (window.__ghBlocked.some((b) => `${b.directive} ${b.uri}` === key)) return;
+
+  window.__ghBlocked.push({ uri, directive });
+  if (window.__ghBlocked.length > 40) window.__ghBlocked.shift();
+  window.ghLog?.("error", `Blocked by the content security policy: ${uri}`,
+                 `${directive} does not allow it`);
+});
+
 window.__ghLog = [];
 
 window.ghLog = function (kind, message, detail) {
@@ -4674,6 +4704,29 @@ let lastAgentSql = null;
 
 const AGENT_MAX_TURNS = 8;
 
+/* JSON.stringify refuses a BigInt outright, and DuckDB returns every BIGINT
+   column as one — a count, a population, an OSM id. The whole tool result was
+   therefore lost to a TypeError the moment a query touched an integer column,
+   which is most of them.
+
+   Values that fit in a double become numbers, because that is what the model
+   should reason about. Anything larger keeps its digits as a string rather
+   than silently losing precision, which matters for identifiers. Dates and
+   binary columns are given readable forms for the same reason. */
+function agentJson(value) {
+  return JSON.stringify(value, (_key, v) => {
+    if (typeof v === "bigint") {
+      return (v >= -9007199254740991n && v <= 9007199254740991n)
+        ? Number(v)
+        : v.toString();
+    }
+    if (v instanceof Date) return v.toISOString();
+    if (v instanceof Uint8Array) return `<${v.length} bytes>`;
+    if (typeof v === "number" && !Number.isFinite(v)) return null;
+    return v;
+  });
+}
+
 function agentToolSpecs() {
   return Object.entries(AGENT_TOOLS).map(([name, tool]) => ({
     name,
@@ -4691,7 +4744,7 @@ async function runAgentTool(name, input) {
     if (!approved) return { error: "The person declined this step." };
   }
 
-  window.ghLog?.("info", `Agent: ${name}`, JSON.stringify(input ?? {}).slice(0, 200));
+  window.ghLog?.("info", `Agent: ${name}`, agentJson(input ?? {}).slice(0, 200));
 
   try {
     const result = await tool.run(input ?? {});
@@ -4796,7 +4849,7 @@ async function runAgent(question, { key, model, baseUrl }, onStep) {
       results.push({
         type: "tool_result",
         tool_use_id: call.id,
-        content: JSON.stringify(value).slice(0, 12000),
+        content: agentJson(value).slice(0, 12000),
         is_error: Boolean(value && value.error)
       });
     }
@@ -5170,8 +5223,28 @@ async function eeDiagnose(project) {
   const body = (await response.text().catch(() => "")).slice(0, 600);
 
   if (response.ok) {
-    return "The API answered normally, so the project and the token are fine " +
-           "and the failure is inside the client library.";
+    // The plain request worked, so the project, the token and the API are all
+    // fine. If the library's own request was refused by the policy, the host
+    // it wanted is named here; a plain fetch to a different host would not
+    // have revealed it.
+    const blocked = (window.__ghBlocked || [])
+      .filter((b) => /googleapis|google/i.test(b.uri));
+
+    if (blocked.length) {
+      const hosts = [...new Set(blocked.map((b) => {
+        try { return new URL(b.uri).origin; } catch { return b.uri; }
+      }))];
+      return "The API answers normally when this page asks it directly, so the " +
+             "project, the token and the API are all fine. The library's own " +
+             "request was refused by this site's content security policy.<br><br>" +
+             "Blocked: <code>" + hosts.map(escapeHtml).join("</code>, <code>") +
+             "</code><br><br>Add " + (hosts.length > 1 ? "those hosts" : "that host") +
+             " to <code>connect-src</code> in <code>vercel.json</code> and redeploy.";
+    }
+
+    return "The API answered normally, so the project, the token and the API " +
+           "are all fine, and nothing was blocked by the content security " +
+           "policy either. The failure is inside the client library.";
   }
 
   let message = body;
