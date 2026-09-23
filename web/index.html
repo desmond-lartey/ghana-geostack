@@ -5042,6 +5042,37 @@ async function clipGeometry() {
   return { label: row.name, geometry: JSON.parse(row.geom) };
 }
 
+/* The clip as a geometry, resolved once when it changes and kept.
+
+   Earth Engine needs the same shape the local tools cut with, and the way it
+   used to get it was to name the place to a boundary asset on Google's side
+   and hope the two agreed. They do not have to. Ghana's six newest regions —
+   Ahafo, Bono East, North East, Oti, Savannah and Western North — were created
+   in December 2018, so a boundary set older than that has no Oti to match, and
+   this project's own admin1 file spells one of them "Northern East". A name
+   that matches nothing returns an empty collection, whose geometry is empty,
+   and an image clipped to an empty geometry is a blank layer with no error
+   anywhere: exactly the "it draws nothing until I switch back to Ghana" this
+   fixes.
+
+   So the geometry is taken from the boundaries this page already has, and sent
+   to Earth Engine as coordinates. Nothing has to agree about spelling, and the
+   raster is cut from the identical shape as the vector tools. */
+async function resolveClipGeometry() {
+  clipState.geometry = null;
+  if (clipState.kind !== "region" && clipState.kind !== "district") return null;
+  const target = await clipGeometry();
+  clipState.geometry = target?.geometry ?? null;
+  return clipState.geometry;
+}
+
+/* Resolve it if something changed the clip without waiting for the lookup. */
+async function ensureClipGeometry() {
+  if (clipState.kind !== "region" && clipState.kind !== "district") return null;
+  if (!clipState.geometry) await resolveClipGeometry();
+  return clipState.geometry;
+}
+
 /* Returns the clipped collection plus enough to say what happened. */
 async function clipToTarget(t, collection) {
   const target = await clipGeometry();
@@ -5182,10 +5213,12 @@ async function renderClipPicker() {
   select.value = clipState.kind === "none" || clipState.kind === "view"
     ? clipState.kind : `${clipState.kind}:${clipState.name}`;
 
-  select.addEventListener("change", () => {
+  select.addEventListener("change", async () => {
     const [kind, ...rest] = select.value.split(":");
     clipState.kind = kind;
     clipState.name = rest.join(":");
+    // Resolved before anything redraws, so the redraw uses the new shape.
+    await resolveClipGeometry();
     window.ghLog?.("info", "Clip target: " + clipLabel());
     renderClip();
   });
@@ -5581,11 +5614,21 @@ const AGENT_TOOLS = {
       set("ee-min", min); set("ee-max", max);
       if (palette && EE_PALETTES[palette]) set("ee-palette", EE_PALETTES[palette].join(", "));
 
-      await addEeLayer(dataset);
+      const outcome = await addEeLayer(dataset);
+      if (!outcome?.ok) {
+        return { error: outcome?.error
+          || "The layer was not drawn, and no reason was given. Check the Log panel." };
+      }
 
       return {
-        drawn: dataset.title,
-        classified: Boolean(dataset.classes),
+        drawn: outcome.title,
+        // The id actually used, because the person is looking at a layer
+        // labelled with it and a summary naming a different one is a lie they
+        // can see.
+        dataset_id: outcome.id,
+        clipped_to: outcome.clip,
+        images: outcome.images ?? undefined,
+        classified: outcome.classified,
         classes: dataset.classes ? dataset.classes.names : undefined,
         note: "This is a rendered picture, not data. To get numbers from it " +
               "call summarise_earth_engine or land_cover_areas."
@@ -5727,6 +5770,7 @@ const AGENT_TOOLS = {
 
       clipState.kind = kind;
       clipState.name = name || "";
+      await resolveClipGeometry();
       // The person watching should see the clip change when the agent changes
       // it, not discover it in the next result.
       renderClip();
@@ -5879,6 +5923,20 @@ window.__ghTools = () => agentToolSpecs();
 /* The same argument as above, for the layer stack: from the console a person
    can ask the page what it is actually drawing, and the screenshot and smoke
    tests can put a layer in without reaching into module scope. */
+/* A way in for the clip test. Earth Engine cannot be reached from a test, so
+   the test replaces `ee` with a recorder and drives the layer through this;
+   what it checks is the expression that gets built, which is where both the
+   silent-empty-layer and the false-success bugs lived. */
+window.__ghClip = {
+  setReady: (v) => { eeState.ready = v; },
+  setClip: ({ kind, name, geometry }) => {
+    clipState.kind = kind; clipState.name = name || ""; clipState.geometry = geometry || null;
+  },
+  breakLookup: () => { conn = null; },
+  addLayer: (dataset, form) => addEeLayer(dataset, form),
+  zones: (level) => eeZonesFor(level)
+};
+
 window.__ghLayers = {
   list: () => [...userLayers.values()],
   add: (entry) => registerUserLayer(entry),
@@ -5991,7 +6049,13 @@ How to work:
 
 Answer in two or three sentences when you are done. Say what the numbers mean,
 not what you clicked. If a tool returns an error, read it and try a different
-approach rather than repeating the same call.`;
+approach rather than repeating the same call.
+
+Report what the tools returned, never what you intended. Name the dataset id
+and the version in the tool's own result — the person is looking at a layer
+labelled with it, so claiming a different one is a mistake they can see. If a
+tool returns an error, say plainly that it did not work and why, rather than
+describing the result it would have had.`;
 
 /* One turn of conversation with whichever provider is configured. Only
    Anthropic's tool format is implemented; the others stay on the old
@@ -7620,12 +7684,14 @@ async function eeDiagnose(project) {
    from exactly the same shape. */
 function eeClipFeatures() {
   if (clipState.kind === "region" || clipState.kind === "district") {
-    const asset = clipState.kind === "region"
-      ? "projects/sat-io/open-datasets/geoboundaries/CGAZ_ADM1"
-      : "projects/sat-io/open-datasets/geoboundaries/CGAZ_ADM2";
-    return ee.FeatureCollection(asset)
-      .filter(ee.Filter.eq("shapeGroup", "GHA"))
-      .filter(ee.Filter.eq("shapeName", clipState.name));
+    // This page's own boundary, sent as coordinates. See resolveClipGeometry
+    // for why it is not looked up by name on Google's side.
+    if (clipState.geometry) {
+      return ee.FeatureCollection([ee.Feature(ee.Geometry(clipState.geometry))]);
+    }
+    // Not resolved yet. Falling back to a name lookup would quietly restore
+    // the bug, so this is left empty and reported by whoever asked for it.
+    return ee.FeatureCollection([]);
   }
 
   if (clipState.kind === "view") {
@@ -7662,16 +7728,21 @@ function eeZonesFor(level) {
 
   let zones = ee.FeatureCollection(asset).filter(ee.Filter.eq("shapeGroup", "GHA"));
 
-  if (clipState.kind === "district" && level === "district") {
-    zones = zones.filter(ee.Filter.eq("shapeName", clipState.name));
-  } else if (clipState.kind === "region" && level === "region") {
-    zones = zones.filter(ee.Filter.eq("shapeName", clipState.name));
-  } else if (clipState.kind !== "none") {
-    // Asking for districts while clipped to a region, or anything while
-    // clipped to the view: keep the zones that fall inside the clip.
-    zones = zones.filterBounds(eeClipRegion());
-  }
+  // The zones themselves stay Google-side, because the reduction happens
+  // against them and their geometry is the one the areas are measured from.
+  // Which of them to keep is decided by the clip's own shape rather than by
+  // its name, so a region this asset spells differently — or has never heard
+  // of — still narrows the zones correctly.
+  if (clipState.kind !== "none") zones = zones.filterBounds(eeClipRegion());
   return zones;
+}
+
+/* How many zones a summary is about to reduce over. Zero is the failure that
+   looks like a result: an empty table, no error, and a person concluding the
+   dataset has no data for their region. */
+function eeCountZones(zones) {
+  return new Promise((resolve) =>
+    zones.size().evaluate((v, err) => resolve(err ? null : v)));
 }
 
 /* ── Search ────────────────────────────────────────────────────────────── */
@@ -8136,11 +8207,29 @@ async function diagnoseEmptyCollection(d, form) {
 
 /* ── Drawing it ────────────────────────────────────────────────────────── */
 
+/* Every exit from here says what happened, because the caller may be the agent
+   rather than a person watching the panel. It used to return nothing at all on
+   every failure and the agent tool reported success regardless — which is how
+   "it says it has done it but I don't see the results" is produced. */
 async function addEeLayer(d, replayForm) {
   if (!eeState.ready) {
-    eeDetailStatus("Connect to Earth Engine first — the panel at the top of this tab.",
-                   "error");
-    return;
+    const message = "Earth Engine is not connected. Sign in on the Data panel first.";
+    eeDetailStatus(message, "error");
+    return { error: message };
+  }
+
+  // The named boundary is resolved from this page's own admin file, so it has
+  // to be in hand before an expression is built from it.
+  if (clipState.kind === "region" || clipState.kind === "district") {
+    await ensureClipGeometry();
+    if (!clipState.geometry) {
+      const message = `The boundary for ${escapeHtml(clipLabel())} could not be read `
+        + `from this browser's copy of the admin layers, so there is no shape to `
+        + `clip to. Set the clip to the whole country, or reload so the `
+        + `boundaries load.`;
+      eeDetailStatus(message, "error");
+      return { error: message.replace(/<[^>]+>/g, "") };
+    }
   }
 
   const form = replayForm || readEeForm(d);
@@ -8148,6 +8237,7 @@ async function addEeLayer(d, replayForm) {
 
   try {
     let layer;
+    let images = null;
     if (d.type === "table") {
       layer = ee.FeatureCollection(d.id)
         .filterBounds(eeClipRegion())
@@ -8164,10 +8254,14 @@ async function addEeLayer(d, replayForm) {
         const n = await new Promise((resolve) =>
           built.collection.size().evaluate((v, err) => resolve(err ? null : v)));
         if (n === 0) {
-          eeDetailStatus(await diagnoseEmptyCollection(d, form), "error");
-          return;
+          const why = await diagnoseEmptyCollection(d, form);
+          eeDetailStatus(why, "error");
+          return { error: why.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim() };
         }
-        if (n !== null) eeDetailStatus(`${n} images found. Building the composite…`);
+        if (n !== null) {
+          images = n;
+          eeDetailStatus(`${n} images found. Building the composite…`);
+        }
       }
       layer = built.image.visualize(vis);
     }
@@ -8223,16 +8317,27 @@ async function addEeLayer(d, replayForm) {
          <button class="btn btn-quiet" id="ee-remove">Remove</button>
          <button class="btn btn-quiet" id="ee-opacity">Fade</button>
        </div>`);
-    document.getElementById("ee-remove").addEventListener("click", () => {
+    // These two live in the status message just written, which is only in the
+    // document when the Data panel is open on this dataset. Redrawing after a
+    // clip change happens with the panel closed, and reaching for them blindly
+    // threw there — inside the try, so a layer that had already been drawn
+    // reported itself as a failure.
+    document.getElementById("ee-remove")?.addEventListener("click", () => {
       removeEeLayer(d.id); eeDetailStatus("Removed.");
     });
-    document.getElementById("ee-opacity").addEventListener("click", () => {
+    document.getElementById("ee-opacity")?.addEventListener("click", () => {
       const current = map.getPaintProperty(sourceId, "raster-opacity") ?? 0.85;
       map.setPaintProperty(sourceId, "raster-opacity", current > 0.5 ? 0.35 : 0.85);
     });
 
+    return { ok: true, id: d.id, title: d.title, clip: clipLabel(),
+             images, classified: Boolean(d.classes) };
+
   } catch (err) {
-    eeDetailStatus(`Earth Engine refused it: ${escapeHtml(err.message || err)}`, "error");
+    console.error("addEeLayer:", err);
+    const message = `Earth Engine refused it: ${err.message || err}`;
+    eeDetailStatus(escapeHtml(message), "error");
+    return { error: message };
   }
 }
 
@@ -8293,6 +8398,16 @@ async function summariseEe(d, level) {
     // geometry keeps the request small.
     const nameColumn = level === "region" ? "adm1_name" : "adm2_name";
     const zones = eeZonesFor(level);
+    // A summary over no zones comes back as an empty table with no error,
+    // which reads as "this dataset has nothing for my region" when the truth
+    // is that the clip matched no zone at all.
+    const zoneCount = await eeCountZones(zones);
+    if (zoneCount === 0) {
+      throw new Error(
+        `No ${level} boundaries fall inside ${clipLabel()}, so there is nothing `
+        + `to reduce over. Widen the clip, or summarise by ${
+          level === "region" ? "district" : "region"} instead.`);
+    }
 
     const band = form.bands[0] || (d.bands || [])[0]?.name;
     const single = band ? image.select([band]) : image;
@@ -8379,6 +8494,16 @@ async function classAreasByZone(dataset, level) {
 
   const nameColumn = level === "region" ? "adm1_name" : "adm2_name";
   const zones = eeZonesFor(level);
+  // A summary over no zones comes back as an empty table with no error, which
+  // reads as "this dataset has nothing for my region" when the truth is that
+  // the clip matched no zone at all.
+  const zoneCount = await eeCountZones(zones);
+  if (zoneCount === 0) {
+    throw new Error(
+      `No ${level} boundaries fall inside ${clipLabel()}, so there is nothing `
+      + `to reduce over. Widen the clip, or summarise by ${
+        level === "region" ? "district" : "region"} instead.`);
+  }
   const { image } = buildEeImage(dataset, form);
 
   const counted = image.reduceRegions({

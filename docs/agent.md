@@ -85,6 +85,15 @@ anything, and an agent that produces one produces it confidently.
 for the map, but the model is sent the row count and the attributes only.
 Coordinates are megabytes and tell a language model nothing.
 
+**A tool that fails says so.** `add_earth_engine_layer` used to report the
+dataset it had been asked for whether or not anything was drawn, so a layer
+that failed came back as a confident sentence about a map with nothing new on
+it. Every exit now carries the outcome, and the result names the dataset id
+actually used, the boundary it was clipped to and how many images went into it.
+The model is told to report those rather than its intention — the person is
+looking at a layer labelled with that id, so naming a different one is a
+mistake they can see.
+
 ---
 
 ## Adding a tool

@@ -96,10 +96,21 @@ The rendering is not guesswork where it does not have to be. Earth Engine
 publishes a suggested visualisation for most collections, and the panel says
 which of the two you are looking at.
 
-**Add to map** clips the result to Ghana's boundary and draws it. Before
-drawing, it counts the images in your date range and tells you if there are
-none, because an empty composite draws as blank tiles and looks identical to a
-layer that failed.
+**Add to map** clips the result to whatever the clip is set to and draws it.
+Before drawing, it counts the images in your date range and tells you if there
+are none, because an empty composite draws as blank tiles and looks identical
+to a layer that failed.
+
+The boundary it clips to is this page's own — the same admin file the vector
+tools cut with, sent to Earth Engine as coordinates. It used to be named to a
+boundary asset on Google's side instead, which works only while the two agree
+about spelling and about which regions exist. They need not: Ghana's six newest
+regions were created in December 2018, so an older boundary set has no Oti to
+match, and this project's own admin1 file spells one of the six "Northern
+East". A name matching nothing gives an empty collection, whose geometry is
+empty, and an image clipped to an empty geometry is a blank layer with no error
+anywhere — which is why a region clip used to draw nothing until you set it
+back to the whole country.
 
 ---
 
@@ -275,6 +286,7 @@ is counted on its own and the message names the one responsible:
 | What it says | What happened |
 | --- | --- |
 | The boundary came back empty | The clip's boundary returned no features, so there was no area to search. This is the boundary source, not the dataset |
+| The boundary could not be read | The clip is a region or district whose shape is not loaded in this browser. Reload, or clip to the whole country |
 | No images at all, before any filter | The id has changed, or the collection is empty for this account |
 | None of them over Ghana | The dataset does not cover the area. Drawing it would give an empty rectangle |
 | None in this date range | The dates. The message repeats the range the catalogue claims |

@@ -121,3 +121,11 @@ jobs:
           npm install --no-save playwright@1.49
           npx playwright install --with-deps chromium
           node tests/smoke_viewer.cjs
+
+      # Two Earth Engine bugs in a row lived in an expression nobody could see:
+      # a boundary looked up by a name Google's copy had never heard of, and a
+      # failure that returned nothing while the caller reported success. This
+      # replaces the Earth Engine client with a recorder and checks what the
+      # page actually builds.
+      - name: The Earth Engine clip is this page's own boundary
+        run: node tests/ee_clip.cjs
