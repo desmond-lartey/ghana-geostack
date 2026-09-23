@@ -23,6 +23,8 @@ treated, and the model is given that list and left to work.
 | `run_sql` | Run a read-only query and return the rows |
 | `show_result_on_map` | Draw the last result |
 | `style_by_column` | Colour it by a numeric column, optionally in 3D |
+| `get_clip` | The boundary every analysis is currently confined to |
+| `set_clip` | Confine everything to a region, district, the view, or the country |
 | `search_earth_engine` | Search the catalogue by keyword, with bands and class lists |
 | `add_earth_engine_layer` | Draw a dataset over Ghana, with its own colours and legend |
 | `land_cover_areas` | Square kilometres of each class per region, for classified data |

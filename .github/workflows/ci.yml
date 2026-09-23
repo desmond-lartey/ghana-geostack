@@ -28,10 +28,12 @@ jobs:
           python -m pip install --upgrade pip
           pip install ruff pytest pyyaml
 
+      # Through the Makefile deliberately, so "lint" has one definition. It
+      # previously had two: the Makefile dropped the formatter check with a
+      # documented reason, CI kept enforcing it, and main went red on a file
+      # nobody had touched.
       - name: Lint
-        run: |
-          ruff check pipelines/ scripts/
-          ruff format --check pipelines/
+        run: make lint
 
       - name: Test
         run: pytest -q tests/

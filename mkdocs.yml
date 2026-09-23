@@ -121,6 +121,7 @@ nav:
   - Administrative boundaries: boundaries.md
   - Architecture: architecture.md
   - Querying the data: querying.md
+  - Layers and clipping: layers-and-clipping.md
   - Earth observation catalogue: catalog.md
   - Earth Engine in the browser: earth-engine.md
   - Asking questions: agent.md

@@ -810,6 +810,7 @@ td { font-family: var(--font-mono); font-size: 12.5px; font-variant-numeric: tab
   <div class="tabpanel" id="pane-layers" role="tabpanel" aria-labelledby="tab-layers" data-active="true"></div>
 
   <div class="tabpanel" id="pane-ask" role="tabpanel" aria-labelledby="tab-ask">
+    <div data-clip-badge></div>
     <h3>Ask a question in plain English</h3>
     <textarea id="question" rows="3" spellcheck="true" style="min-height:76px;font-family:var(--font-ui);font-size:14.5px"
               placeholder="Which region has the most districts?"></textarea>
@@ -838,6 +839,7 @@ td { font-family: var(--font-mono); font-size: 12.5px; font-variant-numeric: tab
   </div>
 
   <div class="tabpanel" id="pane-tools" role="tabpanel" aria-labelledby="tab-tools">
+    <div class="field" id="clip-picker"></div>
     <h3>Geoprocessing</h3>
     <p class="legend-note" style="margin:0 0 14px">
       Runs in this browser on the features you choose. Nothing is uploaded.
@@ -873,6 +875,7 @@ td { font-family: var(--font-mono); font-size: 12.5px; font-variant-numeric: tab
   <div class="tabpanel" id="pane-style" role="tabpanel" aria-labelledby="tab-style"></div>
 
   <div class="tabpanel" id="pane-data" role="tabpanel" aria-labelledby="tab-data">
+    <div data-clip-badge></div>
 
     <h3>Earth Engine</h3>
     <div id="ee-panel">
@@ -968,6 +971,7 @@ td { font-family: var(--font-mono); font-size: 12.5px; font-variant-numeric: tab
   </div>
 
   <div class="tabpanel" id="pane-query" role="tabpanel" aria-labelledby="tab-query">
+    <div data-clip-badge></div>
     <h3>Run SQL against the data</h3>
     <textarea id="sql" spellcheck="false" aria-label="SQL query">SELECT adm1_pcode, adm1_name, round(area_sqkm) AS km2
 FROM ghana.region
@@ -1617,6 +1621,17 @@ if (window.__ghSafeMode) {
   state.hillshade = false;
 }
 
+/* State that other parts of the module reach for while setting themselves up.
+
+   A `const` is not hoisted: touching one before its declaration line throws
+   and takes the page with it, which has now happened twice — once for a
+   palette table, once for this registry, both reached through a render call
+   during start-up. Declaring the containers here, next to `state`, and leaving
+   the behaviour where it belongs is what stops it happening a third time. */
+const userLayers = new Map();        // what this session has put on the map
+let userLayerSeq = 0;
+const clipState = { kind: "none", name: "", geometry: null };
+
 document.documentElement.dataset.theme = state.theme;
 
 function colours() { return PALETTE[state.theme]; }
@@ -1983,6 +1998,10 @@ function toggleCatalogLayer(id) {
   }, firstVector);
 
   catalogState.loaded.set(id, sourceId);
+  registerUserLayer({
+    id: sourceId, label: entry.title, kind: "raster",
+    layerIds: [sourceId], sourceId, note: entry.attribution
+  });
 
   /* Watch what the source actually does. A layer that loads no tiles looks
      identical to one that loaded fine and happens to be transparent, and
@@ -2262,6 +2281,13 @@ function renderLayerList() {
       setLayerVisible(id, !state.active.has(id));
     });
   }
+
+  // Everything added during this session, below the fixed layers above.
+  host.insertAdjacentHTML("beforeend", `
+    <h4 style="margin:18px 0 6px;font-size:12px;letter-spacing:.06em;
+               text-transform:uppercase;opacity:.65">Added this session</h4>
+    <div id="user-layers"></div>`);
+  renderUserLayers();
 }
 
 /* ---------------------------------------------------------------------------
@@ -2596,6 +2622,22 @@ function flatten(coordinates, out = []) {
   return out;
 }
 
+/* The extent of a whole collection, so a layer can be zoomed to. Built on the
+   single-geometry version below rather than pulling in Turf, which loads on
+   demand and may not be present when someone presses Zoom. */
+function bboxOfCollection(collection) {
+  let box = null;
+  for (const feature of collection.features ?? []) {
+    if (!feature.geometry) continue;
+    const [xmin, ymin, xmax, ymax] = bboxOf(feature.geometry);
+    box = box
+      ? [Math.min(box[0], xmin), Math.min(box[1], ymin),
+         Math.max(box[2], xmax), Math.max(box[3], ymax)]
+      : [xmin, ymin, xmax, ymax];
+  }
+  return box;
+}
+
 function bboxOf(geometry) {
   const points = flatten(geometry.coordinates);
   let xmin = Infinity, ymin = Infinity, xmax = -Infinity, ymax = -Infinity;
@@ -2788,6 +2830,7 @@ async function initDuckDB() {
       throw new Error(failures.join(" · ") || "no tables could be loaded");
     }
     if (failures.length) console.warn("Some layers did not load:", failures);
+    renderClipPicker();
     setStatus(`Ready — ${loaded.join(", ")}`
       + (state.spatial ? " · spatial functions available on shape"
                        : " · spatial macros only"));
@@ -2911,8 +2954,9 @@ async function mapResult() {
     }
 
     // geom holds GeoJSON text, so the page parses it rather than asking DuckDB
-    // for a spatial function it may not have.
-    const features = [];
+    // for a spatial function it may not have. Not const: the clip below may
+    // narrow it.
+    let features = [];
     for (const row of rows) {
       const { geom, shape, ...properties } = row;
       if (!geom) continue;
@@ -2941,6 +2985,27 @@ async function mapResult() {
       paint: { "circle-radius": 5, "circle-color": colours().query,
                "circle-stroke-width": 1, "circle-stroke-color": colours().ground } });
 
+    // A query answers over the whole country unless the clip says otherwise.
+    // Filtering the drawn features is honest about what is being shown; the
+    // status line says how many were set aside so the number is never a
+    // surprise.
+    let clipNote = "";
+    if (clipState.kind !== "none" && features.length) {
+      const t = await loadTurf();
+      const clipped = await clipToTarget(t, t.featureCollection(features));
+      if (clipped.dropped) {
+        clipNote = ` · ${clipped.dropped.toLocaleString()} outside ${clipped.label}`;
+        features = clipped.collection.features;
+        map.getSource("qr")?.setData(t.featureCollection(features));
+      }
+      if (!features.length) {
+        setStatus(`Every row fell outside ${clipped.label}. `
+          + "Change the clip in the Tools tab, or set it to the whole country.", true);
+        clearQueryResult();
+        return;
+      }
+    }
+
     const bounds = new maplibregl.LngLatBounds();
     for (const f of features) {
       const flat = f.geometry.coordinates.flat(Infinity);
@@ -2948,8 +3013,16 @@ async function mapResult() {
     }
     if (!bounds.isEmpty()) map.fitBounds(bounds, { padding: 60, duration: 900 });
 
+    registerUserLayer({
+      id: "qr", label: "Query result", kind: "result",
+      layerIds: ["qr-fill", "qr-line", "qr-point"], sourceId: "qr",
+      bbox: bounds.isEmpty() ? null : bounds.toArray().flat(),
+      note: `${features.length.toLocaleString()} features`
+            + (joinedOn ? ` · geometry from ${joinedOn}` : "") + clipNote
+    });
+
     setStatus(`${features.length.toLocaleString()} features drawn`
-      + (joinedOn ? ` · geometry from ${joinedOn}` : ""));
+      + (joinedOn ? ` · geometry from ${joinedOn}` : "") + clipNote);
     renderStylePane();
   } catch (err) {
     setStatus(String(err.message ?? err), true);
@@ -3663,6 +3736,8 @@ function renderStylePane() {
 }
 
 function clearQueryResult() {
+  userLayers.delete("qr");
+  renderUserLayers();
   for (const id of ["qr-fill", "qr-line", "qr-point"]) {
     if (map.getLayer(id)) map.removeLayer(id);
   }
@@ -3670,6 +3745,8 @@ function clearQueryResult() {
 }
 
 function clearToolResult() {
+  userLayers.delete("tool");
+  renderUserLayers();
   for (const id of ["tool-fill", "tool-line", "tool-point"]) {
     if (map.getLayer(id)) map.removeLayer(id);
   }
@@ -3869,14 +3946,29 @@ async function runTool() {
     // Yield once so the status paints before a long synchronous run.
     await new Promise((resolve) => setTimeout(resolve, 0));
 
-    const output = tool.run(t, input, Number(toolParam.value));
+    let output = tool.run(t, input, Number(toolParam.value));
     if (!output || !output.features?.length) throw new Error("The tool returned nothing.");
 
     // Voronoi emits nulls for points it cannot cell; drop them.
     output.features = output.features.filter((f) => f && f.geometry);
+
+    // Clipping applies to every tool, not to a chosen few. A buffer that
+    // spills into Togo, a convex hull drawn around the whole country, a
+    // Voronoi diagram that tiles the Atlantic — each is the same mistake, and
+    // clipping the output is the same fix.
+    const clipped = await clipToTarget(t, output);
+    if (clipped.dropped) {
+      setToolStatus(`${tool.label}: ${clipped.kept.toLocaleString()} features `
+        + `within ${clipped.label}, ${clipped.dropped.toLocaleString()} outside it`);
+    }
+    output = clipped.collection;
+    if (!output.features.length) {
+      throw new Error(`Nothing fell inside ${clipped.label}. `
+        + "Widen the clip, or set it to the whole country.");
+    }
     toolOutput = output;
 
-    drawToolOutput(output);
+    drawToolOutput(output, `${tool.label}${clipped.suffix}`);
 
     // Make the result downloadable and queryable like any other.
     lastRows = output.features.map((f) => ({ ...f.properties, geom: JSON.stringify(f.geometry) }));
@@ -3893,7 +3985,7 @@ async function runTool() {
   }
 }
 
-function drawToolOutput(collection) {
+function drawToolOutput(collection, toolLabel) {
   clearToolResult();
   map.addSource("tool", { type: "geojson", data: collection });
   map.addLayer({ id: "tool-fill", type: "fill", source: "tool",
@@ -3913,6 +4005,13 @@ function drawToolOutput(collection) {
     for (let i = 0; i < flat.length; i += 2) bounds.extend([flat[i], flat[i + 1]]);
   }
   if (!bounds.isEmpty()) map.fitBounds(bounds, { padding: 60, duration: 900 });
+
+  registerUserLayer({
+    id: "tool", label: toolLabel || "Tool result", kind: "tool",
+    layerIds: ["tool-fill", "tool-line", "tool-point"], sourceId: "tool",
+    bbox: bounds.isEmpty() ? null : bounds.toArray().flat(),
+    note: `${collection.features.length.toLocaleString()} features`
+  });
 }
 
 document.getElementById("tool-clear").addEventListener("click", () => {
@@ -4212,10 +4311,22 @@ async function fetchLive(id) {
   }
 
   try {
-    const collection = overpassToGeoJson(payload.elements ?? [], source.geometry);
+    let collection = overpassToGeoJson(payload.elements ?? [], source.geometry);
+
+    // Same clip as the tools use. Overpass answers a bounding box, which
+    // almost never matches the place anyone had in mind.
+    let clipNote = "";
+    if (clipState.kind !== "none" && collection.features.length) {
+      const t = await loadTurf();
+      const clipped = await clipToTarget(t, collection);
+      collection = clipped.collection;
+      if (clipped.dropped) clipNote = ` · ${clipped.dropped.toLocaleString()} outside ${clipped.label}`;
+    }
 
     if (!collection.features.length) {
-      host.textContent = "Nothing mapped here yet.";
+      host.textContent = clipNote
+        ? `Everything fetched fell outside the clip boundary.`
+        : "Nothing mapped here yet.";
       return;
     }
 
@@ -4275,6 +4386,7 @@ function drawLive(id, source, collection) {
   if (map.getSource(sourceId)) map.removeSource(sourceId);
 
   map.addSource(sourceId, { type: "geojson", data: collection });
+  const liveBbox = collection.features.length ? bboxOfCollection(collection) : null;
 
   if (source.geometry === "polygon") {
     map.addLayer({ id: `${sourceId}-fill`, type: "fill", source: sourceId,
@@ -4304,6 +4416,13 @@ function drawLive(id, source, collection) {
       paint: { "circle-radius": 4, "circle-color": source.colour,
                "circle-stroke-width": 1, "circle-stroke-color": colours().ground } });
   }
+
+  registerUserLayer({
+    id: sourceId, label: `${source.label} (live)`, kind: "live",
+    layerIds: ["fill", "3d", "line", "circle"].map((s) => `${sourceId}-${s}`),
+    sourceId, bbox: liveBbox,
+    note: `${collection.features.length} features from OpenStreetMap`
+  });
 
   const popupLayer = `${sourceId}-${source.geometry === "polygon" ? "fill"
                       : source.geometry === "line" ? "line" : "circle"}`;
@@ -4436,6 +4555,385 @@ document.getElementById("sql").addEventListener("keydown", (e) => {
 
 setTheme(state.theme);
 initDuckDB();
+
+/* ── Clipping ──────────────────────────────────────────────────────────────
+
+   The hotspots notebook clips its points to the city boundary with one line —
+   gpd.overlay(gdf_poi, admin[['geometry']]) — before it clusters anything, and
+   that line is doing real work. An analysis that runs over whatever happened
+   to be fetched answers a question about the fetch, not about the place.
+
+   So every tool and every live fetch clips to one target, chosen once. Points
+   are kept or dropped by a point-in-polygon test; lines and polygons are cut
+   at the boundary where Turf can, and kept whole where it cannot rather than
+   thrown away.                                                              */
+
+async function clipGeometry() {
+  if (clipState.kind === "none") return null;
+
+  if (clipState.kind === "view") {
+    const b = map.getBounds();
+    return {
+      label: "the current view",
+      geometry: {
+        type: "Polygon",
+        coordinates: [[[b.getWest(), b.getSouth()], [b.getEast(), b.getSouth()],
+                       [b.getEast(), b.getNorth()], [b.getWest(), b.getNorth()],
+                       [b.getWest(), b.getSouth()]]]
+      }
+    };
+  }
+
+  // A named region or district, taken from the boundaries already loaded, so
+  // this needs neither a spatial extension nor a network call.
+  if (!conn) return null;
+  const table = clipState.kind === "region" ? "region" : "district";
+  const column = clipState.kind === "region" ? "adm1_name" : "adm2_name";
+  const safe = String(clipState.name).replace(/'/g, "''");
+
+  const result = await conn.query(
+    `SELECT ${column} AS name, geom FROM ghana.${table}
+     WHERE ${column} = '${safe}' LIMIT 1;`);
+  const row = result.toArray()[0]?.toJSON();
+  if (!row?.geom) return null;
+
+  return { label: row.name, geometry: JSON.parse(row.geom) };
+}
+
+/* Returns the clipped collection plus enough to say what happened. */
+async function clipToTarget(t, collection) {
+  const target = await clipGeometry();
+  if (!target) {
+    return { collection, kept: collection.features.length, dropped: 0,
+             label: "Ghana", suffix: "" };
+  }
+
+  const mask = t.feature(target.geometry);
+  const kept = [];
+
+  for (const feature of collection.features) {
+    const type = feature.geometry?.type;
+    if (!type) continue;
+
+    try {
+      if (type === "Point" || type === "MultiPoint") {
+        // A point is in or it is out; there is nothing to cut.
+        if (t.booleanPointInPolygon(
+              type === "Point" ? feature : t.point(feature.geometry.coordinates[0]), mask)) {
+          kept.push(feature);
+        }
+        continue;
+      }
+
+      if (type === "Polygon" || type === "MultiPolygon") {
+        const piece = t.intersect(t.featureCollection([feature, mask]));
+        if (piece) kept.push({ ...piece, properties: { ...feature.properties } });
+        continue;
+      }
+
+      if (type === "LineString" || type === "MultiLineString") {
+        // Turf has no line-polygon clip, so a line is kept whole when any of
+        // it is inside. Stated plainly rather than silently approximated.
+        const inside = t.lineSplit
+          ? t.booleanIntersects(feature, mask)
+          : t.booleanIntersects(feature, mask);
+        if (inside) kept.push(feature);
+        continue;
+      }
+
+      if (t.booleanIntersects(feature, mask)) kept.push(feature);
+    } catch {
+      // A geometry Turf cannot handle is kept rather than silently lost.
+      kept.push(feature);
+    }
+  }
+
+  return {
+    collection: t.featureCollection(kept),
+    kept: kept.length,
+    dropped: collection.features.length - kept.length,
+    label: target.label,
+    suffix: ` in ${target.label}`
+  };
+}
+
+/* The clip governs work started from several tabs, so it is shown on each of
+   them rather than only where it is set. A number read without knowing what it
+   covers is the thing this is guarding against. */
+function renderClipBadges() {
+  for (const host of document.querySelectorAll("[data-clip-badge]")) {
+    const clipped = clipState.kind !== "none";
+    host.innerHTML =
+      `<div style="display:flex;gap:7px;align-items:center;font-size:11.5px;
+                   padding:6px 9px;border-radius:var(--radius);margin-bottom:10px;
+                   border:1px solid ${clipped ? "var(--gold)" : "var(--border)"};
+                   background:var(--surface-2)">
+         <span style="opacity:.7">Clipped to</span>
+         <strong>${escapeHtml(clipLabel())}</strong>
+         <button class="btn btn-quiet" data-clip-change
+                 style="margin-left:auto">Change</button>
+       </div>`;
+  }
+  for (const button of document.querySelectorAll("[data-clip-change]")) {
+    button.addEventListener("click", () => {
+      selectTab("tools");
+      document.getElementById("clip-select")?.focus();
+    });
+  }
+}
+
+/* The selector, shared by the Tools tab and the live fetches. */
+async function renderClipPicker() {
+  const host = document.getElementById("clip-picker");
+  if (!host || !conn) return;
+
+  let regions = [], districts = [];
+  try {
+    regions = (await conn.query(
+      "SELECT adm1_name AS n FROM ghana.region ORDER BY 1;"))
+      .toArray().map((r) => r.toJSON().n);
+    districts = (await conn.query(
+      "SELECT adm2_name AS n FROM ghana.district ORDER BY 1;"))
+      .toArray().map((r) => r.toJSON().n);
+  } catch {
+    return;      // boundaries not loaded yet; the picker appears when they are
+  }
+
+  host.innerHTML = `
+    <label for="clip-select">Clip results to</label>
+    <select id="clip-select" style="width:100%;height:34px;border-radius:var(--radius);border:1px solid var(--border);background:var(--surface-2);color:var(--text);font-size:13px">
+      <option value="none">The whole country</option>
+      <option value="view">The current view</option>
+      <optgroup label="Region">
+        ${regions.map((n) => `<option value="region:${escapeHtml(n)}">${escapeHtml(n)}</option>`).join("")}
+      </optgroup>
+      <optgroup label="District">
+        ${districts.map((n) => `<option value="district:${escapeHtml(n)}">${escapeHtml(n)}</option>`).join("")}
+      </optgroup>
+    </select>
+    <p class="legend-note">Applies to every tool and every live fetch. Points
+      outside are dropped; polygons are cut at the boundary; lines that cross it
+      are kept whole.</p>`;
+
+  renderClipBadges();
+
+  const select = document.getElementById("clip-select");
+  select.value = clipState.kind === "none" || clipState.kind === "view"
+    ? clipState.kind : `${clipState.kind}:${clipState.name}`;
+
+  select.addEventListener("change", () => {
+    const [kind, name] = select.value.split(":");
+    clipState.kind = kind;
+    clipState.name = name || "";
+    window.ghLog?.("info", "Clip target: " + clipLabel());
+    renderClipBadges();
+  });
+}
+
+/* ── The layer stack ───────────────────────────────────────────────────────
+
+   Everything this session puts on the map — an Earth Engine raster, a live
+   OpenStreetMap fetch, a query result, the output of a tool — is registered
+   here. Before, each of those drew into its own fixed layer ids and could only
+   be replaced, never managed: there was no way to see what was on the map, let
+   alone turn one thing off or take it away.
+
+   The panel is GeoLibre's, because GeoLibre's is right: a row per layer with
+   its visibility, its opacity, somewhere to go and a way to remove it, newest
+   at the top. What differs is the registry — a producer declares its layer
+   once and everything else follows, so a new kind of output gets managed for
+   free rather than needing its own controls.                                */
+
+function registerUserLayer({ id, label, kind, layerIds, sourceId, bbox, note }) {
+  const key = id || `layer-${++userLayerSeq}`;
+  userLayers.set(key, {
+    id: key,
+    label: label || key,
+    kind: kind || "data",              // raster | vector | result | live
+    layerIds: layerIds.filter((l) => map.getLayer(l)),
+    sourceId,
+    bbox: bbox || null,
+    note: note || "",
+    visible: true,
+    opacity: 1,
+    added: new Date().toISOString().slice(11, 19)
+  });
+  window.ghLog?.("ok", `Layer added: ${label}`, kind);
+  renderUserLayers();
+  return key;
+}
+
+function forgetUserLayer(id) {
+  const entry = userLayers.get(id);
+  if (!entry) return;
+
+  for (const layerId of entry.layerIds) {
+    if (map.getLayer(layerId)) map.removeLayer(layerId);
+  }
+  // A source may back several layers, so it goes only once they are all gone.
+  if (entry.sourceId && map.getSource(entry.sourceId)) {
+    const stillUsed = map.getStyle().layers.some((l) => l.source === entry.sourceId);
+    if (!stillUsed) map.removeSource(entry.sourceId);
+  }
+
+  userLayers.delete(id);
+  window.ghLog?.("info", `Layer removed: ${entry.label}`);
+  renderUserLayers();
+  renderStylePane();
+}
+
+function setUserLayerVisible(id, visible) {
+  const entry = userLayers.get(id);
+  if (!entry) return;
+  entry.visible = visible;
+  for (const layerId of entry.layerIds) {
+    if (map.getLayer(layerId)) {
+      map.setLayoutProperty(layerId, "visibility", visible ? "visible" : "none");
+    }
+  }
+  renderUserLayers();
+}
+
+function setUserLayerOpacity(id, opacity) {
+  const entry = userLayers.get(id);
+  if (!entry) return;
+  entry.opacity = opacity;
+
+  // Which paint property carries opacity depends on the layer type, so it is
+  // read from the layer rather than assumed.
+  for (const layerId of entry.layerIds) {
+    const layer = map.getLayer(layerId);
+    if (!layer) continue;
+    const property = {
+      raster: "raster-opacity", fill: "fill-opacity", line: "line-opacity",
+      circle: "circle-opacity", symbol: "icon-opacity",
+      "fill-extrusion": "fill-extrusion-opacity"
+    }[layer.type];
+    if (property) map.setPaintProperty(layerId, property, opacity);
+    if (layer.type === "circle") map.setPaintProperty(layerId, "circle-stroke-opacity", opacity);
+  }
+}
+
+function zoomToUserLayer(id) {
+  const entry = userLayers.get(id);
+  if (!entry) return;
+
+  if (entry.bbox) {
+    map.fitBounds([[entry.bbox[0], entry.bbox[1]], [entry.bbox[2], entry.bbox[3]]],
+                  { padding: 50, duration: 1200 });
+    return;
+  }
+  // No stored extent: fall back to what is drawn, which is all a raster has.
+  const features = map.queryRenderedFeatures({ layers: entry.layerIds });
+  if (!features.length) {
+    setStatus(`${entry.label} has no extent to zoom to`, true);
+    return;
+  }
+  // The bounding box is computed by hand rather than with Turf, which is
+  // loaded on demand and may not be present when someone presses this.
+  let [west, south, east, north] = [Infinity, Infinity, -Infinity, -Infinity];
+  const visit = (coords) => {
+    if (typeof coords[0] === "number") {
+      west = Math.min(west, coords[0]); east = Math.max(east, coords[0]);
+      south = Math.min(south, coords[1]); north = Math.max(north, coords[1]);
+      return;
+    }
+    for (const part of coords) visit(part);
+  };
+  for (const feature of features) {
+    if (feature.geometry?.coordinates) visit(feature.geometry.coordinates);
+  }
+  if (!Number.isFinite(west)) {
+    setStatus(`${entry.label} has no extent to zoom to`, true);
+    return;
+  }
+  map.fitBounds([[west, south], [east, north]], { padding: 50, duration: 1200 });
+}
+
+function moveUserLayer(id, direction) {
+  const keys = [...userLayers.keys()];
+  const at = keys.indexOf(id);
+  const to = at + direction;
+  if (at < 0 || to < 0 || to >= keys.length) return;
+
+  // MapLibre draws later layers on top, so moving up the list means moving
+  // the layer above the one currently above it.
+  const entry = userLayers.get(id);
+  const neighbour = userLayers.get(keys[to]);
+  const anchor = direction < 0 ? neighbour.layerIds[0] : undefined;
+  for (const layerId of entry.layerIds) {
+    if (map.getLayer(layerId)) map.moveLayer(layerId, anchor);
+  }
+
+  keys.splice(at, 1);
+  keys.splice(to, 0, id);
+  const reordered = new Map(keys.map((k) => [k, userLayers.get(k)]));
+  userLayers.clear();
+  for (const [k, v] of reordered) userLayers.set(k, v);
+  renderUserLayers();
+}
+
+const LAYER_KIND_NOTE = {
+  raster: "a picture; summarise it for numbers",
+  vector: "features you can query",
+  result: "from a query",
+  live: "fetched from OpenStreetMap",
+  tool: "computed here"
+};
+
+function renderUserLayers() {
+  const host = document.getElementById("user-layers");
+  if (!host) return;
+
+  if (!userLayers.size) {
+    host.innerHTML = `<p class="hint">Nothing added yet. Layers you fetch,
+      query or compute appear here, newest first.</p>`;
+    return;
+  }
+
+  const rows = [...userLayers.values()].reverse();
+  host.innerHTML = rows.map((entry) => `
+    <div style="padding:8px 0;border-bottom:1px solid var(--border)">
+      <div style="display:flex;gap:8px;align-items:center">
+        <input type="checkbox" ${entry.visible ? "checked" : ""}
+               data-layer-eye="${entry.id}" aria-label="Show ${escapeHtml(entry.label)}"
+               style="accent-color:var(--accent);flex:none">
+        <span style="flex:1;font-size:13px;line-height:1.3">${escapeHtml(entry.label)}</span>
+        <span style="font-size:10px;opacity:.5;font-family:var(--font-mono);flex:none">
+          ${escapeHtml(entry.kind)}</span>
+      </div>
+
+      <div style="display:flex;gap:6px;align-items:center;margin-top:5px">
+        <input type="range" min="0" max="1" step="0.05" value="${entry.opacity}"
+               data-layer-opacity="${entry.id}" aria-label="Opacity"
+               style="flex:1;accent-color:var(--accent)">
+        <button class="btn btn-quiet" data-layer-zoom="${entry.id}"
+                title="Zoom to this layer">Zoom</button>
+        <button class="btn btn-quiet" data-layer-up="${entry.id}" title="Bring forward">↑</button>
+        <button class="btn btn-quiet" data-layer-down="${entry.id}" title="Send back">↓</button>
+        <button class="btn btn-quiet" data-layer-remove="${entry.id}"
+                title="Remove this layer">Remove</button>
+      </div>
+
+      ${entry.note ? `<div style="font-size:11px;opacity:.65;margin-top:3px">
+        ${escapeHtml(entry.note)}</div>` : ""}
+      <div style="font-size:10px;opacity:.45;margin-top:2px">
+        ${entry.added} · ${LAYER_KIND_NOTE[entry.kind] ?? ""}</div>
+    </div>`).join("");
+
+  const on = (attribute, handler, event = "click") => {
+    for (const el of host.querySelectorAll(`[data-${attribute}]`)) {
+      el.addEventListener(event, () => handler(el.dataset[
+        attribute.replace(/-([a-z])/g, (_, c) => c.toUpperCase())], el));
+    }
+  };
+  on("layer-eye", (id, el) => setUserLayerVisible(id, el.checked), "change");
+  on("layer-opacity", (id, el) => setUserLayerOpacity(id, Number(el.value)), "input");
+  on("layer-zoom", (id) => zoomToUserLayer(id));
+  on("layer-up", (id) => moveUserLayer(id, +1));
+  on("layer-down", (id) => moveUserLayer(id, -1));
+  on("layer-remove", (id) => forgetUserLayer(id));
+}
 
 /* ── The agent's tools ─────────────────────────────────────────────────────
 
@@ -4762,6 +5260,66 @@ const AGENT_TOOLS = {
     }
   },
 
+  get_clip: {
+    category: "map",
+    description: "The boundary every analysis is currently confined to. Read " +
+                 "this before interpreting any result: a count, an area or a " +
+                 "layer means something different depending on what it covers.",
+    schema: { type: "object", properties: {} },
+    run: () => ({
+      kind: clipState.kind,
+      name: clipState.name || null,
+      label: clipLabel(),
+      applies_to: "query results, the tools, live OpenStreetMap fetches, and " +
+                  "Earth Engine layers and summaries"
+    })
+  },
+
+  set_clip: {
+    category: "map",
+    description: "Confine every subsequent analysis to a region, a district, " +
+                 "the current view, or the whole country. Set this before " +
+                 "fetching or computing rather than filtering afterwards — an " +
+                 "Earth Engine layer clipped to one district is a hundredth of " +
+                 "the work of one clipped to Ghana.",
+    schema: {
+      type: "object",
+      properties: {
+        kind: { type: "string", description: "none, view, region or district" },
+        name: { type: "string", description: "The region or district name, for those kinds" }
+      },
+      required: ["kind"]
+    },
+    run: async ({ kind, name }) => {
+      if (!["none", "view", "region", "district"].includes(kind)) {
+        return { error: `kind must be none, view, region or district — not "${kind}".` };
+      }
+      if ((kind === "region" || kind === "district") && !name) {
+        return { error: `A ${kind} name is required.` };
+      }
+
+      // A name that does not exist would silently clip everything to nothing,
+      // so it is checked against the boundaries before being accepted.
+      if (kind === "region" || kind === "district") {
+        const column = kind === "region" ? "adm1_name" : "adm2_name";
+        const table = kind === "region" ? "region" : "district";
+        const safe = String(name).replace(/'/g, "''");
+        const hit = await conn.query(
+          `SELECT ${column} AS n FROM ghana.${table}
+           WHERE lower(${column}) = lower('${safe}') LIMIT 1;`);
+        const row = hit.toArray()[0]?.toJSON();
+        if (!row) return { error: `No ${kind} called "${name}". Use run_sql to list them.` };
+        name = row.n;
+      }
+
+      clipState.kind = kind;
+      clipState.name = name || "";
+      renderClipPicker();
+      return { clip: clipLabel(),
+               note: "Everything from here on is confined to this." };
+    }
+  },
+
   list_palettes: {
     category: "map",
     description: "The palettes available, and when each is the right one. " +
@@ -5001,6 +5559,11 @@ How to work:
   so do not call them speculatively.
 - Check get_map_state before moving the map if the person said "here" or "this
   area".
+- Clipping confines EVERYTHING — queries, tools, fetches, Earth Engine layers
+  and summaries. Call get_clip before reading any result, because a number
+  means something different depending on what it covers, and set_clip before
+  computing rather than filtering afterwards. If the person names one place,
+  clipping to it is usually what they meant.
 
 Answer in two or three sentences when you are done. Say what the numbers mean,
 not what you clicked. If a tool returns an error, read it and try a different
@@ -5478,6 +6041,70 @@ async function eeDiagnose(project) {
   return `Earth Engine returned HTTP ${response.status}: ${escapeHtml(message)}${hint}`;
 }
 
+/* The clip target, as Earth Engine understands it.
+
+   Everything drawn or measured through Earth Engine went to Ghana's national
+   outline, which made the clip setting a half-truth: it governed the tools and
+   the OpenStreetMap fetches and nothing else. A raster is where clipping
+   matters most — it is the difference between rendering ten metre land cover
+   for one district and rendering it for the whole country, which is the same
+   picture, a hundred times the work, and a legend no one can read.
+
+   The named boundaries come from geoBoundaries server-side, the same source
+   the summaries reduce onto, so a layer and the numbers taken from it are cut
+   from exactly the same shape. */
+function eeClipFeatures() {
+  if (clipState.kind === "region" || clipState.kind === "district") {
+    const asset = clipState.kind === "region"
+      ? "projects/sat-io/open-datasets/geoboundaries/CGAZ_ADM1"
+      : "projects/sat-io/open-datasets/geoboundaries/CGAZ_ADM2";
+    return ee.FeatureCollection(asset)
+      .filter(ee.Filter.eq("shapeGroup", "GHA"))
+      .filter(ee.Filter.eq("shapeName", clipState.name));
+  }
+
+  if (clipState.kind === "view") {
+    const b = map.getBounds();
+    return ee.FeatureCollection([ee.Feature(
+      ee.Geometry.Rectangle([b.getWest(), b.getSouth(), b.getEast(), b.getNorth()]))]);
+  }
+
+  return ee.FeatureCollection("FAO/GAUL_SIMPLIFIED_500m/2015/level0")
+    .filter(ee.Filter.eq("ADM0_NAME", "Ghana"));
+}
+
+function eeClipRegion() {
+  return eeClipFeatures().geometry();
+}
+
+/* What to call it, for a status line or a layer name. */
+function clipLabel() {
+  if (clipState.kind === "region" || clipState.kind === "district") return clipState.name;
+  if (clipState.kind === "view") return "the current view";
+  return "Ghana";
+}
+
+/* The zones a summary should cover. Reducing over all 260 districts when the
+   clip says one region is work nobody asked for and rows nobody wants. */
+function eeZonesFor(level) {
+  const asset = level === "region"
+    ? "projects/sat-io/open-datasets/geoboundaries/CGAZ_ADM1"
+    : "projects/sat-io/open-datasets/geoboundaries/CGAZ_ADM2";
+
+  let zones = ee.FeatureCollection(asset).filter(ee.Filter.eq("shapeGroup", "GHA"));
+
+  if (clipState.kind === "district" && level === "district") {
+    zones = zones.filter(ee.Filter.eq("shapeName", clipState.name));
+  } else if (clipState.kind === "region" && level === "region") {
+    zones = zones.filter(ee.Filter.eq("shapeName", clipState.name));
+  } else if (clipState.kind !== "none") {
+    // Asking for districts while clipped to a region, or anything while
+    // clipped to the view: keep the zones that fall inside the clip.
+    zones = zones.filterBounds(eeClipRegion());
+  }
+  return zones;
+}
+
 /* ── Search ────────────────────────────────────────────────────────────── */
 
 function renderEeResults() {
@@ -5836,9 +6463,8 @@ function eeVisParams(form) {
 }
 
 function buildEeImage(d, form) {
-  const ghana = ee.FeatureCollection("FAO/GAUL_SIMPLIFIED_500m/2015/level0")
-    .filter(ee.Filter.eq("ADM0_NAME", "Ghana"));
-  const region = ghana.geometry();
+  // Whatever the clip says, not always the country.
+  const region = eeClipRegion();
 
   if (d.type === "image") {
     const base = ee.Image(d.id);
@@ -5878,8 +6504,7 @@ async function addEeLayer(d) {
     let layer;
     if (d.type === "table") {
       layer = ee.FeatureCollection(d.id)
-        .filterBounds(ee.FeatureCollection("FAO/GAUL_SIMPLIFIED_500m/2015/level0")
-          .filter(ee.Filter.eq("ADM0_NAME", "Ghana")).geometry())
+        .filterBounds(eeClipRegion())
         .style({ color: "E8C67A", fillColor: "00000022", width: 1 });
     } else {
       // An empty collection is the commonest disappointment — a date range
@@ -5926,6 +6551,12 @@ async function addEeLayer(d) {
                    paint: { "raster-opacity": 0.85 } }, firstVector);
 
     eeState.layers.set(d.id, sourceId);
+    registerUserLayer({
+      id: sourceId, label: d.title, kind: "raster",
+      layerIds: [sourceId], sourceId,
+      note: d.classes ? `${d.classes.names.length} classes, producer's colours`
+                      : `${d.provider || "Earth Engine"}`
+    });
 
     renderEeLegend(document.getElementById("ee-legend"), d, form);
 
@@ -5980,16 +6611,11 @@ async function summariseEe(d, level) {
   try {
     const { image } = buildEeImage(d, form);
 
-    // The same boundaries the rest of the site uses, held server-side.
-    // Joining back by name rather than uploading geometry keeps the request
-    // small; the viewer already knows how to attach geometry to a name.
-    const asset = level === "region"
-      ? "projects/sat-io/open-datasets/geoboundaries/CGAZ_ADM1"
-      : "projects/sat-io/open-datasets/geoboundaries/CGAZ_ADM2";
+    // The same boundaries the rest of the site uses, held server-side, and
+    // narrowed to the clip. Joining back by name rather than uploading
+    // geometry keeps the request small.
     const nameColumn = level === "region" ? "adm1_name" : "adm2_name";
-
-    const zones = ee.FeatureCollection(asset)
-      .filter(ee.Filter.eq("shapeGroup", "GHA"));
+    const zones = eeZonesFor(level);
 
     const band = form.bands[0] || (d.bands || [])[0]?.name;
     const single = band ? image.select([band]) : image;
@@ -6074,12 +6700,8 @@ async function classAreasByZone(dataset, level) {
   const classes = dataset.classes;
   const scale = Math.max(dataset.resolution_m || 100, 10);
 
-  const asset = level === "region"
-    ? "projects/sat-io/open-datasets/geoboundaries/CGAZ_ADM1"
-    : "projects/sat-io/open-datasets/geoboundaries/CGAZ_ADM2";
   const nameColumn = level === "region" ? "adm1_name" : "adm2_name";
-
-  const zones = ee.FeatureCollection(asset).filter(ee.Filter.eq("shapeGroup", "GHA"));
+  const zones = eeZonesFor(level);
   const { image } = buildEeImage(dataset, form);
 
   const counted = image.reduceRegions({

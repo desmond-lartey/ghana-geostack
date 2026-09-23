@@ -113,7 +113,11 @@ async function main() {
 
   const page = await context.newPage();
   const errors = [];
-  page.on("pageerror", (err) => errors.push(err.message));
+  // The stack matters more than the message: "cannot access X before
+  // initialization" is useless without knowing who reached for X.
+  page.on("pageerror", (err) => errors.push(
+    err.stack ? `${err.message}\n      ${err.stack.split("\n").slice(1, 4).join("\n      ")}`
+              : err.message));
   page.on("console", (m) => {
     if (m.type() === "error") errors.push(`console: ${m.text().slice(0, 200)}`);
   });
