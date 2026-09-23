@@ -64,7 +64,7 @@ made it a half-truth and the numbers beside it misleading.
 | Tools | The output is cut to the boundary before it is drawn |
 | Live OpenStreetMap | Fetched features outside it are dropped |
 | Query results | Rows whose geometry falls outside are not drawn, and the count says how many |
-| Earth Engine layers | The raster is clipped server-side, so one district is a hundredth of the work of the whole country |
+| Earth Engine layers | The raster is clipped server-side, so one district is a hundredth of the work of the whole country. Changing the clip redraws the rasters already on the map, from the form each was drawn with |
 | Earth Engine summaries | Only zones inside the clip are reduced, so the table holds the rows you asked for |
 | Ask | The agent can read the clip and set it, and is told to read it before interpreting any result |
 
@@ -80,3 +80,23 @@ it are cut from exactly the same shape.
 The tool reports what happened: how many features fell inside, how many were
 dropped, and which boundary was used. If nothing survives, it says so and
 suggests widening rather than drawing an empty layer.
+
+### The setting and the tool are for different things
+
+Both are called clipping and they are not interchangeable.
+
+The **Clip tool**, in the toolbox, cuts one layer that already exists and
+writes the result as a new layer. It works on features, so it takes vectors
+only: query results, live OpenStreetMap fetches, boundaries, the output of
+another tool.
+
+The **clip setting** governs what new work covers, and it is the one that
+reaches rasters. An Earth Engine layer is a picture rendered on Google's
+machines — there is no geometry in the browser to cut — so it is cut where it
+is made, before the tiles are drawn. That is also why it is worth setting: ten
+metre land cover for one district is a hundredth of the work of the same
+picture for Ghana.
+
+To get an Earth Engine raster into the toolbox, reduce it first. **Summarise**
+and **Land cover area by region** turn the picture into rows in the browser
+database, and rows drawn on the map are features like any other.

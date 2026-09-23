@@ -5125,6 +5125,11 @@ function renderClipBadges() {
    permanent one; the badges appear on whichever panels are open. */
 function renderClip() {
   const label = clipLabel();
+  // Rasters already on the map were cut server-side to the previous boundary.
+  if (typeof redrawEeLayers === "function" && label !== renderClip.lastLabel) {
+    if (renderClip.lastLabel !== undefined) redrawEeLayers();
+    renderClip.lastLabel = label;
+  }
   const sb = document.getElementById("sb-clip");
   if (sb) sb.textContent = label;
   const chip = document.getElementById("clip-chip");
@@ -6650,9 +6655,16 @@ async function renderToolDetail() {
           ${layers.map((l) => `<option value="${escapeHtml(l.id)}">${escapeHtml(l.label)}${
             l.count ? ` — ${l.count.toLocaleString()} features` : ""}</option>`).join("")}
         </select>${hint}
-        ${layers.length ? "" : `<p class="tb-hint" style="color:var(--clay)">
-          Nothing is drawn yet. Run a query, fetch a live layer, or turn on a
-          boundary layer first.</p>`}</div>`;
+        ${layers.length ? "" : `<p class="tb-hint" style="color:var(--clay)">${
+          [...userLayers.values()].some((e) => e.kind === "raster")
+            ? `These tools work on features, and the only layer drawn is a
+               raster — a picture rendered on Google's machines, with no
+               geometry in this browser to cut or measure. Set the clip from
+               Processing → Clip results to… and the raster is cut where it is
+               made; <em>Summarise</em> in the Data panel turns it into rows
+               these tools can take.`
+            : `Nothing is drawn yet. Run a query, fetch a live layer, or turn on
+               a boundary layer first.`}</p>`}</div>`;
     }
 
     if (spec.kind === "boundary") {
@@ -7297,7 +7309,8 @@ const eeState = {
   ready: false,       // the library is loaded and initialised
   catalog: [],        // the index written at build time
   selected: null,
-  layers: new Map()   // dataset id -> map source id
+  layers: new Map(),  // dataset id -> map source id
+  drawn: new Map()    // dataset id -> { dataset, form, clip } it was drawn with
 };
 
 function eeCredentials() {
@@ -8123,14 +8136,14 @@ async function diagnoseEmptyCollection(d, form) {
 
 /* ── Drawing it ────────────────────────────────────────────────────────── */
 
-async function addEeLayer(d) {
+async function addEeLayer(d, replayForm) {
   if (!eeState.ready) {
     eeDetailStatus("Connect to Earth Engine first — the panel at the top of this tab.",
                    "error");
     return;
   }
 
-  const form = readEeForm(d);
+  const form = replayForm || readEeForm(d);
   eeDetailStatus("Asking Earth Engine for tiles…");
 
   try {
@@ -8182,6 +8195,9 @@ async function addEeLayer(d) {
                    paint: { "raster-opacity": 0.85 } }, firstVector);
 
     eeState.layers.set(d.id, sourceId);
+    // What it was drawn from, so changing the clip can redraw it without that
+    // dataset's panel still being open.
+    eeState.drawn.set(d.id, { dataset: d, form, clip: clipLabel() });
     registerUserLayer({
       id: sourceId, label: d.title, kind: "raster",
       layerIds: [sourceId], sourceId,
@@ -8226,6 +8242,28 @@ function removeEeLayer(id) {
   if (map.getLayer(sourceId)) map.removeLayer(sourceId);
   if (map.getSource(sourceId)) map.removeSource(sourceId);
   eeState.layers.delete(id);
+  eeState.drawn.delete(id);
+}
+
+/* An Earth Engine raster is cut to the clip on Google's machines at the moment
+   it is drawn, so a raster already on the map keeps the boundary it was drawn
+   with. That made the clip a half-truth again in the one place it matters
+   most: the status bar saying Ashanti above a picture of the whole country.
+
+   Changing the clip therefore redraws them, from the form each was drawn with
+   rather than from whatever the panel happens to be showing now. */
+async function redrawEeLayers() {
+  const drawn = [...eeState.drawn.values()];
+  if (!drawn.length || !eeState.ready) return;
+
+  window.ghLog?.("info",
+    `Clip changed to ${clipLabel()} — redrawing ${drawn.length} Earth Engine `
+    + `layer${drawn.length === 1 ? "" : "s"}`);
+
+  for (const { dataset, form } of drawn) {
+    try { await addEeLayer(dataset, form); }
+    catch (err) { window.ghLog?.("error", `${dataset.id}: ${err.message ?? err}`); }
+  }
 }
 
 /* ── Reducing it to a table ────────────────────────────────────────────── */

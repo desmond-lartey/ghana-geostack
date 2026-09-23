@@ -1,9 +1,19 @@
 """Generate the site icons from the national boundary.
 
-The favicon is Ghana's actual outline, simplified from
+The mark is Ghana's actual outline, simplified from
 `data/reference/gha_admin0.geojson`, rather than a generic pin. It is derived
 from the same COD boundary the rest of the platform uses, so the mark and the
 data agree.
+
+Around it is a surveyor's reticle: a ring, a north mark at the top and ticks
+at east, south and west. That says what the country is doing there — this is a
+mapping tool, not a page about Ghana — and it is what survives at 16 px, where
+the outline alone is an orange smudge.
+
+The compass was tried *through* the outline first, which is the obvious reading
+of "a compass across the shape". It does not work: any ring or needle cut
+through a country that small takes the country apart, and what is left reads as
+a broken blob rather than as Ghana. The reticle around it keeps both.
 
 Outputs:
     docs/assets/favicon.svg        documentation favicon
@@ -108,18 +118,70 @@ def svg_path(points: list[tuple[float, float]]) -> str:
     return head + rest + "Z"
 
 
+def mark(size: float) -> dict:
+    """The mark as plain geometry, in one place.
+
+    The SVG and the PNG are drawn by different libraries from this one
+    description, so they cannot drift into two slightly different logos. Every
+    number is a fraction of the canvas, so the mark is the same at 16 px and at
+    180 px.
+    """
+    margin = size * 0.085                      # from the canvas edge to the ring
+    stroke = size * 0.040                      # the ring, and the ticks
+    radius = (size - margin * 2) / 2 - stroke / 2
+    north = size * 0.155                       # the north mark, tip to base
+    tick = size * 0.042                        # tick width
+    reach = margin * 1.5                       # ticks run from the edge to here
+    half = size / 2
+
+    return {
+        "ring": (half, half, radius, stroke),
+        # The ring is broken where the north mark sits, so the two read as one
+        # shape rather than a triangle resting on a line.
+        "gap": (half - north * 0.8, 0.0, north * 1.6, margin + stroke * 1.5),
+        "north": [(half, size * 0.008),
+                  (half - north / 2, margin + north * 0.60),
+                  (half + north / 2, margin + north * 0.60)],
+        "ticks": [(half - tick / 2, size - reach, tick, reach),     # south
+                  (0.0, half - tick / 2, reach, tick),              # west
+                  (size - reach, half - tick / 2, reach, tick)],    # east
+        "country": outline(size, padding=size * 0.255)[0],
+    }
+
+
 def write_svg(path: Path, size: int, fill: str, background: str | None,
               radius: float = 0) -> None:
-    points, _ = outline(size, padding=size * 0.09)
+    m = mark(size)
+    cx, cy, r, stroke = m["ring"]
+    gx, gy, gw, gh = m["gap"]
+    # The mask id has to be unique on a page, because these files get inlined.
+    mask_id = f"gap-{path.stem}"
+
     parts = [
         f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {size} {size}" '
-        f'width="{size}" height="{size}" role="img" aria-label="Ghana">'
+        f'width="{size}" height="{size}" role="img" '
+        f'aria-label="Ghana GeoStack">',
+        f'<mask id="{mask_id}">'
+        f'<rect width="{size}" height="{size}" fill="#fff"/>'
+        f'<rect x="{gx:.2f}" y="{gy:.2f}" width="{gw:.2f}" height="{gh:.2f}" fill="#000"/>'
+        f'</mask>',
     ]
     if background:
         parts.append(
             f'<rect width="{size}" height="{size}" rx="{radius}" fill="{background}"/>')
-    parts.append(f'<path d="{svg_path(points)}" fill="{fill}"/>')
-    parts.append("</svg>")
+
+    parts.append(f'<g fill="{fill}">')
+    parts.append(
+        f'<circle cx="{cx:.2f}" cy="{cy:.2f}" r="{r:.2f}" fill="none" '
+        f'stroke="{fill}" stroke-width="{stroke:.2f}" mask="url(#{mask_id})"/>')
+    parts.append('<path d="'
+                 + "".join(f'{"M" if i == 0 else "L"}{x:.2f} {y:.2f}'
+                           for i, (x, y) in enumerate(m["north"]))
+                 + 'Z"/>')
+    for x, y, w, h in m["ticks"]:
+        parts.append(f'<rect x="{x:.2f}" y="{y:.2f}" width="{w:.2f}" height="{h:.2f}"/>')
+    parts.append(f'<path d="{svg_path(m["country"])}"/>')
+    parts.append("</g></svg>")
 
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text("".join(parts), encoding="utf-8")
@@ -133,14 +195,28 @@ def write_png(path: Path, size: int, fill: str, background: str | None) -> None:
         print("  Pillow not installed, skipping PNG icons")
         return
 
-    supersample = 4
+    # Eight times, not four: the ring and the ticks are thin, and at 16 px a
+    # coarser supersample turns them into grey mush.
+    supersample = 8
     canvas = size * supersample
-    points, _ = outline(canvas, padding=canvas * 0.09)
+    m = mark(canvas)
+    cx, cy, r, stroke = m["ring"]
+    clear = (0, 0, 0, 0)
 
-    image = Image.new("RGBA", (canvas, canvas), background or (0, 0, 0, 0))
-    ImageDraw.Draw(image).polygon(points, fill=fill)
+    image = Image.new("RGBA", (canvas, canvas), background or clear)
+    draw = ImageDraw.Draw(image)
+
+    draw.ellipse([cx - r - stroke / 2, cy - r - stroke / 2,
+                  cx + r + stroke / 2, cy + r + stroke / 2],
+                 outline=fill, width=round(stroke))
+    gx, gy, gw, gh = m["gap"]
+    draw.rectangle([gx, gy, gx + gw, gy + gh], fill=background or clear)
+    draw.polygon(m["north"], fill=fill)
+    for x, y, w, h in m["ticks"]:
+        draw.rectangle([x, y, x + w, y + h], fill=fill)
+    draw.polygon(m["country"], fill=fill)
+
     image = image.resize((size, size), Image.LANCZOS)
-
     path.parent.mkdir(parents=True, exist_ok=True)
     image.save(path)
     print(f"  {path.relative_to(ROOT)} ({path.stat().st_size} bytes)")
