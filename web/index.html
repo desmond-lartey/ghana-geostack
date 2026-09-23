@@ -387,29 +387,14 @@ button { cursor: pointer; border: none; background: none; }
 
 /* --- Panel ---------------------------------------------------------------- */
 
+/* Was a sliding drawer, then a fixed column. It is now a floating panel like
+   the layers one, so everything that made it slide is dropped rather than
+   overridden a property at a time. `.dock` does the rest. */
 #panel {
-  /* Was a floating drawer; it is now the right-hand dock, so the positioning
-     that made it float is neutralised rather than the rules being rewritten
-     one by one. */
-  position: relative;
-  top: auto; right: auto;
-  height: auto;
-  width: 348px;
-  max-width: 100vw;
-  z-index: 24;
+  max-width: calc(100vw - 24px);
   transform: none !important;
-  box-shadow: none;
-  display: flex;
-  flex-direction: column;
-  background: var(--surface);
-  border-left: 1px solid var(--border);
-  border-radius: 0;
-  box-shadow: -8px 0 36px rgba(0, 0, 0, 0.28);
-  transform: translateX(100%);
-  transition: transform 0.3s var(--ease);
+  transition: none;
 }
-
-#panel[data-open="true"] { transform: none; }
 
 @media (max-width: 620px) {
   #panel {
@@ -422,20 +407,23 @@ button { cursor: pointer; border: none; background: none; }
   }
 }
 
+/* The title and its close button share one line, which the hidden tab strip
+   made a column by sitting between them. */
 #panel-head {
-  padding: 22px 20px 0;
+  display: flex; align-items: center; gap: 8px;
+  padding: 12px 14px 12px 16px;
   border-bottom: 1px solid var(--border);
 }
 
 #panel-head h2 {
   font-family: var(--font-display);
-  margin: 0 0 14px;
-  font-size: 21px;
-  font-weight: 600;
-  letter-spacing: -0.015em;
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
 }
 
-@media (max-width: 620px) { #panel-head { padding-top: 18px; } }
+
 
 #tabs { display: flex; gap: 22px; }
 
@@ -783,41 +771,53 @@ td { font-family: var(--font-mono); font-size: 12.5px; font-variant-numeric: tab
 
 /* — Workspace: rail, dock, map, dock, rail — */
 
-#workspace { position: relative; display: flex; min-height: 0; }
-
-.rail {
-  width: 40px; flex: none;
-  display: flex; flex-direction: column; align-items: center; gap: 2px;
-  padding-top: 8px;
-  background: var(--surface);
-  border-right: 1px solid var(--border);
-  z-index: 25;
-}
-.rail.right { border-right: 0; border-left: 1px solid var(--border); }
-
-.rail button {
-  width: 30px; height: 74px;
-  border: 1px solid transparent; border-radius: 7px;
-  background: none; color: var(--text-3);
-  font: inherit; font-size: 10px; letter-spacing: .09em;
-  writing-mode: vertical-rl; text-orientation: mixed;
-  cursor: pointer; text-transform: uppercase;
-}
-.rail button:hover { background: var(--surface-2); color: var(--text); }
-.rail button[aria-pressed="true"] {
-  background: var(--surface-2); color: var(--accent);
-  border-color: var(--border); font-weight: 600;
-}
+/* The map has the whole workspace; the panels float on top of it. Two things
+   follow that a strip of docks either side could not do: closing a panel gives
+   the map the full window rather than a wider column, and the map underneath
+   is continuous, so panning does not stop at a panel's edge. */
+#workspace { position: relative; min-height: 0; }
 
 .dock {
-  width: 320px; flex: none;
+  position: absolute; top: 12px; bottom: 12px; left: 12px;
+  width: 320px;
   display: flex; flex-direction: column; min-height: 0;
   background: var(--surface);
-  border-right: 1px solid var(--border);
+  border: 1px solid var(--border); border-radius: 12px;
+  box-shadow: 0 14px 38px rgba(0, 0, 0, .30);
+  overflow: hidden;
   z-index: 24;
 }
-.dock.right { border-right: 0; border-left: 1px solid var(--border); width: 348px; }
+.dock.right { left: auto; right: 12px; width: 348px; top: 58px; }
 .dock[hidden] { display: none; }
+
+/* The panel toolbar, on the map. Deliberately the size and shape of a map
+   control, because that is what it is. */
+#maptools {
+  position: absolute; top: 12px; right: 12px; z-index: 26;
+  display: flex; gap: 6px;
+}
+#maptools button {
+  width: 34px; height: 34px;
+  display: grid; place-items: center;
+  border: 1px solid var(--border); border-radius: 9px;
+  background: var(--surface); color: var(--text-2);
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, .18);
+}
+#maptools button svg { width: 17px; height: 17px; }
+#maptools button:hover { color: var(--text); border-color: var(--text-3); }
+#maptools button[aria-pressed="true"] {
+  background: var(--accent); border-color: var(--accent); color: #fff;
+}
+
+.dock-close svg, #panel-close svg { width: 15px; height: 15px; }
+#panel-close {
+  margin-left: auto;
+  width: 26px; height: 26px; display: grid; place-items: center;
+  border: 1px solid transparent; border-radius: 6px;
+  background: none; color: var(--text-3); cursor: pointer;
+}
+#panel-close:hover { background: var(--surface-2); color: var(--text); }
 
 .dock-head {
   display: flex; align-items: center; gap: 8px;
@@ -873,7 +873,7 @@ td { font-family: var(--font-mono); font-size: 12.5px; font-variant-numeric: tab
 }
 #dock-search-results .hint { margin: 6px 9px; }
 
-#map-wrap { position: relative; flex: 1; min-width: 0; }
+#map-wrap { position: absolute; inset: 0; }
 #map { position: absolute; inset: 0; transition: none; }
 
 /* — Status bar — */
@@ -928,6 +928,15 @@ td { font-family: var(--font-mono); font-size: 12.5px; font-variant-numeric: tab
 .layer-card[data-selected="true"] {
   border-color: var(--accent); background: var(--surface-2);
 }
+.layer-card.base { margin-bottom: 4px; }
+.layer-card.base[data-off="true"] { opacity: .45; }
+.layer-card.base .lc-kind { font-size: 10px; }
+
+.dock-group {
+  margin: 14px 0 6px; font-size: 10.5px; letter-spacing: .07em;
+  text-transform: uppercase; color: var(--text-3); font-weight: 600;
+}
+.dock-group:first-child { margin-top: 2px; }
 .layer-card .lc-top { display: flex; align-items: center; gap: 8px; }
 .layer-card .lc-grip { cursor: grab; opacity: .35; flex: none; }
 .layer-card .lc-grip svg { width: 13px; height: 13px; display: block; }
@@ -936,7 +945,9 @@ td { font-family: var(--font-mono); font-size: 12.5px; font-variant-numeric: tab
   color: var(--text-2); display: grid; place-items: center; flex: none;
 }
 .layer-card .lc-eye svg { width: 15px; height: 15px; }
-.layer-card .lc-eye[aria-pressed="false"] { opacity: .35; }
+.layer-card .lc-eye[aria-pressed="false"] { opacity: .5; }
+.layer-card .lc-eye[aria-pressed="false"] ~ .lc-name { color: var(--text-3); }
+.layer-card .lc-eye[aria-pressed="false"] ~ .lc-swatch { opacity: .4; }
 .layer-card .lc-swatch {
   width: 13px; height: 13px; border-radius: 3px; flex: none;
   border: 1px solid rgba(0,0,0,.25);
@@ -1061,6 +1072,7 @@ td { font-family: var(--font-mono); font-size: 12.5px; font-variant-numeric: tab
   flex-direction: column;
 }
 #legend[hidden] { display: none !important; }
+#workspace:has(#dock-left:not([hidden])) #legend { left: 344px; }
 #legend-body { overflow-y: auto; }
 
 .legend-group + .legend-group {
@@ -1113,13 +1125,7 @@ td { font-family: var(--font-mono); font-size: 12.5px; font-variant-numeric: tab
 <div id="shell">
 
 <div id="menubar">
-  <div class="brand">
-    <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
-      <path d="M2 4.2 6 2.4l4 1.8 4-1.8v9.4l-4 1.8-4-1.8-4 1.8z"
-            stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/>
-      <path d="M6 2.4v9.4M10 4.2v9.4" stroke="currentColor" stroke-width="1.1"/>
-    </svg>Ghana GeoStack
-  </div>
+  <div class="brand">Ghana GeoStack</div>
 
   <div class="menu" data-menu="project">
     <button type="button">Project</button>
@@ -1200,10 +1206,6 @@ td { font-family: var(--font-mono); font-size: 12.5px; font-variant-numeric: tab
 
 <div id="workspace">
 
-  <nav class="rail" aria-label="Left panels">
-    <button type="button" data-rail="left" aria-pressed="true">Layers</button>
-  </nav>
-
   <aside class="dock" id="dock-left" aria-label="Layers">
     <div class="dock-head">
       <h2>Layers</h2>
@@ -1216,6 +1218,9 @@ td { font-family: var(--font-mono); font-size: 12.5px; font-variant-numeric: tab
         </button>
         <button type="button" data-act="allvis:false" title="Hide everything">
           <svg viewBox="0 0 15 15" fill="none"><path d="M2 2l11 11M1 7.5S3.5 3 7.5 3c1.2 0 2.3.4 3.2 1M14 7.5s-2.5 4.5-6.5 4.5c-1.2 0-2.3-.4-3.2-1" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+        </button>
+        <button type="button" data-act="dock:left" title="Close" class="dock-close">
+          <svg viewBox="0 0 15 15" fill="none"><path d="M4 4l7 7M11 4l-7 7" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
         </button>
       </div>
     </div>
@@ -1238,6 +1243,54 @@ td { font-family: var(--font-mono); font-size: 12.5px; font-variant-numeric: tab
 
 <div id="map-wrap">
     <div id="map"></div>
+
+<!-- The panels are opened from here, and each button closes the panel it
+     opened. They sit on the map rather than in a strip beside it, so nothing
+     spends width on a permanent label and any panel can be put away entirely
+     when the map is what matters. -->
+<div id="maptools" role="toolbar" aria-label="Panels">
+  <button type="button" data-toggle="dock-left" aria-pressed="true" title="Layers">
+    <svg viewBox="0 0 18 18" fill="none" aria-hidden="true">
+      <path d="M9 2 2 5.6 9 9.2l7-3.6z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/>
+      <path d="M2 9.4 9 13l7-3.6M2 12.8 9 16.4l7-3.6" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/>
+    </svg>
+  </button>
+  <button type="button" data-toggle="style" aria-pressed="false" title="Style">
+    <svg viewBox="0 0 18 18" fill="none" aria-hidden="true">
+      <path d="M9 2.2a6.8 6.8 0 1 0 0 13.6c1 0 1.5-.7 1.5-1.4 0-.8-.7-1.3-.7-2 0-.6.5-1.1 1.2-1.1h1.4a3.4 3.4 0 0 0 3.4-3.4C15.8 4.7 12.7 2.2 9 2.2z"
+            stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/>
+      <circle cx="5.6" cy="8.2" r="1" fill="currentColor"/>
+      <circle cx="9" cy="5.6" r="1" fill="currentColor"/>
+    </svg>
+  </button>
+  <button type="button" data-toggle="data" aria-pressed="false" title="Earth observation data">
+    <svg viewBox="0 0 18 18" fill="none" aria-hidden="true">
+      <circle cx="9" cy="9" r="6.8" stroke="currentColor" stroke-width="1.3"/>
+      <path d="M2.2 9h13.6M9 2.2c1.9 2 2.9 4.3 2.9 6.8S10.9 13.8 9 15.8C7.1 13.8 6.1 11.5 6.1 9s1-4.8 2.9-6.8z"
+            stroke="currentColor" stroke-width="1.2"/>
+    </svg>
+  </button>
+  <button type="button" data-toggle="query" aria-pressed="false" title="SQL workspace">
+    <svg viewBox="0 0 18 18" fill="none" aria-hidden="true">
+      <rect x="2.4" y="3.4" width="13.2" height="11.2" rx="1.6" stroke="currentColor" stroke-width="1.3"/>
+      <path d="M2.4 7h13.2M7 7v7.6" stroke="currentColor" stroke-width="1.3"/>
+    </svg>
+  </button>
+  <button type="button" data-toggle="ask" aria-pressed="false" title="Ask">
+    <svg viewBox="0 0 18 18" fill="none" aria-hidden="true">
+      <path d="M15.6 9.2c0 3.1-2.9 5.6-6.6 5.6-.8 0-1.6-.1-2.3-.3L2.4 15.8l1.3-3A5.3 5.3 0 0 1 2.4 9.2c0-3.1 3-5.6 6.6-5.6s6.6 2.5 6.6 5.6z"
+            stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/>
+    </svg>
+  </button>
+  <button type="button" data-toggle="log" aria-pressed="false" title="Log">
+    <svg viewBox="0 0 18 18" fill="none" aria-hidden="true">
+      <path d="M5.4 5h8M5.4 9h8M5.4 13h5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+      <circle cx="2.8" cy="5" r=".9" fill="currentColor"/>
+      <circle cx="2.8" cy="9" r=".9" fill="currentColor"/>
+      <circle cx="2.8" cy="13" r=".9" fill="currentColor"/>
+    </svg>
+  </button>
+</div>
 
 <section id="legend" class="card" data-open="true" aria-label="Legend" hidden>
   <button id="legend-head" aria-expanded="true" aria-controls="legend-body">
@@ -1331,6 +1384,9 @@ td { font-family: var(--font-mono); font-size: 12.5px; font-variant-numeric: tab
   <aside id="panel" class="dock right" aria-label="Style, data and query">
     <div id="panel-head">
       <h2 id="panel-title">Style</h2>
+      <button type="button" id="panel-close" title="Close" aria-label="Close this panel">
+        <svg viewBox="0 0 15 15" fill="none"><path d="M4 4l7 7M11 4l-7 7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+      </button>
     <div id="tabs" role="tablist" hidden>
       <button class="tab" role="tab" id="tab-layers"   aria-selected="true"  aria-controls="pane-layers">Layers</button>
       <button class="tab" role="tab" id="tab-ask"      aria-selected="false" aria-controls="pane-ask">Ask</button>
@@ -1631,10 +1687,6 @@ ORDER BY km2 DESC;</textarea>
     <p><a href="https://github.com/desmond-lartey/ghana-geostack">github.com/desmond-lartey/ghana-geostack</a></p>
   </div>
 </aside>
-
-  <nav class="rail right" aria-label="Right panels">
-    <button type="button" data-rail="right" aria-pressed="true">Style</button>
-  </nav>
 
 </div><!-- /#workspace -->
 
@@ -2203,6 +2255,10 @@ const clipState = { kind: "none", name: "", geometry: null };
    renders that run during start-up do nothing until the module has finished
    evaluating, and the last statement in it turns this on and draws once. */
 let shellReady = false;
+
+/* Which pane the right-hand panel is showing, so a toolbar button can tell
+   "open on something else" from "already showing this". */
+let panelPane = "style";
 
 document.documentElement.dataset.theme = state.theme;
 
@@ -5336,7 +5392,7 @@ const AGENT_TOOLS = {
       id: l.id,
       name: l.name,
       visible: state.active.has(l.id),
-      needs_database: Boolean(l.table && !state.tilesOk)
+      needs_database: Boolean(l.unavailable)
     }))
   },
 
@@ -6008,6 +6064,9 @@ async function runAgent(question, { key, model, baseUrl }, onStep) {
 const ICON = {
   grip: '<svg viewBox="0 0 15 15" fill="currentColor"><circle cx="5" cy="3" r="1.1"/><circle cx="10" cy="3" r="1.1"/><circle cx="5" cy="7.5" r="1.1"/><circle cx="10" cy="7.5" r="1.1"/><circle cx="5" cy="12" r="1.1"/><circle cx="10" cy="12" r="1.1"/></svg>',
   eye: '<svg viewBox="0 0 15 15" fill="none"><path d="M1 7.5S3.5 3 7.5 3s6.5 4.5 6.5 4.5-2.5 4.5-6.5 4.5S1 7.5 1 7.5z" stroke="currentColor" stroke-width="1.2"/><circle cx="7.5" cy="7.5" r="1.8" stroke="currentColor" stroke-width="1.2"/></svg>',
+  // A hidden layer gets a different icon, not the same one faded. Nine
+  // toggles down a list, opacity alone is not a state anyone can read.
+  eyeOff: '<svg viewBox="0 0 15 15" fill="none"><path d="M2 2l11 11" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><path d="M1 7.5S3.5 3 7.5 3c1.1 0 2.1.3 3 .8M14 7.5s-2.5 4.5-6.5 4.5c-1.1 0-2.1-.3-3-.8" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>',
   up: '<svg viewBox="0 0 15 15" fill="none"><path d="M7.5 12V3.5M3.8 7.2 7.5 3.5l3.7 3.7" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>',
   down: '<svg viewBox="0 0 15 15" fill="none"><path d="M7.5 3v8.5M3.8 7.8l3.7 3.7 3.7-3.7" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>',
   zoom: '<svg viewBox="0 0 15 15" fill="none"><circle cx="6.6" cy="6.6" r="4.6" stroke="currentColor" stroke-width="1.3"/><path d="M10 10l3.4 3.4M6.6 4.6v4M4.6 6.6h4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>',
@@ -6029,15 +6088,13 @@ function renderUserLayers() {
   const host = document.getElementById("dock-left-body");
   if (!host) return;
 
-  const fixed = LAYERS.filter((l) => state.active.has(l.id));
   const added = [...userLayers.values()].reverse();
 
-  if (!fixed.length && !added.length) {
-    host.innerHTML = `<p class="hint">Nothing on the map. Add Data → a live layer,
-      or turn on a boundary below.</p>` + baseLayerToggles();
-  } else {
-    host.innerHTML = added.map(layerCard).join("") + baseLayerToggles();
-  }
+  host.innerHTML =
+    (added.length
+      ? `<h4 class="dock-group">Added this session</h4>` + added.map(layerCard).join("")
+      : "")
+    + baseLayerToggles();
 
   wireLayerCards(host);
   const count = document.getElementById("sb-layers");
@@ -6062,7 +6119,7 @@ function layerCard(entry) {
         <button type="button" class="lc-eye" data-lc="eye" data-id="${entry.id}"
                 aria-pressed="${entry.visible}"
                 aria-label="${entry.visible ? "Hide" : "Show"} ${escapeHtml(entry.label)}">
-          ${ICON.eye}</button>
+          ${entry.visible ? ICON.eye : ICON.eyeOff}</button>
         <span class="lc-swatch" style="background:${entry.colour || "var(--accent)"}"></span>
         <button type="button" class="lc-name" data-lc="select" data-id="${entry.id}"
                 title="${escapeHtml(entry.label)}">${escapeHtml(entry.label)}</button>
@@ -6092,22 +6149,33 @@ function layerCard(entry) {
 }
 
 /* The fixed boundary layers stay listed below, as a background group. */
+/* The published layers, in their own groups, each with a switch. Every one of
+   them is listed, including those that need the database: a layer that is
+   missing from the list looks like a layer that does not exist, whereas one
+   marked "needs database" says what to do about it. Districts and Regions are
+   drawn by default and were the conspicuous absence — on the map, nowhere in
+   the list, and so impossible to turn off. */
 function baseLayerToggles() {
-  return `
-    <h4 style="margin:16px 0 6px;font-size:10.5px;letter-spacing:.07em;
-               text-transform:uppercase;opacity:.55">Reference</h4>
-    ${LAYERS.filter((l) => !l.table || state.tilesOk).map((l) => `
-      <div class="layer-card" style="padding:7px 10px">
+  const groups = [...new Set(LAYERS.map((l) => l.group))];
+  const c = colours();
+
+  return groups.map((group) => `
+    <h4 class="dock-group">${escapeHtml(group)}</h4>
+    ${LAYERS.filter((l) => l.group === group).map((l) => {
+      const off = Boolean(l.unavailable);
+      const on = state.active.has(l.id);
+      return `
+      <div class="layer-card base" data-off="${off}" style="padding:7px 10px">
         <div class="lc-top">
-          <span class="lc-grip" style="opacity:.15">${ICON.grip}</span>
           <button type="button" class="lc-eye" data-base="${l.id}"
-                  aria-pressed="${state.active.has(l.id)}"
-                  aria-label="Toggle ${escapeHtml(l.name)}">${ICON.eye}</button>
-          <span class="lc-swatch" style="background:${l.colour ? colours()[l.colour] : "var(--text-3)"}"></span>
+                  aria-pressed="${on}" ${off ? "disabled" : ""}
+                  aria-label="Toggle ${escapeHtml(l.name)}">${on ? ICON.eye : ICON.eyeOff}</button>
+          <span class="lc-swatch" style="background:${l.key ? c[l.key] : "var(--text-3)"}"></span>
           <span class="lc-name">${escapeHtml(l.name)}</span>
-          <span class="lc-kind">base</span>
+          <span class="lc-kind">${off ? "needs database" : escapeHtml(l.meta ?? "")}</span>
         </div>
-      </div>`).join("")}`;
+      </div>`;
+    }).join("")}`).join("");
 }
 
 function wireLayerCards(host) {
@@ -6738,16 +6806,40 @@ const PANEL_TITLES = {
   log: "Log", sources: "About the data", settings: "Map", layers: "Layers"
 };
 
-function showPanel(name) {
+/* One pane shows in the right-hand panel at a time. Asking for the pane that
+   is already showing closes the panel, which is what a toggle button that
+   stays lit has to mean — the alternative is a button that looks pressed and
+   does nothing when pressed again. */
+function showPanel(name, { toggle = false } = {}) {
+  const panel = document.getElementById("panel");
+  if (toggle && !panel.hidden && panelPane === name) return hidePanel();
+
+  panelPane = name;
   selectTab(name);
   const title = document.getElementById("panel-title");
   if (title) title.textContent = PANEL_TITLES[name] ?? name;
-  document.getElementById("panel").hidden = false;
-  for (const button of document.querySelectorAll('[data-rail="right"]')) {
-    button.setAttribute("aria-pressed", "true");
-  }
+  panel.hidden = false;
+  syncMapTools();
   if (name === "style") renderStylePane();
   if (name === "log") renderLog();
+}
+
+function hidePanel() {
+  document.getElementById("panel").hidden = true;
+  syncMapTools();
+}
+
+/* Each toolbar button is lit when the thing it opens is on screen. */
+function syncMapTools() {
+  const panel = document.getElementById("panel");
+  const left = document.getElementById("dock-left");
+  for (const button of document.querySelectorAll("#maptools [data-toggle]")) {
+    const what = button.dataset.toggle;
+    const on = what === "dock-left"
+      ? !left.hidden
+      : !panel.hidden && panelPane === what;
+    button.setAttribute("aria-pressed", String(on));
+  }
 }
 
 /* ── The search box at the foot of the layers dock ─────────────────────────
@@ -6873,11 +6965,8 @@ function renderDockSearch(host, hits, term) {
 
 function toggleDock(side) {
   const dock = document.getElementById(side === "left" ? "dock-left" : "panel");
-  const button = document.querySelector(`[data-rail="${side}"]`);
-  const open = dock.hidden;
-  dock.hidden = !open;
-  button?.setAttribute("aria-pressed", String(open));
-  map.resize();
+  dock.hidden = !dock.hidden;
+  syncMapTools();
 }
 
 /* The menus. One handler for the whole bar, because a menu is a list of
@@ -7065,6 +7154,17 @@ function turfLikeDistanceKm(lon1, lat1, lon2, lat2) {
     }
 
     wireDockSearch();
+
+    // The panel toolbar on the map: one button per panel, each closing what
+    // it opened.
+    for (const button of document.querySelectorAll("#maptools [data-toggle]")) {
+      button.addEventListener("click", () => {
+        const what = button.dataset.toggle;
+        if (what === "dock-left") toggleDock("left");
+        else showPanel(what, { toggle: true });
+      });
+    }
+    document.getElementById("panel-close")?.addEventListener("click", hidePanel);
 
     // The clip: readable in the status bar at all times, changed from there or
     // from Processing → Clip results to.
@@ -7521,8 +7621,12 @@ function eeClipFeatures() {
       ee.Geometry.Rectangle([b.getWest(), b.getSouth(), b.getEast(), b.getNorth()]))]);
   }
 
-  return ee.FeatureCollection("FAO/GAUL_SIMPLIFIED_500m/2015/level0")
-    .filter(ee.Filter.eq("ADM0_NAME", "Ghana"));
+  // The country is the union of its regions, from the same geoBoundaries
+  // asset the named clips and the summaries use. It was FAO GAUL, which is a
+  // second boundary source for the one case where the docs promised the
+  // first, and a second source is a second thing that can be empty.
+  return ee.FeatureCollection("projects/sat-io/open-datasets/geoboundaries/CGAZ_ADM1")
+    .filter(ee.Filter.eq("shapeGroup", "GHA"));
 }
 
 function eeClipRegion() {
@@ -7925,7 +8029,13 @@ function buildEeImage(d, form) {
   }
 
   let collection = ee.ImageCollection(d.id).filterBounds(region);
-  if (form.start && form.end) collection = collection.filterDate(form.start, form.end);
+  // filterDate's end is exclusive, so a range typed as 2021-01-01 to
+  // 2021-01-01 asks for nothing at all and an image stamped on the end date
+  // is silently outside. A person writing two dates means both of them, so
+  // the end is pushed to the end of that day.
+  if (form.start && form.end) {
+    collection = collection.filterDate(form.start, ee.Date(form.end).advance(1, "day"));
+  }
   if (form.bands.length) collection = collection.select(form.bands);
 
   const reduce = {
@@ -7938,6 +8048,77 @@ function buildEeImage(d, form) {
     image: (d.classes ? eeClassImage(composite, d.classes) : composite).clip(region),
     region, collection, classed: Boolean(d.classes)
   };
+}
+
+/* ── When nothing comes back ───────────────────────────────────────────────
+
+   An empty collection was reported as "no images in this date range", which
+   is a guess dressed as an answer: the date filter is one of three things
+   that can empty a collection, and blaming it when the boundary was the
+   problem sends people to change a date that was already right.
+
+   So each filter is counted separately and the one that emptied it is named.
+   Four counts is four cheap calls against a service that has already been
+   asked for tiles, and the alternative is a person editing dates until they
+   give up.                                                                 */
+
+function eeCount(collection) {
+  return new Promise((resolve) =>
+    collection.size().evaluate((v, err) => resolve(err ? { error: String(err) } : v)));
+}
+
+async function diagnoseEmptyCollection(d, form) {
+  const base = ee.ImageCollection(d.id);
+  const region = eeClipRegion();
+  const where = clipLabel();
+
+  const [whole, inBounds, inDate, boundary] = await Promise.all([
+    eeCount(base),
+    eeCount(base.filterBounds(region)),
+    form.start && form.end
+      ? eeCount(base.filterDate(form.start, ee.Date(form.end).advance(1, "day")))
+      : Promise.resolve(null),
+    eeCount(eeClipFeatures())
+  ]);
+
+  const failed = [whole, inBounds, inDate, boundary].find((v) => v && v.error);
+  if (failed) {
+    return `Earth Engine refused the request while working out why nothing came
+            back: ${escapeHtml(failed.error)}`;
+  }
+
+  if (boundary === 0) {
+    return `The boundary for <strong>${escapeHtml(where)}</strong> came back empty,
+            so the search area was empty and no image could fall inside it. This
+            is the boundary source, not the dataset or your dates — the
+            geoBoundaries collection this reads is a community asset, and a
+            project that cannot read it gets nothing rather than an error.`;
+  }
+
+  if (whole === 0) {
+    return `<strong>${escapeHtml(d.id)}</strong> has no images at all, before any
+            filter is applied. Either the id has changed or the collection is
+            empty for this account.`;
+  }
+
+  if (inBounds === 0) {
+    return `${whole.toLocaleString()} images in this collection, none of them over
+            <strong>${escapeHtml(where)}</strong>. This dataset does not cover the
+            area — the search results mark that, and drawing it anyway would give
+            an empty rectangle.`;
+  }
+
+  if (inDate === 0) {
+    return `${inBounds.toLocaleString()} images over ${escapeHtml(where)}, none
+            between ${escapeHtml(form.start)} and ${escapeHtml(form.end)}. The
+            catalogue says this dataset runs ${escapeHtml(d.start || "?")} to
+            ${escapeHtml(d.end || "now")}.`;
+  }
+
+  return `${inBounds.toLocaleString()} images over ${escapeHtml(where)} and
+          ${inDate.toLocaleString()} in this date range, but none that are both.
+          The passes over ${escapeHtml(where)} fall outside
+          ${escapeHtml(form.start)} to ${escapeHtml(form.end)}.`;
 }
 
 /* ── Drawing it ────────────────────────────────────────────────────────── */
@@ -7970,9 +8151,7 @@ async function addEeLayer(d) {
         const n = await new Promise((resolve) =>
           built.collection.size().evaluate((v, err) => resolve(err ? null : v)));
         if (n === 0) {
-          eeDetailStatus(
-            `No images between ${form.start} and ${form.end} over Ghana. ` +
-            `This dataset runs ${d.start || "?"} to ${d.end || "now"}.`, "error");
+          eeDetailStatus(await diagnoseEmptyCollection(d, form), "error");
           return;
         }
         if (n !== null) eeDetailStatus(`${n} images found. Building the composite…`);

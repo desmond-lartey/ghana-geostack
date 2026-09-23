@@ -1,9 +1,10 @@
 # The map interface
 
 The viewer is laid out as a desktop GIS rather than as a web page with a map on
-it: a menu bar across the top, a dock on each side, the map between them, and a
-status bar along the bottom. Geoprocessing is a floating toolbox opened from the
-**Processing** menu, not a tab competing with everything else.
+it: a menu bar across the top, a status bar along the bottom, the map filling
+everything between them, and panels floating over it that can each be put away.
+Geoprocessing is a floating toolbox opened from the **Processing** menu, not a
+tab competing with everything else.
 
 That shape is borrowed from [GeoLibre](https://github.com/ArcaneDiver/geolibre),
 and borrowed deliberately. Anyone who has used QGIS, ArcGIS or GeoLibre already
@@ -16,15 +17,16 @@ knows where to look, and a layout people already know needs no explaining.
 ```
 ┌────────────────────────────────────────────────────────────────┐
 │ Ghana GeoStack   Project  View  Add Data  Processing  Help     │  menu bar
-├──┬──────────────────┬──────────────────────────┬────────────┬──┤
-│  │ Layers           │                          │ Style      │  │
-│L │  ▸ layer card    │           map            │            │S │
-│A │  ▸ layer card    │                          │            │T │
-│Y │  ▸ layer card    │   ┌────────────┐         │            │Y │
-│E │                  │   │  legend    │         │            │L │
-│R │ ─────────────────│   └────────────┘         │            │E │
-│S │ 🔍 search        │                          │            │  │
-├──┴──────────────────┴──────────────────────────┴────────────┴──┤
+├────────────────────────────────────────────────────────────────┤
+│ ┌──────────────┐                        ▣ ▣ ▣ ▣ ▣ ▣  ← toolbar │
+│ │ Layers     ×│                       ┌──────────────┐         │
+│ │  ▸ card     │                       │ Style      × │         │
+│ │  ▸ card     │          map          │              │         │
+│ │ ────────────│                       │              │         │
+│ │ 🔍 search   │   ┌────────────┐      │              │         │
+│ └──────────────┘  │  legend    │      └──────────────┘         │
+│                   └────────────┘                               │
+├────────────────────────────────────────────────────────────────┤
 │ Coords  Zoom  Scale  BBox  Eye alt  Bearing  Pitch │ CRS Clip  │  status bar
 └────────────────────────────────────────────────────────────────┘
 ```
@@ -33,16 +35,18 @@ knows where to look, and a layout people already know needs no explaining.
 *Project* is data and exports, *View* is the map itself, *Add Data* brings
 something new in, *Processing* opens the toolbox, *Help* explains the place.
 
-**The rails** are the vertical strips either side. Each one collapses or
-restores its dock, so the map can have the whole window when that is what the
-work needs.
+**The toolbar** sits on the map at the top right: one button per panel, and
+each one closes the panel it opened. It stays in the same place whatever is
+open, because a control that moves is a control to hunt for.
 
-**The left dock** is the layer stack. **The right dock** is everything else —
-Style, Data, the SQL workspace, Ask, the Log — one pane at a time, chosen from
-the menus. It opens on Style, because styling is what you do to a layer you
-have just added.
+**The panels float on the map** rather than taking columns out of it. Layers on
+the left, everything else on the right — Style, Data, the SQL workspace, Ask,
+the Log, one at a time. Both can be closed, from the toolbar or from the × in
+their own header, and with both closed the map has the whole window. The map
+underneath is continuous, so a drag does not stop at a panel's edge.
 
-**The status bar** reports where the map is. It is read, not operated.
+**The status bar** reports where the map is. It is read, not operated, apart
+from the clip.
 
 ---
 
@@ -74,8 +78,16 @@ The opacity slider reads each layer's type and sets the matching paint
 property — `raster-opacity`, `fill-opacity`, `circle-opacity` — rather than
 assuming. A source is removed only once nothing else draws from it.
 
-Below the cards, reference layers — regions, districts, capitals — are simple
-toggles. They are always available and never in the way.
+Below them, the published layers are listed in their own groups — Administrative,
+Infrastructure, Services, Analysis — each with a switch. Every one is listed,
+including those that need the database running, which are marked and disabled
+rather than hidden: a layer missing from a list looks like a layer that does
+not exist.
+
+Districts and Regions are drawn from GeoJSON when there is no database, so they
+work in any deployment. They were the conspicuous omission from an earlier
+version of this list — on the map, absent from the panel, and therefore
+impossible to turn off.
 
 ---
 

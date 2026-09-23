@@ -267,10 +267,24 @@ The other answers it distinguishes: a token that was never set, a project the
 signed-in account cannot use, a project that does not exist, a rejected token,
 and a request that never left the browser at all.
 
-**The layer draws nothing** — check the date range first. The panel reports
-the image count before drawing, so a zero there is the answer. After that,
-check the band: a band name that does not exist in the collection produces an
-empty image rather than an error.
+**The layer draws nothing** — the panel counts the images before drawing, and
+when that count is zero it works out *why* rather than blaming the dates. Three
+filters can empty a collection and only one of them is the date range, so each
+is counted on its own and the message names the one responsible:
+
+| What it says | What happened |
+| --- | --- |
+| The boundary came back empty | The clip's boundary returned no features, so there was no area to search. This is the boundary source, not the dataset |
+| No images at all, before any filter | The id has changed, or the collection is empty for this account |
+| None of them over Ghana | The dataset does not cover the area. Drawing it would give an empty rectangle |
+| None in this date range | The dates. The message repeats the range the catalogue claims |
+| None that are both | The passes over the area fall outside the range |
+
+Two notes on dates. `filterDate`'s end is exclusive in Earth Engine, so a range
+typed as the same day twice asks for nothing at all; the end you type is pushed
+to the end of that day, because two dates mean both of them. And a band name
+that does not exist in the collection produces an empty image rather than an
+error, so check the band when the count is fine and the picture is not.
 
 **"Could not load the Earth Engine library"** — the client library is pinned
 to an exact version, because Google Hosted Libraries has no `latest` path. If
