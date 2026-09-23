@@ -7,38 +7,29 @@ deciding what an analysis covers.
 
 ## The layer stack
 
-Everything this session puts on the map is listed under **Added this session**
-in the Layers tab, newest first — Earth Engine rasters, live OpenStreetMap
-fetches, query results, tool output, catalogue layers. Each row has:
-
-| | |
-| --- | --- |
-| Checkbox | Show or hide, without losing it |
-| Slider | Opacity |
-| **Zoom** | Fit the map to that layer's extent |
-| **↑ ↓** | Move it in front of or behind the others |
-| **Remove** | Take it off the map and free its source |
+Everything this session puts on the map is a card in the left dock, newest at
+the top — Earth Engine rasters, live OpenStreetMap fetches, query results, tool
+output, catalogue layers. What each card can do is described in
+[The map interface](interface.md).
 
 Before this, each producer drew into its own fixed layer ids and could only be
 replaced, never managed. There was no way to see what was on the map, let alone
 turn one thing off.
 
 The design is GeoLibre's, because GeoLibre's is right. What differs is
-underneath: a producer registers its layer once, with a label, its layer ids
-and an extent, and everything else follows. A new kind of output is managed for
-free rather than needing controls of its own.
-
-The opacity slider reads each layer's type and sets the matching paint
-property — `raster-opacity`, `fill-opacity`, `circle-opacity` — rather than
-assuming. A source is removed only once nothing else draws from it.
+underneath: a producer registers its layer once, with a label, its layer ids,
+an extent, a colour and a legend if it has one, and everything else follows —
+the card, the legend entry, the search result, the toolbox input. A new kind of
+output is managed for free rather than needing controls of its own.
 
 ---
 
 ## Clipping
 
-Set **Clip results to** in the Tools tab, and every tool and every live fetch
-respects it. The options are the whole country, the current view, any region or
-any district.
+Set the clip from **Processing → Clip results to…**, or by clicking what the
+status bar says it is currently set to. Every tool and every live fetch respects
+it. The options are the whole country, the current view, any region or any
+district.
 
 This comes from the hotspots notebook, where one line does the work:
 
@@ -77,9 +68,10 @@ made it a half-truth and the numbers beside it misleading.
 | Earth Engine summaries | Only zones inside the clip are reduced, so the table holds the rows you asked for |
 | Ask | The agent can read the clip and set it, and is told to read it before interpreting any result |
 
-Because it governs work started from several tabs, the current clip is shown on
-each of them. A number read without knowing what it covers is the thing this is
-guarding against.
+Because it governs work started from several panels, the current clip is in the
+status bar at all times, and shown again on each panel that starts work. A
+number read without knowing what it covers is the thing this is guarding
+against.
 
 For Earth Engine the named boundaries come from geoBoundaries server-side — the
 same source the summaries reduce onto — so a layer and the numbers taken from

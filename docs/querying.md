@@ -172,30 +172,38 @@ The approach is adapted from
 
 ## Geoprocessing in the browser
 
-The **Tools** tab runs vector operations on features already in the page. The
-library is loaded on first use, so a visitor who never opens the tab never
-downloads it.
+**Processing → Ghana Toolbox** runs vector operations on features already in
+the page. The library is loaded on first use, so a visitor who never opens the
+toolbox never downloads it. The tools, and how the toolbox is laid out, are in
+[The map interface](interface.md).
 
 | Tool | Does | Needs a parameter |
 | --- | --- | --- |
-| Buffer | A zone of the given radius around each feature | Radius in km |
+| Clip | Keeps only the parts inside a boundary | A boundary |
+| Buffer | A zone of the given radius around each feature | Distance in km |
 | Centroids | One point per feature, at its centre of mass | — |
-| Dissolve into one | Merges every feature into a single polygon | — |
+| Point on feature | One point per feature, guaranteed to be on it | — |
+| Dissolve | Merges every feature into a single polygon | — |
 | Convex hull | The tightest convex polygon containing the input | — |
 | Bounding box | One rectangle around the whole input | — |
 | Simplify | Removes vertices while keeping the shape | Tolerance in degrees |
 | Voronoi catchments | The area closest to each input point | — |
+| Distance to nearest | How far each feature is from the closest of another layer | A second layer |
+| Sample elevation | The height at a point, from the terrain source | — |
 | Measure | Area in km² and perimeter in km per feature | — |
 
-Input is either the current query result or a whole layer. Output draws on the
-map, appears as a table, and downloads as GeoJSON.
+Input is any layer on the map, which includes the current query result and
+anything fetched live. Each run writes its own layer, so results stack rather
+than replacing one another, and each one draws on the map, opens as a table and
+downloads as GeoJSON.
 
 ### A worked example
 
 Health facility catchments, without leaving the browser:
 
 1. Query tab: `SELECT name, adm1_name, geom FROM ghana.capital WHERE adm_p_lvl = 1;`
-2. Tools tab: input **Current query result**, tool **Buffer**, radius **50**
+2. **Processing → Ghana Toolbox**: tool **Buffer**, input **the query result**,
+   distance **50 km**
 3. Run. Sixteen catchments draw on the map and download as GeoJSON.
 
 Swap in `ghana.facility` once the pipeline has been run, set the radius to 5,
@@ -239,7 +247,7 @@ be. Zoom to the area you care about first.
 ### Fetched data becomes a table
 
 A fetch does not only draw. Each result is registered as a table, so the Query
-tab and the Tools tab treat it exactly like a published layer:
+tab and the toolbox treat it exactly like a published layer:
 
 ```sql
 SELECT name, amenity, lon, lat, geom
@@ -248,7 +256,7 @@ ORDER BY name;
 ```
 
 Which means the full chain works with no database at all — fetch health
-facilities for a district, buffer them by 5 km in the Tools tab, and download
+facilities for a district, buffer them by 5 km in the toolbox, and download
 the catchments as GeoJSON.
 
 Tables created this way: `ghana.osm_health`, `ghana.osm_education`,
@@ -329,11 +337,9 @@ reader gets from *here is some data* to *here is what it shows*.
 Query results and tool output replace themselves on each run rather than
 stacking. Everything can also be removed explicitly:
 
-- **Clear map** in the Query and Tools tabs
-- **Remove** beside any layer in the Style tab
-- **Remove all results** at the foot of the Style tab
-- **Clear** beside a live layer in the Layers tab
-- **Reset view** removes every result and returns the camera to Ghana
+- **Remove** on any layer card in the left dock, which frees its source too
+- **Hide everything** at the head of the layer dock, which keeps the layers
+- **View → Reset the view** removes every result and returns the camera to Ghana
 
 ## The panel does not block the map
 

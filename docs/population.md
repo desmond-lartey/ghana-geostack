@@ -197,7 +197,7 @@ python pipelines/05_zonal_stats.py data/raw/chirps_rainfall_ghana.tif \
 ## Seeing it
 
 With the stack running, the analysis tables are served as vector tiles and
-appear in the viewer's Layers tab.
+appear in the viewer's layer dock.
 
 Without a database, the CSV from step 2 is the route: it is keyed on p-code,
 so it joins to the boundaries the viewer already has.

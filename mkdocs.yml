@@ -25,7 +25,6 @@ site_dir: site
 theme:
   name: material
   language: en
-  custom_dir: docs/overrides
 
   font:
     text: Roboto
@@ -121,6 +120,7 @@ nav:
   - Administrative boundaries: boundaries.md
   - Architecture: architecture.md
   - Querying the data: querying.md
+  - The map interface: interface.md
   - Layers and clipping: layers-and-clipping.md
   - Earth observation catalogue: catalog.md
   - Earth Engine in the browser: earth-engine.md

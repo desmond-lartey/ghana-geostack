@@ -388,12 +388,17 @@ button { cursor: pointer; border: none; background: none; }
 /* --- Panel ---------------------------------------------------------------- */
 
 #panel {
-  position: absolute;
-  top: 0; right: 0;
-  height: 100%;
-  width: 392px;
+  /* Was a floating drawer; it is now the right-hand dock, so the positioning
+     that made it float is neutralised rather than the rules being rewritten
+     one by one. */
+  position: relative;
+  top: auto; right: auto;
+  height: auto;
+  width: 348px;
   max-width: 100vw;
-  z-index: 30;
+  z-index: 24;
+  transform: none !important;
+  box-shadow: none;
   display: flex;
   flex-direction: column;
   background: var(--surface);
@@ -691,18 +696,554 @@ td { font-family: var(--font-mono); font-size: 12.5px; font-variant-numeric: tab
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
 }
+
+/* ── The shell ─────────────────────────────────────────────────────────────
+   A menu bar across the top, a rail and a dock down each side, the map in the
+   middle, a status bar along the bottom. This is GeoLibre's arrangement, and
+   the reason to adopt it rather than approximate it is that it puts every
+   capability somewhere a person can find without being told: layers on the
+   left where they are always visible, style on the right beside what it
+   styles, processing behind a menu, and the map's own state along the bottom.
+
+   What it replaces was a single drawer with nine tabs, which meant a layer
+   list nested inside a tab inside a panel, and a clip setting that governed
+   everything from inside one tab. Both were symptoms of the same thing: no
+   place for anything to live. */
+
+#shell {
+  position: absolute; inset: 0;
+  display: grid;
+  grid-template-rows: 44px 1fr 26px;
+  grid-template-columns: 1fr;
+  background: var(--ground);
+}
+
+/* — Menu bar — */
+
+#menubar {
+  display: flex; align-items: center; gap: 2px;
+  padding: 0 10px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  font-size: 13.5px;
+  position: relative; z-index: 60;
+}
+
+#menubar .brand {
+  display: flex; align-items: center; gap: 7px;
+  font-family: var(--font-display); font-weight: 700;
+  font-size: 15px; color: var(--accent);
+  padding-right: 12px; margin-right: 4px;
+  white-space: nowrap;
+}
+#menubar .brand svg { width: 18px; height: 18px; }
+
+.menu { position: relative; }
+
+.menu > button {
+  display: flex; align-items: center; gap: 6px;
+  height: 30px; padding: 0 11px;
+  border: 1px solid transparent; border-radius: 7px;
+  background: none; color: var(--text);
+  font: inherit; cursor: pointer;
+  white-space: nowrap;
+}
+.menu > button:hover { background: var(--surface-2); }
+.menu[data-open="true"] > button { background: var(--surface-2); border-color: var(--border); }
+.menu > button svg { width: 15px; height: 15px; opacity: .75; flex: none; }
+
+.menu-list {
+  position: absolute; top: calc(100% + 4px); left: 0;
+  min-width: 212px; padding: 5px;
+  background: var(--surface);
+  border: 1px solid var(--border-2);
+  border-radius: 10px;
+  box-shadow: var(--shadow);
+  display: none; z-index: 70;
+}
+.menu[data-open="true"] .menu-list { display: block; }
+
+.menu-list button, .menu-list .menu-label {
+  display: flex; align-items: center; gap: 9px; width: 100%;
+  padding: 7px 10px; border: 0; border-radius: 7px;
+  background: none; color: var(--text);
+  font: inherit; font-size: 13px; text-align: left; cursor: pointer;
+}
+.menu-list button:hover { background: var(--surface-2); }
+.menu-list button[aria-current="true"] { color: var(--accent); font-weight: 600; }
+.menu-list .sep { height: 1px; margin: 5px 4px; background: var(--border); }
+.menu-list .menu-label {
+  cursor: default; font-size: 10.5px; letter-spacing: .07em;
+  text-transform: uppercase; opacity: .55; padding-bottom: 3px;
+}
+.menu-list .shortcut { margin-left: auto; opacity: .45; font-size: 11px; font-family: var(--font-mono); }
+
+#menubar .spacer { flex: 1; }
+#menubar .project-name { opacity: .6; font-size: 13px; padding-right: 6px; }
+
+/* — Workspace: rail, dock, map, dock, rail — */
+
+#workspace { position: relative; display: flex; min-height: 0; }
+
+.rail {
+  width: 40px; flex: none;
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  padding-top: 8px;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  z-index: 25;
+}
+.rail.right { border-right: 0; border-left: 1px solid var(--border); }
+
+.rail button {
+  width: 30px; height: 74px;
+  border: 1px solid transparent; border-radius: 7px;
+  background: none; color: var(--text-3);
+  font: inherit; font-size: 10px; letter-spacing: .09em;
+  writing-mode: vertical-rl; text-orientation: mixed;
+  cursor: pointer; text-transform: uppercase;
+}
+.rail button:hover { background: var(--surface-2); color: var(--text); }
+.rail button[aria-pressed="true"] {
+  background: var(--surface-2); color: var(--accent);
+  border-color: var(--border); font-weight: 600;
+}
+
+.dock {
+  width: 320px; flex: none;
+  display: flex; flex-direction: column; min-height: 0;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  z-index: 24;
+}
+.dock.right { border-right: 0; border-left: 1px solid var(--border); width: 348px; }
+.dock[hidden] { display: none; }
+
+.dock-head {
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 12px 8px;
+  border-bottom: 1px solid var(--border);
+}
+.dock-head h2 {
+  margin: 0; font-family: var(--font-display);
+  font-size: 15px; font-weight: 700; letter-spacing: -.01em;
+}
+.dock-head .dock-tools { margin-left: auto; display: flex; gap: 2px; }
+.dock-head .dock-tools button {
+  width: 26px; height: 26px; display: grid; place-items: center;
+  border: 0; border-radius: 6px; background: none;
+  color: var(--text-3); cursor: pointer;
+}
+.dock-head .dock-tools button:hover { background: var(--surface-2); color: var(--text); }
+.dock-head .dock-tools svg { width: 15px; height: 15px; }
+
+.dock-body { flex: 1; overflow-y: auto; padding: 12px; min-height: 0; }
+
+/* — The search box at the foot of the layers dock — */
+
+#dock-search {
+  display: flex; align-items: center; gap: 8px; flex: none;
+  padding: 8px 12px;
+  border-top: 1px solid var(--border);
+}
+#dock-search svg { width: 15px; height: 15px; color: var(--text-3); flex: none; }
+#dock-search input {
+  flex: 1; min-width: 0; height: 30px;
+  border: 0; background: none; color: var(--text);
+  font: inherit; font-size: 12.5px; outline: none;
+}
+#dock-search input::placeholder { color: var(--text-3); }
+#dock-search input::-webkit-search-cancel-button { filter: grayscale(1) opacity(.5); }
+
+#dock-search-results {
+  flex: none; max-height: 232px; overflow-y: auto;
+  border-top: 1px solid var(--border);
+  padding: 6px;
+}
+#dock-search-results[hidden] { display: none; }
+#dock-search-results button {
+  display: block; width: 100%; text-align: left;
+  padding: 7px 9px; border: 0; border-radius: var(--radius);
+  background: none; color: var(--text); font: inherit; font-size: 12.5px;
+  cursor: pointer;
+}
+#dock-search-results button:hover { background: var(--surface-2); }
+#dock-search-results button span {
+  display: block; font-size: 11px; color: var(--text-3); margin-top: 1px;
+}
+#dock-search-results .hint { margin: 6px 9px; }
+
+#map-wrap { position: relative; flex: 1; min-width: 0; }
+#map { position: absolute; inset: 0; transition: none; }
+
+/* — Status bar — */
+
+#statusbar {
+  display: flex; align-items: center; gap: 18px;
+  padding: 0 12px;
+  background: var(--surface); border-top: 1px solid var(--border);
+  font-family: var(--font-mono); font-size: 11px; color: var(--text-3);
+  overflow: hidden; white-space: nowrap;
+}
+#statusbar .sb-item { display: flex; gap: 6px; }
+#statusbar .sb-item b { font-weight: 500; opacity: .65; }
+#statusbar .sb-right { margin-left: auto; display: flex; gap: 14px; }
+
+/* The clip is the one thing in the status bar that can be changed, so it is
+   the one thing that looks like it can be. */
+#sb-clip {
+  border: 0; background: none; padding: 0;
+  font: inherit; color: var(--accent); cursor: pointer;
+  text-decoration: underline; text-underline-offset: 2px;
+}
+#sb-clip:hover { color: var(--text); }
+
+#clip-dialog {
+  position: fixed; right: 16px; bottom: 42px; z-index: 60;
+  width: 320px; max-width: calc(100vw - 32px);
+  padding: 14px 15px 12px;
+  background: var(--surface);
+  border: 1px solid var(--border); border-radius: 12px;
+  box-shadow: 0 18px 44px rgba(0, 0, 0, .34);
+}
+#clip-dialog[hidden] { display: none; }
+#clip-dialog h2 {
+  margin: 0 0 10px; font-family: var(--font-display);
+  font-size: 14px; font-weight: 700; letter-spacing: -.01em;
+}
+#clip-dialog select {
+  width: 100%; height: 34px; padding: 0 9px;
+  border: 1px solid var(--border); border-radius: var(--radius);
+  background: var(--surface-2); color: var(--text); font: inherit; font-size: 13px;
+}
+#clip-dialog .clip-actions { display: flex; justify-content: flex-end; margin-top: 10px; }
+
+/* — Layer cards — */
+
+.layer-card {
+  border: 1px solid var(--border); border-radius: 9px;
+  padding: 9px 10px; margin-bottom: 8px;
+  background: var(--surface);
+}
+.layer-card[data-selected="true"] {
+  border-color: var(--accent); background: var(--surface-2);
+}
+.layer-card .lc-top { display: flex; align-items: center; gap: 8px; }
+.layer-card .lc-grip { cursor: grab; opacity: .35; flex: none; }
+.layer-card .lc-grip svg { width: 13px; height: 13px; display: block; }
+.layer-card .lc-eye {
+  border: 0; background: none; padding: 0; cursor: pointer;
+  color: var(--text-2); display: grid; place-items: center; flex: none;
+}
+.layer-card .lc-eye svg { width: 15px; height: 15px; }
+.layer-card .lc-eye[aria-pressed="false"] { opacity: .35; }
+.layer-card .lc-swatch {
+  width: 13px; height: 13px; border-radius: 3px; flex: none;
+  border: 1px solid rgba(0,0,0,.25);
+}
+.layer-card .lc-name {
+  flex: 1; font-size: 13px; line-height: 1.25;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  background: none; border: 0; color: var(--text); font: inherit;
+  text-align: left; cursor: pointer; padding: 0;
+}
+.layer-card .lc-kind {
+  font-size: 9.5px; letter-spacing: .07em; text-transform: uppercase;
+  opacity: .45; flex: none;
+}
+.layer-card .lc-opacity {
+  display: flex; align-items: center; gap: 8px; margin-top: 7px;
+  font-size: 11px; color: var(--text-3);
+}
+.layer-card .lc-opacity input { flex: 1; accent-color: var(--accent); }
+.layer-card .lc-opacity output { font-family: var(--font-mono); width: 30px; text-align: right; }
+.layer-card .lc-actions {
+  display: flex; gap: 2px; margin-top: 8px;
+  padding-top: 8px; border-top: 1px solid var(--border);
+}
+.layer-card .lc-actions button {
+  width: 28px; height: 28px; display: grid; place-items: center;
+  border: 0; border-radius: 6px; background: none;
+  color: var(--text-2); cursor: pointer;
+}
+.layer-card .lc-actions button:hover { background: var(--surface); color: var(--text); }
+.layer-card .lc-actions button.danger:hover { color: var(--clay); }
+.layer-card .lc-actions svg { width: 15px; height: 15px; }
+
+/* — The toolbox, a floating window — */
+
+#toolbox {
+  position: fixed; z-index: 80;
+  left: 50%; top: 50%; transform: translate(-50%, -50%);
+  width: min(920px, 94vw); height: min(620px, 88vh);
+  display: none; flex-direction: column;
+  background: var(--surface);
+  border: 1px solid var(--accent); border-radius: 12px;
+  box-shadow: 0 24px 70px rgba(0,0,0,.4);
+}
+#toolbox[data-open="true"] { display: flex; }
+#toolbox .tb-head {
+  display: flex; align-items: flex-start; gap: 10px;
+  padding: 13px 15px; border-bottom: 1px solid var(--border);
+  cursor: grab;
+}
+#toolbox .tb-head h2 { margin: 0; font-family: var(--font-display); font-size: 16px; }
+#toolbox .tb-head p { margin: 2px 0 0; font-size: 12px; opacity: .65; }
+#toolbox .tb-close {
+  margin-left: auto; border: 0; background: none; cursor: pointer;
+  color: var(--text-3); font-size: 19px; line-height: 1; padding: 2px 6px;
+}
+#toolbox .tb-body { display: flex; flex: 1; min-height: 0; }
+#toolbox .tb-list {
+  width: 288px; flex: none; border-right: 1px solid var(--border);
+  display: flex; flex-direction: column; min-height: 0;
+}
+#toolbox .tb-filters { padding: 12px; display: grid; gap: 8px; }
+#toolbox .tb-results { flex: 1; overflow-y: auto; padding: 0 8px 10px; }
+#toolbox .tb-item {
+  width: 100%; text-align: left; padding: 9px 10px; margin-bottom: 3px;
+  border: 1px solid transparent; border-radius: 8px;
+  background: none; color: var(--text); font: inherit; cursor: pointer;
+}
+#toolbox .tb-item:hover { background: var(--surface-2); }
+#toolbox .tb-item[aria-current="true"] {
+  background: var(--surface-2); border-color: var(--accent);
+}
+#toolbox .tb-item strong { display: block; font-size: 13px; font-weight: 600; }
+#toolbox .tb-item span { font-size: 11px; opacity: .6; }
+#toolbox .tb-detail { flex: 1; overflow-y: auto; padding: 15px 18px; min-height: 0; }
+#toolbox .tb-detail h3 { margin: 0 0 2px; font-size: 17px; font-family: var(--font-display); }
+#toolbox .tb-detail .tb-id {
+  font-family: var(--font-mono); font-size: 11px; opacity: .5; margin-bottom: 10px;
+}
+#toolbox .tb-run { display: flex; gap: 8px; align-items: center; margin-bottom: 14px; }
+#toolbox .tb-param { margin-bottom: 13px; }
+#toolbox .tb-param label { display: block; font-size: 12.5px; font-weight: 600; margin-bottom: 3px; }
+#toolbox .tb-param .tb-hint { font-size: 11px; opacity: .6; margin: 3px 0 0; }
+#toolbox .tb-param .tb-meta { float: right; font-family: var(--font-mono); font-size: 10.5px; opacity: .45; }
+#toolbox select, #toolbox input[type="text"], #toolbox input[type="number"], #toolbox input[type="search"] {
+  width: 100%; height: 34px; padding: 0 10px;
+  border: 1px solid var(--border); border-radius: var(--radius);
+  background: var(--surface-2); color: var(--text); font: inherit; font-size: 13px;
+}
+#toolbox .tb-status { margin-top: 12px; font-size: 12.5px; }
+
+@media (max-width: 900px) {
+  .dock { width: 272px; }
+  .dock.right { width: 272px; }
+  #menubar .menu > button span { display: none; }
+}
+
+
+/* The tab strip is how panels used to be chosen; the menus choose them now.
+   The buttons stay in the document because selectTab still drives which panel
+   shows, but nobody should see them. A bare [hidden] loses to the display
+   rule above, so it is said again with enough weight to win.
+
+   The same applies to the old floating header and the row of buttons along the
+   bottom of the map: the menu bar and the status bar carry those now. An id
+   selector saying `display: flex` outranks the browser's own rule for
+   [hidden], so each one has to be overruled by name. */
+#tabs[hidden],
+#header[hidden],
+#controls[hidden] { display: none !important; }
+
+/* The legend sits where a printed map puts it: bottom left, over the map,
+   out of the way of the docks either side. It is only there when there is
+   something to explain. */
+#legend {
+  top: auto;
+  bottom: var(--pad);
+  left: var(--pad);
+  width: 246px;
+  max-height: calc(100% - var(--pad) * 2);
+  display: flex;
+  flex-direction: column;
+}
+#legend[hidden] { display: none !important; }
+#legend-body { overflow-y: auto; }
+
+.legend-group + .legend-group {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+.legend-group h4 {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  margin: 0 0 6px;
+}
+.legend-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  margin: 3px 0;
+}
+.legend-row i {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  flex: none;
+  border: 1px solid rgba(0, 0, 0, 0.25);
+}
+.legend-row .legend-value {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-3);
+}
+.legend-ramp { height: 10px; border-radius: 3px; border: 1px solid var(--border); }
+.legend-ends {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--text-3);
+  margin-top: 3px;
+}
 </style>
 </head>
 
 <body>
 
-<div id="map"></div>
+<div id="shell">
 
-<section id="legend" class="card" data-open="true" aria-label="Legend">
+<div id="menubar">
+  <div class="brand">
+    <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <path d="M2 4.2 6 2.4l4 1.8 4-1.8v9.4l-4 1.8-4-1.8-4 1.8z"
+            stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/>
+      <path d="M6 2.4v9.4M10 4.2v9.4" stroke="currentColor" stroke-width="1.1"/>
+    </svg>Ghana GeoStack
+  </div>
+
+  <div class="menu" data-menu="project">
+    <button type="button">Project</button>
+    <div class="menu-list">
+      <span class="menu-label">Data</span>
+      <button data-act="panel:data">Earth observation catalogue</button>
+      <button data-act="panel:query">SQL workspace<span class="shortcut">Q</span></button>
+      <div class="sep"></div>
+      <button data-act="download:geojson">Download the drawn layer</button>
+      <button data-act="download:csv">Download the query result</button>
+      <div class="sep"></div>
+      <button data-act="reset">Reset the view</button>
+    </div>
+  </div>
+
+  <div class="menu" data-menu="view">
+    <button type="button">View</button>
+    <div class="menu-list">
+      <span class="menu-label">Panels</span>
+      <button data-act="dock:left">Layers</button>
+      <button data-act="panel:style">Style</button>
+      <button data-act="panel:log">Log</button>
+      <button data-act="panel:sources">About the data</button>
+      <div class="sep"></div>
+      <span class="menu-label">Map</span>
+      <button data-act="panel:settings">Basemap, projection and terrain</button>
+      <button data-act="theme">Light or dark</button>
+      <button data-act="locate">Find me</button>
+    </div>
+  </div>
+
+  <div class="menu" data-menu="adddata">
+    <button type="button">Add Data</button>
+    <div class="menu-list">
+      <span class="menu-label">Earth Engine</span>
+      <button data-act="panel:data">Search the catalogue</button>
+      <div class="sep"></div>
+      <span class="menu-label">Live from OpenStreetMap</span>
+      <button data-act="live:health">Health facilities</button>
+      <button data-act="live:education">Schools</button>
+      <button data-act="live:market">Markets and shops</button>
+      <button data-act="live:water">Water points</button>
+      <button data-act="live:road">Roads</button>
+      <button data-act="live:building">Buildings</button>
+    </div>
+  </div>
+
+  <div class="menu" data-menu="processing">
+    <button type="button">Processing</button>
+    <div class="menu-list">
+      <button data-act="panel:ask">AI Assistant</button>
+      <button data-act="toolbox:">Ghana Toolbox</button>
+      <button data-act="clip">Clip results to…</button>
+      <div class="sep"></div>
+      <span class="menu-label">By category</span>
+      <button data-act="toolbox:overlay">Overlay analysis</button>
+      <button data-act="toolbox:geometry">Geometry</button>
+      <button data-act="toolbox:proximity">Proximity</button>
+      <button data-act="toolbox:terrain">Terrain</button>
+      <button data-act="toolbox:zonal">Zonal statistics</button>
+      <div class="sep"></div>
+      <button data-act="panel:query">SQL workspace</button>
+    </div>
+  </div>
+
+  <div class="menu" data-menu="help">
+    <button type="button">Help</button>
+    <div class="menu-list">
+      <button data-act="tour">Take the tour</button>
+      <button data-act="panel:sources">Sources and licensing</button>
+      <button data-act="docs">Documentation</button>
+    </div>
+  </div>
+
+  <div class="spacer"></div>
+  <span class="project-name" id="clip-chip"></span>
+</div>
+
+<div id="workspace">
+
+  <nav class="rail" aria-label="Left panels">
+    <button type="button" data-rail="left" aria-pressed="true">Layers</button>
+  </nav>
+
+  <aside class="dock" id="dock-left" aria-label="Layers">
+    <div class="dock-head">
+      <h2>Layers</h2>
+      <div class="dock-tools">
+        <button type="button" data-act="zoom:all" title="Zoom to everything">
+          <svg viewBox="0 0 15 15" fill="none"><circle cx="6.6" cy="6.6" r="4.6" stroke="currentColor" stroke-width="1.3"/><path d="M10 10l3.4 3.4M6.6 4.6v4M4.6 6.6h4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+        </button>
+        <button type="button" data-act="allvis:true" title="Show everything">
+          <svg viewBox="0 0 15 15" fill="none"><path d="M1 7.5S3.5 3 7.5 3s6.5 4.5 6.5 4.5-2.5 4.5-6.5 4.5S1 7.5 1 7.5z" stroke="currentColor" stroke-width="1.2"/><circle cx="7.5" cy="7.5" r="1.8" stroke="currentColor" stroke-width="1.2"/></svg>
+        </button>
+        <button type="button" data-act="allvis:false" title="Hide everything">
+          <svg viewBox="0 0 15 15" fill="none"><path d="M2 2l11 11M1 7.5S3.5 3 7.5 3c1.2 0 2.3.4 3.2 1M14 7.5s-2.5 4.5-6.5 4.5c-1.2 0-2.3-.4-3.2-1" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+        </button>
+      </div>
+    </div>
+    <div class="dock-body" id="dock-left-body"></div>
+
+    <!-- One box for three questions that all end the same way: show me that.
+         A layer name filters the list; a region, district or capital flies the
+         map to it; a pair of numbers is a coordinate. Which it is can be told
+         from what was typed, so there is nothing to choose first. -->
+    <form id="dock-search" autocomplete="off">
+      <svg viewBox="0 0 15 15" fill="none" aria-hidden="true">
+        <circle cx="6.6" cy="6.6" r="4.6" stroke="currentColor" stroke-width="1.3"/>
+        <path d="M10 10l3.6 3.6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+      </svg>
+      <input id="dock-search-input" type="search" aria-label="Search layers and places"
+             placeholder="Search layers, regions, districts, or lat, lon…">
+    </form>
+    <div id="dock-search-results" hidden></div>
+    </aside>
+
+<div id="map-wrap">
+    <div id="map"></div>
+
+<section id="legend" class="card" data-open="true" aria-label="Legend" hidden>
   <button id="legend-head" aria-expanded="true" aria-controls="legend-body">
     <span>
-      <span id="legend-title">Ghana GeoStack</span>
-      <span id="legend-sub">Regions and districts</span>
+      <span id="legend-title">Legend</span>
+      <span id="legend-sub">Nothing drawn</span>
     </span>
     <svg id="legend-chev" width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden="true">
       <path d="M3 5l3.5 3.5L10 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
@@ -711,7 +1252,7 @@ td { font-family: var(--font-mono); font-size: 12.5px; font-variant-numeric: tab
   <div id="legend-body"></div>
 </section>
 
-<div id="header">
+<div id="header" hidden>
   <span id="wordmark">
     <svg class="mark" viewBox="0 0 32 32" aria-hidden="true">
       <path fill="var(--accent)" d="M19.25 2.92L19.04 2.88L19 2.98L19.06 3.08L18.82 3.14L18.71 3.3L18.66 3.08L18.44 3.12L18.39 3.46L18.25 3.44L17.97 3.68L17.87 3.62L17.77 3.89L17.63 3.83L17.46 3.75L17.38 3.59L16.82 3.56L16.58 3.73L16.46 3.67L16.12 3.55L15.66 3.57L15.2 3.72L14.6 3.62L14.1 3.8L13.5 3.7L12.9 3.85L12.3 3.75L11.7 3.95L11.1 3.9L10.5 4.1L10 4.4L9.6 4.9L9.3 5.5L9.1 6.2L9 7L8.9 8L8.8 9L8.7 10L8.5 11L8.3 12L8 13L7.7 14L7.4 15L7.2 16L7.1 17L7.2 18L7.4 19L7.7 20L8.1 21L8.6 22L9.2 23L9.9 24L10.7 25L11.6 26L12.6 27L13.7 28L14.9 28.8L16.2 29.4L17.6 29.7L19 29.6L20.4 29.2L21.7 28.5L22.9 27.5L23.9 26.3L24.6 24.9L25 23.4L25.1 21.8L24.9 20.2L24.4 18.7L23.7 17.3L22.8 16.1L21.8 15L20.7 14L19.6 13.1L18.5 12.3L17.4 11.6L16.4 11L15.5 10.4L14.7 9.9L14 9.4L13.4 9L12.9 8.6L12.5 8.2L12.2 7.8L12 7.4L11.9 7L11.9 6.6L12 6.2L12.2 5.8L12.5 5.4L12.9 5L13.4 4.6L14 4.3L14.7 4L15.5 3.8L16.4 3.6L17.4 3.5L18.5 3.4Z"/>
@@ -732,7 +1273,7 @@ td { font-family: var(--font-mono); font-size: 12.5px; font-variant-numeric: tab
   </button>
 </div>
 
-<nav id="controls" aria-label="Map controls">
+<nav id="controls" aria-label="Map controls" hidden>
   <button class="btn btn-secondary" id="btn-info" aria-pressed="false">
     <svg width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden="true">
       <circle cx="7.5" cy="7.5" r="6" stroke="currentColor" stroke-width="1.3"/>
@@ -757,12 +1298,6 @@ td { font-family: var(--font-mono); font-size: 12.5px; font-variant-numeric: tab
       <circle cx="7.5" cy="7.5" r="6.2" stroke="currentColor" stroke-width="1.2"/>
     </svg>Ask
   </button>
-  <button class="btn btn-secondary" id="btn-tools" aria-pressed="false">
-    <svg width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden="true">
-      <path d="M9.9 2.3a3 3 0 0 0-3.6 4l-4 4a1.2 1.2 0 0 0 1.7 1.7l4-4a3 3 0 0 0 4-3.6L10.2 6.3 8.7 4.8z"
-            stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/>
-    </svg>Tools
-  </button>
   <button class="btn btn-secondary" id="btn-query" aria-pressed="false">
     <svg width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden="true">
       <path d="M2.5 4h10M2.5 7.5h6.5M2.5 11h4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
@@ -770,7 +1305,7 @@ td { font-family: var(--font-mono); font-size: 12.5px; font-variant-numeric: tab
   </button>
 </nav>
 
-<div id="story-launch" data-hidden="false">
+<div id="story-launch" data-hidden="true">
   <button id="story-go" class="btn btn-primary" style="height:44px;padding:0 20px;font-size:15px">
     Take the tour
     <svg width="16" height="12" viewBox="0 0 16 12" fill="none" aria-hidden="true">
@@ -791,13 +1326,14 @@ td { font-family: var(--font-mono); font-size: 12.5px; font-variant-numeric: tab
   </div>
 </article>
 
-<aside id="panel" aria-label="Layers, query and sources">
-  <div id="panel-head">
-    <h2>Ghana GeoStack</h2>
-    <div id="tabs" role="tablist">
+  </div><!-- /#map-wrap -->
+
+  <aside id="panel" class="dock right" aria-label="Style, data and query">
+    <div id="panel-head">
+      <h2 id="panel-title">Style</h2>
+    <div id="tabs" role="tablist" hidden>
       <button class="tab" role="tab" id="tab-layers"   aria-selected="true"  aria-controls="pane-layers">Layers</button>
       <button class="tab" role="tab" id="tab-ask"      aria-selected="false" aria-controls="pane-ask">Ask</button>
-      <button class="tab" role="tab" id="tab-tools"    aria-selected="false" aria-controls="pane-tools">Tools</button>
       <button class="tab" role="tab" id="tab-style"    aria-selected="false" aria-controls="pane-style">Style</button>
       <button class="tab" role="tab" id="tab-data"     aria-selected="false" aria-controls="pane-data">Data</button>
       <button class="tab" role="tab" id="tab-query"    aria-selected="false" aria-controls="pane-query">Query</button>
@@ -836,40 +1372,6 @@ td { font-family: var(--font-mono); font-size: 12.5px; font-variant-numeric: tab
 
     <h3>Questions that work</h3>
     <div id="ask-examples"></div>
-  </div>
-
-  <div class="tabpanel" id="pane-tools" role="tabpanel" aria-labelledby="tab-tools">
-    <div class="field" id="clip-picker"></div>
-    <h3>Geoprocessing</h3>
-    <p class="legend-note" style="margin:0 0 14px">
-      Runs in this browser on the features you choose. Nothing is uploaded.
-      Results draw on the map and download like any other query result.</p>
-
-    <div class="field">
-      <label for="tool-input">Input</label>
-      <select id="tool-input"></select>
-    </div>
-
-    <div class="field">
-      <label for="tool-name">Tool</label>
-      <select id="tool-name"></select>
-      <p class="legend-note" id="tool-note" style="margin-top:7px"></p>
-    </div>
-
-    <div class="field" id="tool-param-field">
-      <label for="tool-param" id="tool-param-label">Distance, km</label>
-      <input id="tool-param" type="number" step="any" value="5"
-             style="width:100%;height:38px;padding:0 11px;border-radius:var(--radius);border:1px solid var(--border);background:var(--surface-2);color:var(--text);font-family:var(--font-mono);font-size:13px">
-    </div>
-
-    <div class="actions">
-      <button class="btn btn-primary" id="tool-run">Run tool</button>
-      <button class="btn btn-quiet" id="tool-download" style="height:38px">GeoJSON</button>
-      <button class="btn btn-quiet" id="tool-clear" style="height:38px">Clear map</button>
-      <span id="tool-status">&nbsp;</span>
-    </div>
-
-    <div id="tool-result"></div>
   </div>
 
   <div class="tabpanel" id="pane-style" role="tabpanel" aria-labelledby="tab-style"></div>
@@ -1129,6 +1631,65 @@ ORDER BY km2 DESC;</textarea>
     <p><a href="https://github.com/desmond-lartey/ghana-geostack">github.com/desmond-lartey/ghana-geostack</a></p>
   </div>
 </aside>
+
+  <nav class="rail right" aria-label="Right panels">
+    <button type="button" data-rail="right" aria-pressed="true">Style</button>
+  </nav>
+
+</div><!-- /#workspace -->
+
+<div id="statusbar">
+  <span class="sb-item"><b>Coords</b><span id="sb-coords">—</span></span>
+  <span class="sb-item"><b>Zoom</b><span id="sb-zoom">—</span></span>
+  <span class="sb-item"><b>Scale</b><span id="sb-scale">—</span></span>
+  <span class="sb-item"><b>BBox</b><span id="sb-bbox">—</span></span>
+  <span class="sb-item"><b>Eye alt</b><span id="sb-alt">—</span></span>
+  <span class="sb-item"><b>Bearing</b><span id="sb-bearing">—</span></span>
+  <span class="sb-item"><b>Pitch</b><span id="sb-pitch">—</span></span>
+  <span class="sb-right">
+    <span class="sb-item"><b>CRS</b><span id="sb-crs">EPSG:4326</span></span>
+    <span class="sb-item"><b>Clip</b><button type="button" id="sb-clip"
+          title="What every analysis is confined to. Click to change.">Ghana</button></span>
+    <span class="sb-item"><b>Layers</b><span id="sb-layers">0</span></span>
+  </span>
+</div>
+
+</div><!-- /#shell -->
+
+<div id="toolbox" data-open="false" role="dialog" aria-modal="false" aria-labelledby="tb-title">
+  <div class="tb-head" id="tb-head">
+    <div>
+      <h2 id="tb-title">Ghana Toolbox</h2>
+      <p>Runs in this browser. Every tool takes an input layer and writes a new one.</p>
+    </div>
+    <button type="button" class="tb-close" id="tb-close" aria-label="Close the toolbox">&times;</button>
+  </div>
+
+  <div class="tb-body">
+    <div class="tb-list">
+      <div class="tb-filters">
+        <input type="search" id="tb-search" placeholder="Search tools" aria-label="Search tools">
+        <select id="tb-category" aria-label="Category"></select>
+      </div>
+      <div class="tb-results" id="tb-results"></div>
+    </div>
+    <div class="tb-detail" id="tb-detail"></div>
+  </div>
+</div>
+
+<!-- The clip is one setting that governs every tool, every fetch, every query
+     result and every Earth Engine layer, so it is set in one place and read
+     from the status bar rather than living inside whichever panel happens to
+     be open. -->
+<div id="clip-dialog" hidden role="dialog" aria-modal="false" aria-labelledby="clip-dialog-title">
+  <h2 id="clip-dialog-title">Clip results to</h2>
+  <div id="clip-picker"></div>
+  <div class="clip-actions">
+    <button type="button" class="btn btn-quiet" id="clip-dialog-close">Close</button>
+  </div>
+</div>
+
+  
 
 <div id="boot">Ghana GeoStack</div>
 
@@ -1631,6 +2192,17 @@ if (window.__ghSafeMode) {
 const userLayers = new Map();        // what this session has put on the map
 let userLayerSeq = 0;
 const clipState = { kind: "none", name: "", geometry: null };
+
+/* Start-up runs in the middle of this module: setTheme calls renderLayerList,
+   which wants to draw the layer cards, whose icons are declared hundreds of
+   lines further down. A `const` is not hoisted, so reaching one early throws
+   and takes the page down — three separate times now, each a different
+   constant reached through a different render call.
+
+   A flag is the general answer rather than a third careful reordering. The
+   renders that run during start-up do nothing until the module has finished
+   evaluating, and the last statement in it turns this on and draws once. */
+let shellReady = false;
 
 document.documentElement.dataset.theme = state.theme;
 
@@ -2203,34 +2775,96 @@ function terrainElevationAt(lngLat) {
    Legend
 --------------------------------------------------------------------------- */
 
+/* The legend explains what is on the map, which is not the same thing as what
+   is in the layer list: a layer that is switched off explains nothing, and a
+   raster carrying the producer's own class table explains far more than a
+   swatch. So it is built from the drawn layers in the order they were added,
+   newest group first, and it takes itself off the map when there is nothing to
+   say. */
 function renderLegend() {
+  const legend = document.getElementById("legend");
   const body = document.getElementById("legend-body");
   const sub = document.getElementById("legend-sub");
-  const c = colours();
+  if (!body) return;
 
+  const c = colours();
+  const groups = [];
+
+  // Layers this session added: results, fetched data, Earth Engine rasters.
+  // A classified raster brings its class table with it; anything else is one
+  // swatch in a group of its own kind.
+  const drawn = [...userLayers.values()].filter((e) => e.visible !== false);
+  const plain = [];
+
+  for (const entry of [...drawn].reverse()) {
+    const l = entry.legend;
+    if (l?.type === "classes" && l.names?.length) {
+      groups.push(`
+        <div class="legend-group">
+          <h4>${escapeHtml(entry.label)}</h4>
+          ${l.names.map((name, i) => `
+            <div class="legend-row">
+              <i style="background:#${escapeHtml(String(l.colours[i]).replace(/^#/, ""))}"></i>
+              <span>${escapeHtml(name)}</span>
+              ${l.values ? `<span class="legend-value">${escapeHtml(String(l.values[i]))}</span>` : ""}
+            </div>`).join("")}
+        </div>`);
+    } else if (l?.type === "ramp" && l.stops?.length) {
+      groups.push(`
+        <div class="legend-group">
+          <h4>${escapeHtml(entry.label)}</h4>
+          <div class="legend-ramp" style="background:linear-gradient(90deg,${
+            l.stops.map((s) => "#" + String(s).replace(/^#/, "")).join(",")})"></div>
+          <div class="legend-ends">
+            <span>${escapeHtml(String(l.min ?? ""))}</span>
+            <span>${escapeHtml(String(l.max ?? ""))}</span>
+          </div>
+        </div>`);
+    } else if (entry.colour) {
+      plain.push(`
+        <div class="legend-row">
+          <i style="background:${escapeHtml(entry.colour)}"></i>
+          <span>${escapeHtml(entry.label)}</span>
+        </div>`);
+    }
+  }
+
+  if (plain.length) {
+    groups.push(`<div class="legend-group"><h4>On the map</h4>${plain.join("")}</div>`);
+  }
+
+  // The reference layers keep the legend they were written with.
   const shown = LAYERS.filter((l) => state.active.has(l.id));
   const ramp = [...shown].reverse().find((l) => l.legend?.type === "ramp");
   const lead = ramp ?? shown[shown.length - 1];
 
-  if (!lead) {
-    sub.textContent = "No layers shown";
+  if (lead) {
+    const inner = lead.legend.type === "ramp"
+      ? `<div class="ramp" style="background:linear-gradient(90deg, ${
+           c[lead.legend.ramp].join(", ")})"></div>
+         <div class="ramp-ticks">${
+           lead.legend.ticks.map((t) => `<span>${t}</span>`).join("")}</div>`
+      : `<div class="swatches">${shown.map((l) =>
+           `<span class="swatch"><i style="background:${c[l.key]}"></i>${escapeHtml(l.name)}</span>`
+         ).join("")}</div>`;
+    groups.push(`
+      <div class="legend-group">
+        <h4>Reference</h4>${inner}
+        <p class="legend-note">${lead.legend.note}</p>
+      </div>`);
+  }
+
+  if (!groups.length) {
+    legend.hidden = true;
+    sub.textContent = "Nothing drawn";
     body.innerHTML = "";
     return;
   }
 
-  sub.textContent = lead.name;
-
-  if (lead.legend.type === "ramp") {
-    const stops = c[lead.legend.ramp];
-    body.innerHTML = `
-      <div class="ramp" style="background:linear-gradient(90deg, ${stops.join(", ")})"></div>
-      <div class="ramp-ticks">${lead.legend.ticks.map((t) => `<span>${t}</span>`).join("")}</div>
-      <p class="legend-note">${lead.legend.note}</p>`;
-  } else {
-    body.innerHTML = `<div class="swatches">${
-      shown.map((l) => `<span class="swatch"><i style="background:${c[l.key]}"></i>${l.name}</span>`).join("")
-    }</div><p class="legend-note">${lead.legend.note}</p>`;
-  }
+  legend.hidden = false;
+  const count = drawn.length + shown.length;
+  sub.textContent = count === 1 ? "1 layer drawn" : `${count} layers drawn`;
+  body.innerHTML = groups.join("");
 }
 
 /* ---------------------------------------------------------------------------
@@ -2312,7 +2946,7 @@ function closePanel() {
   setTimeout(() => map.resize(), 320);
   hamburger.setAttribute("aria-expanded", "false");
   hamburger.setAttribute("aria-label", "Open menu");
-  for (const id of ["btn-query", "btn-info", "btn-ask", "btn-tools"]) {
+  for (const id of ["btn-query", "btn-info", "btn-ask"]) {
     document.getElementById(id).setAttribute("aria-pressed", "false");
   }
 }
@@ -2342,13 +2976,12 @@ function togglePanelButton(buttonId, tab) {
 }
 
 togglePanelButton("btn-ask", "ask");
-togglePanelButton("btn-tools", "tools");
 togglePanelButton("btn-query", "query");
 togglePanelButton("btn-info", "sources");
 
 document.getElementById("btn-reset").addEventListener("click", () => {
   clearQueryResult();
-  clearToolResult();
+  clearToolResults();
   for (const id of Object.keys(LIVE_SOURCES)) clearLive(id);
   map.flyTo({ ...HOME, duration: 1400 });
   for (const l of LAYERS) setLayerVisible(l.id, Boolean(l.on), false);
@@ -2525,13 +3158,15 @@ document.addEventListener("keydown", (e) => {
 
 const story = { i: 0, running: false };
 const storyCard = document.getElementById("story-card");
-const storyLaunch = document.getElementById("story-launch");
+// The tour used to advertise itself with a button sitting on the map. It is
+// now Help → Take the tour, because a working map should not be covered by an
+// invitation to look at it. The element stays put and stays hidden; the card
+// it opens is unchanged.
 
 function startStory() {
   story.running = true;
   story.i = 0;
   storyCard.dataset.open = "true";
-  storyLaunch.dataset.hidden = "true";
   closePanel();
   showStep();
 }
@@ -2539,7 +3174,6 @@ function startStory() {
 function endStory() {
   story.running = false;
   storyCard.dataset.open = "false";
-  storyLaunch.dataset.hidden = "false";
 }
 
 function showStep() {
@@ -2830,7 +3464,6 @@ async function initDuckDB() {
       throw new Error(failures.join(" · ") || "no tables could be loaded");
     }
     if (failures.length) console.warn("Some layers did not load:", failures);
-    renderClipPicker();
     setStatus(`Ready — ${loaded.join(", ")}`
       + (state.spatial ? " · spatial functions available on shape"
                        : " · spatial macros only"));
@@ -3556,8 +4189,14 @@ function styleTargets() {
   const query = ["qr-fill", "qr-line", "qr-point"].filter((l) => map.getLayer(l));
   if (query.length) targets.push({ key: "qr", label: "Query result", ids: query, clear: "query" });
 
-  const tool = ["tool-fill", "tool-line", "tool-point"].filter((l) => map.getLayer(l));
-  if (tool.length) targets.push({ key: "tool", label: "Tool result", ids: tool, clear: "tool" });
+  // Anything this session added and the fixed panes do not already cover:
+  // toolbox output, Earth Engine rasters, fetched data drawn by the agent.
+  // Without this the Style pane could not reach a layer the toolbox produced.
+  for (const entry of userLayers.values()) {
+    if (targets.some((x) => x.key === entry.id)) continue;
+    const ids = entry.layerIds.filter((l) => map.getLayer(l));
+    if (ids.length) targets.push({ key: entry.id, label: entry.label, ids, forget: entry.id });
+  }
 
   return targets;
 }
@@ -3721,14 +4360,14 @@ function renderStylePane() {
       if (!target) return;
       if (target.live) clearLive(target.live);
       else if (target.clear === "query") clearQueryResult();
-      else if (target.clear === "tool") clearToolResult();
+      else if (target.forget) forgetUserLayer(target.forget);
       renderStylePane();
     });
   }
 
   document.getElementById("style-clear-all").addEventListener("click", () => {
     clearQueryResult();
-    clearToolResult();
+    clearToolResults();
     for (const id of Object.keys(LIVE_SOURCES)) clearLive(id);
     renderStylePane();
     renderLayerList();
@@ -3744,13 +4383,13 @@ function clearQueryResult() {
   if (map.getSource("qr")) map.removeSource("qr");
 }
 
-function clearToolResult() {
-  userLayers.delete("tool");
-  renderUserLayers();
-  for (const id of ["tool-fill", "tool-line", "tool-point"]) {
-    if (map.getLayer(id)) map.removeLayer(id);
+/* Every toolbox run makes its own layer, so clearing "the tool result" means
+   clearing all of them. Each is removed through the registry, which takes its
+   layers and its source with it. */
+function clearToolResults() {
+  for (const entry of [...userLayers.values()]) {
+    if (entry.kind === "tool") forgetUserLayer(entry.id);
   }
-  if (map.getSource("tool")) map.removeSource("tool");
 }
 
 /* ---------------------------------------------------------------------------
@@ -3766,267 +4405,14 @@ function clearToolResult() {
 --------------------------------------------------------------------------- */
 
 let turf = null;
-let toolOutput = null;
 
 async function loadTurf() {
   if (!turf) {
-    setToolStatus("Loading the geoprocessing library");
+    window.ghLog?.("info", "Loading the geoprocessing library");
     turf = await import("https://cdn.jsdelivr.net/npm/@turf/turf@7.2.0/+esm");
   }
   return turf;
 }
-
-const TOOLS = {
-  buffer: {
-    label: "Buffer",
-    note: "A zone of the given radius around each feature. Useful for catchments — 5 km is the CHPS planning distance.",
-    param: "Radius, km",
-    value: 5,
-    run: (t, fc, km) => t.buffer(fc, km, { units: "kilometers" })
-  },
-  centroid: {
-    label: "Centroids",
-    note: "One point per feature, at its centre of mass.",
-    param: null,
-    run: (t, fc) => t.featureCollection(
-      fc.features.map((f) => {
-        const point = t.centroid(f);
-        point.properties = { ...f.properties };
-        return point;
-      }))
-  },
-  dissolve: {
-    label: "Dissolve into one",
-    note: "Merges every feature into a single polygon, dropping internal boundaries. Districts become their region; regions become the country.",
-    param: null,
-    run: (t, fc) => {
-      const polygons = fc.features.filter((f) =>
-        f.geometry.type === "Polygon" || f.geometry.type === "MultiPolygon");
-      if (!polygons.length) throw new Error("Dissolve needs polygons.");
-      return t.featureCollection([polygons.reduce((a, b) => t.union(t.featureCollection([a, b])))]);
-    }
-  },
-  convex: {
-    label: "Convex hull",
-    note: "The tightest convex polygon containing every feature. A quick way to see the extent of a selection.",
-    param: null,
-    run: (t, fc) => t.featureCollection([t.convex(fc)])
-  },
-  envelope: {
-    label: "Bounding box",
-    note: "One rectangle around the whole input.",
-    param: null,
-    run: (t, fc) => t.featureCollection([t.envelope(fc)])
-  },
-  simplify: {
-    label: "Simplify",
-    note: "Removes vertices while keeping the shape recognisable. Lower the tolerance for more detail. Simplified boundaries are for display, never for measurement.",
-    param: "Tolerance, degrees",
-    value: 0.01,
-    run: (t, fc, tolerance) => t.simplify(fc, { tolerance, highQuality: true })
-  },
-  voronoi: {
-    label: "Voronoi catchments",
-    note: "Divides the country into the area closest to each input point. A first approximation of service catchments — it ignores roads, rivers and travel time.",
-    param: null,
-    run: (t, fc) => {
-      const points = t.featureCollection(fc.features.map((f) =>
-        f.geometry.type === "Point" ? f : t.centroid(f)));
-      return t.voronoi(points, { bbox: [-3.30, 4.50, 1.25, 11.20] });
-    }
-  },
-  elevation: {
-    label: "Sample elevation",
-    note: "Reads ground height from the terrain tiles at each feature's centre and attaches it as elevation_m. Needs 3D relief switched on in the Map tab, and only samples where the tiles have loaded — so zoom to the area first.",
-    param: null,
-    run: (t, fc) => {
-      if (!state.terrain) {
-        throw new Error("Switch on 3D relief in the Map tab first — elevation is read from the loaded terrain tiles.");
-      }
-
-      let sampled = 0;
-      const features = fc.features.map((f) => {
-        const point = f.geometry.type === "Point" ? f.geometry.coordinates
-                                                  : t.centroid(f).geometry.coordinates;
-        const metres = terrainElevationAt({ lng: point[0], lat: point[1] });
-        if (metres !== null) sampled += 1;
-        return {
-          ...f,
-          properties: {
-            ...f.properties,
-            elevation_m: metres === null ? null : Math.round(metres)
-          }
-        };
-      });
-
-      if (!sampled) {
-        throw new Error("No terrain tiles loaded for this area yet. Zoom to it, wait for the relief to render, then run again.");
-      }
-      return t.featureCollection(features);
-    }
-  },
-  measure: {
-    label: "Measure",
-    note: "Area in square kilometres and perimeter in kilometres for each feature. No new geometry — the input is returned with the measurements attached.",
-    param: null,
-    run: (t, fc) => t.featureCollection(fc.features.map((f) => ({
-      ...f,
-      properties: {
-        ...f.properties,
-        area_km2: Math.round(t.area(f) / 1e4) / 100,
-        perimeter_km: Math.round(t.length(t.polygonToLine(f), { units: "kilometers" }) * 100) / 100
-      }
-    })))
-  }
-};
-
-const toolInput = document.getElementById("tool-input");
-const toolName = document.getElementById("tool-name");
-const toolParam = document.getElementById("tool-param");
-const toolParamField = document.getElementById("tool-param-field");
-const toolParamLabel = document.getElementById("tool-param-label");
-const toolNote = document.getElementById("tool-note");
-const toolStatus = document.getElementById("tool-status");
-const toolResult = document.getElementById("tool-result");
-
-function setToolStatus(text, isError = false) {
-  toolStatus.textContent = text;
-  toolStatus.dataset.error = String(isError);
-}
-
-toolName.innerHTML = Object.entries(TOOLS)
-  .map(([key, tool]) => `<option value="${key}">${tool.label}</option>`).join("");
-
-toolInput.innerHTML = [
-  ["result", "Current query result"],
-  ["region", "Regions (16)"],
-  ["district", "Districts (260)"],
-  ["capital", "Administrative capitals (177)"]
-].map(([value, label]) => `<option value="${value}">${label}</option>`).join("");
-
-function syncToolFields() {
-  const tool = TOOLS[toolName.value];
-  toolNote.textContent = tool.note;
-  toolParamField.hidden = !tool.param;
-  if (tool.param) {
-    toolParamLabel.textContent = tool.param;
-    toolParam.value = tool.value;
-  }
-}
-
-toolName.addEventListener("change", syncToolFields);
-syncToolFields();
-
-/* The input features, as GeoJSON. Either the rows the last query returned, or
-   a whole layer read back out of DuckDB. */
-async function toolInputFeatures() {
-  if (toolInput.value === "result") {
-    if (!lastRows.length) throw new Error("Run a query first, or pick a layer.");
-    const collection = JSON.parse(toGeoJson(lastRows));
-    if (!collection.features.length) {
-      throw new Error("The last result has no geometry. Include geom in the SELECT list.");
-    }
-    return collection;
-  }
-
-  if (!conn) throw new Error("The query engine is not ready.");
-  const table = await conn.query(`SELECT * FROM ghana.${toolInput.value};`);
-  return JSON.parse(toGeoJson(table.toArray().map((r) => r.toJSON())));
-}
-
-async function runTool() {
-  try {
-    const t = await loadTurf();
-    setToolStatus("Reading input");
-    const input = await toolInputFeatures();
-
-    const tool = TOOLS[toolName.value];
-    setToolStatus(`Running ${tool.label.toLowerCase()} on ${input.features.length.toLocaleString()} features`);
-
-    // Yield once so the status paints before a long synchronous run.
-    await new Promise((resolve) => setTimeout(resolve, 0));
-
-    let output = tool.run(t, input, Number(toolParam.value));
-    if (!output || !output.features?.length) throw new Error("The tool returned nothing.");
-
-    // Voronoi emits nulls for points it cannot cell; drop them.
-    output.features = output.features.filter((f) => f && f.geometry);
-
-    // Clipping applies to every tool, not to a chosen few. A buffer that
-    // spills into Togo, a convex hull drawn around the whole country, a
-    // Voronoi diagram that tiles the Atlantic — each is the same mistake, and
-    // clipping the output is the same fix.
-    const clipped = await clipToTarget(t, output);
-    if (clipped.dropped) {
-      setToolStatus(`${tool.label}: ${clipped.kept.toLocaleString()} features `
-        + `within ${clipped.label}, ${clipped.dropped.toLocaleString()} outside it`);
-    }
-    output = clipped.collection;
-    if (!output.features.length) {
-      throw new Error(`Nothing fell inside ${clipped.label}. `
-        + "Widen the clip, or set it to the whole country.");
-    }
-    toolOutput = output;
-
-    drawToolOutput(output, `${tool.label}${clipped.suffix}`);
-
-    // Make the result downloadable and queryable like any other.
-    lastRows = output.features.map((f) => ({ ...f.properties, geom: JSON.stringify(f.geometry) }));
-
-    const preview = output.features.slice(0, 50).map((f) => f.properties ?? {});
-    if (preview.length && Object.keys(preview[0]).length) renderInto(toolResult, preview);
-    else toolResult.innerHTML = "";
-
-    setToolStatus(`${output.features.length.toLocaleString()} features produced and drawn`);
-    renderStylePane();
-  } catch (err) {
-    setToolStatus(String(err.message ?? err), true);
-    console.error(err);
-  }
-}
-
-function drawToolOutput(collection, toolLabel) {
-  clearToolResult();
-  map.addSource("tool", { type: "geojson", data: collection });
-  map.addLayer({ id: "tool-fill", type: "fill", source: "tool",
-    filter: ["in", ["geometry-type"], ["literal", ["Polygon", "MultiPolygon"]]],
-    paint: { "fill-color": colours().query, "fill-opacity": 0.22 } });
-  map.addLayer({ id: "tool-line", type: "line", source: "tool",
-    filter: ["!", ["in", ["geometry-type"], ["literal", ["Point", "MultiPoint"]]]],
-    paint: { "line-color": colours().query, "line-width": 1.4 } });
-  map.addLayer({ id: "tool-point", type: "circle", source: "tool",
-    filter: ["in", ["geometry-type"], ["literal", ["Point", "MultiPoint"]]],
-    paint: { "circle-radius": 4, "circle-color": colours().query,
-             "circle-stroke-width": 1, "circle-stroke-color": colours().ground } });
-
-  const bounds = new maplibregl.LngLatBounds();
-  for (const f of collection.features) {
-    const flat = f.geometry.coordinates.flat(Infinity);
-    for (let i = 0; i < flat.length; i += 2) bounds.extend([flat[i], flat[i + 1]]);
-  }
-  if (!bounds.isEmpty()) map.fitBounds(bounds, { padding: 60, duration: 900 });
-
-  registerUserLayer({
-    id: "tool", label: toolLabel || "Tool result", kind: "tool",
-    layerIds: ["tool-fill", "tool-line", "tool-point"], sourceId: "tool",
-    bbox: bounds.isEmpty() ? null : bounds.toArray().flat(),
-    note: `${collection.features.length.toLocaleString()} features`
-  });
-}
-
-document.getElementById("tool-clear").addEventListener("click", () => {
-  clearToolResult();
-  toolOutput = null;
-  renderStylePane();
-  setToolStatus("Result removed from the map");
-});
-
-document.getElementById("tool-run").addEventListener("click", runTool);
-document.getElementById("tool-download").addEventListener("click", () => {
-  if (!toolOutput) return setToolStatus("Run a tool first", true);
-  download("ghana-geostack-tool.geojson", JSON.stringify(toolOutput, null, 1),
-           "application/geo+json");
-});
 
 /* ---------------------------------------------------------------------------
    Live data from OpenStreetMap
@@ -4675,17 +5061,32 @@ function renderClipBadges() {
        </div>`;
   }
   for (const button of document.querySelectorAll("[data-clip-change]")) {
-    button.addEventListener("click", () => {
-      selectTab("tools");
-      document.getElementById("clip-select")?.focus();
-    });
+    button.addEventListener("click", () => openClipPicker());
   }
 }
 
-/* The selector, shared by the Tools tab and the live fetches. */
+/* Everything that says what the clip is, said once. The status bar is the
+   permanent one; the badges appear on whichever panels are open. */
+function renderClip() {
+  const label = clipLabel();
+  const sb = document.getElementById("sb-clip");
+  if (sb) sb.textContent = label;
+  const chip = document.getElementById("clip-chip");
+  if (chip) chip.textContent = clipState.kind === "none" ? "" : `Clipped to ${label}`;
+  renderClipBadges();
+}
+
+/* The picker itself. Built from the boundaries in the browser database, so it
+   lists the real names rather than a list that can fall out of date, and it is
+   simply absent until they are loaded. */
 async function renderClipPicker() {
   const host = document.getElementById("clip-picker");
-  if (!host || !conn) return;
+  if (!host) return;
+  if (!conn) {
+    host.innerHTML = `<p class="hint">The boundaries are still loading. The
+      whole country is the clip until they are.</p>`;
+    return;
+  }
 
   let regions = [], districts = [];
   try {
@@ -4696,12 +5097,13 @@ async function renderClipPicker() {
       "SELECT adm2_name AS n FROM ghana.district ORDER BY 1;"))
       .toArray().map((r) => r.toJSON().n);
   } catch {
-    return;      // boundaries not loaded yet; the picker appears when they are
+    host.innerHTML = `<p class="hint">The boundaries are not loaded, so only
+      the whole country and the current view are available.</p>`;
+    return;
   }
 
   host.innerHTML = `
-    <label for="clip-select">Clip results to</label>
-    <select id="clip-select" style="width:100%;height:34px;border-radius:var(--radius);border:1px solid var(--border);background:var(--surface-2);color:var(--text);font-size:13px">
+    <select id="clip-select" aria-label="Clip results to">
       <option value="none">The whole country</option>
       <option value="view">The current view</option>
       <optgroup label="Region">
@@ -4711,24 +5113,30 @@ async function renderClipPicker() {
         ${districts.map((n) => `<option value="district:${escapeHtml(n)}">${escapeHtml(n)}</option>`).join("")}
       </optgroup>
     </select>
-    <p class="legend-note">Applies to every tool and every live fetch. Points
-      outside are dropped; polygons are cut at the boundary; lines that cross it
-      are kept whole.</p>`;
-
-  renderClipBadges();
+    <p class="legend-note">Applies to every tool, every live fetch, every query
+      result and every Earth Engine layer. Points outside are dropped; polygons
+      are cut at the boundary; lines that cross it are kept whole.</p>`;
 
   const select = document.getElementById("clip-select");
   select.value = clipState.kind === "none" || clipState.kind === "view"
     ? clipState.kind : `${clipState.kind}:${clipState.name}`;
 
   select.addEventListener("change", () => {
-    const [kind, name] = select.value.split(":");
+    const [kind, ...rest] = select.value.split(":");
     clipState.kind = kind;
-    clipState.name = name || "";
+    clipState.name = rest.join(":");
     window.ghLog?.("info", "Clip target: " + clipLabel());
-    renderClipBadges();
+    renderClip();
   });
 }
+
+function openClipPicker() {
+  const dialog = document.getElementById("clip-dialog");
+  if (!dialog) return;
+  dialog.hidden = false;
+  renderClipPicker().then(() => document.getElementById("clip-select")?.focus());
+}
+
 
 /* ── The layer stack ───────────────────────────────────────────────────────
 
@@ -4744,7 +5152,7 @@ async function renderClipPicker() {
    once and everything else follows, so a new kind of output gets managed for
    free rather than needing its own controls.                                */
 
-function registerUserLayer({ id, label, kind, layerIds, sourceId, bbox, note }) {
+function registerUserLayer({ id, label, kind, layerIds, sourceId, bbox, note, colour, legend }) {
   const key = id || `layer-${++userLayerSeq}`;
   userLayers.set(key, {
     id: key,
@@ -4753,6 +5161,11 @@ function registerUserLayer({ id, label, kind, layerIds, sourceId, bbox, note }) 
     layerIds: layerIds.filter((l) => map.getLayer(l)),
     sourceId,
     bbox: bbox || null,
+    colour: colour || null,
+    // { type: "classes", names, colours, values } or
+    // { type: "ramp", stops, min, max } — whatever the layer can explain
+    // about itself. Absent means a single swatch of `colour`.
+    legend: legend || null,
     note: note || "",
     visible: true,
     opacity: 1,
@@ -4873,67 +5286,6 @@ function moveUserLayer(id, direction) {
   renderUserLayers();
 }
 
-const LAYER_KIND_NOTE = {
-  raster: "a picture; summarise it for numbers",
-  vector: "features you can query",
-  result: "from a query",
-  live: "fetched from OpenStreetMap",
-  tool: "computed here"
-};
-
-function renderUserLayers() {
-  const host = document.getElementById("user-layers");
-  if (!host) return;
-
-  if (!userLayers.size) {
-    host.innerHTML = `<p class="hint">Nothing added yet. Layers you fetch,
-      query or compute appear here, newest first.</p>`;
-    return;
-  }
-
-  const rows = [...userLayers.values()].reverse();
-  host.innerHTML = rows.map((entry) => `
-    <div style="padding:8px 0;border-bottom:1px solid var(--border)">
-      <div style="display:flex;gap:8px;align-items:center">
-        <input type="checkbox" ${entry.visible ? "checked" : ""}
-               data-layer-eye="${entry.id}" aria-label="Show ${escapeHtml(entry.label)}"
-               style="accent-color:var(--accent);flex:none">
-        <span style="flex:1;font-size:13px;line-height:1.3">${escapeHtml(entry.label)}</span>
-        <span style="font-size:10px;opacity:.5;font-family:var(--font-mono);flex:none">
-          ${escapeHtml(entry.kind)}</span>
-      </div>
-
-      <div style="display:flex;gap:6px;align-items:center;margin-top:5px">
-        <input type="range" min="0" max="1" step="0.05" value="${entry.opacity}"
-               data-layer-opacity="${entry.id}" aria-label="Opacity"
-               style="flex:1;accent-color:var(--accent)">
-        <button class="btn btn-quiet" data-layer-zoom="${entry.id}"
-                title="Zoom to this layer">Zoom</button>
-        <button class="btn btn-quiet" data-layer-up="${entry.id}" title="Bring forward">↑</button>
-        <button class="btn btn-quiet" data-layer-down="${entry.id}" title="Send back">↓</button>
-        <button class="btn btn-quiet" data-layer-remove="${entry.id}"
-                title="Remove this layer">Remove</button>
-      </div>
-
-      ${entry.note ? `<div style="font-size:11px;opacity:.65;margin-top:3px">
-        ${escapeHtml(entry.note)}</div>` : ""}
-      <div style="font-size:10px;opacity:.45;margin-top:2px">
-        ${entry.added} · ${LAYER_KIND_NOTE[entry.kind] ?? ""}</div>
-    </div>`).join("");
-
-  const on = (attribute, handler, event = "click") => {
-    for (const el of host.querySelectorAll(`[data-${attribute}]`)) {
-      el.addEventListener(event, () => handler(el.dataset[
-        attribute.replace(/-([a-z])/g, (_, c) => c.toUpperCase())], el));
-    }
-  };
-  on("layer-eye", (id, el) => setUserLayerVisible(id, el.checked), "change");
-  on("layer-opacity", (id, el) => setUserLayerOpacity(id, Number(el.value)), "input");
-  on("layer-zoom", (id) => zoomToUserLayer(id));
-  on("layer-up", (id) => moveUserLayer(id, +1));
-  on("layer-down", (id) => moveUserLayer(id, -1));
-  on("layer-remove", (id) => forgetUserLayer(id));
-}
 
 /* ── The agent's tools ─────────────────────────────────────────────────────
 
@@ -5314,7 +5666,9 @@ const AGENT_TOOLS = {
 
       clipState.kind = kind;
       clipState.name = name || "";
-      renderClipPicker();
+      // The person watching should see the clip change when the agent changes
+      // it, not discover it in the next result.
+      renderClip();
       return { clip: clipLabel(),
                note: "Everything from here on is confined to this." };
     }
@@ -5460,6 +5814,15 @@ const AGENT_MAX_TURNS = 8;
    that from the console, and lets the smoke test assert the tool list is well
    formed without loading the page's internals into the global scope. */
 window.__ghTools = () => agentToolSpecs();
+
+/* The same argument as above, for the layer stack: from the console a person
+   can ask the page what it is actually drawing, and the screenshot and smoke
+   tests can put a layer in without reaching into module scope. */
+window.__ghLayers = {
+  list: () => [...userLayers.values()],
+  add: (entry) => registerUserLayer(entry),
+  render: () => renderUserLayers()
+};
 
 /* JSON.stringify refuses a BigInt outright, and DuckDB returns every BIGINT
    column as one — a count, a population, an OSM id. The whole tool result was
@@ -5635,6 +5998,1095 @@ async function runAgent(question, { key, model, baseUrl }, onStep) {
     turns: AGENT_MAX_TURNS
   };
 }
+
+/* ── Layer cards ───────────────────────────────────────────────────────────
+   The card GeoLibre draws: a grip, an eye, a colour, the name, what kind of
+   thing it is, an opacity slider showing its value, and — once the card is
+   selected — a row of actions. Selection is what keeps the row of icons from
+   appearing eight times at once. */
+
+const ICON = {
+  grip: '<svg viewBox="0 0 15 15" fill="currentColor"><circle cx="5" cy="3" r="1.1"/><circle cx="10" cy="3" r="1.1"/><circle cx="5" cy="7.5" r="1.1"/><circle cx="10" cy="7.5" r="1.1"/><circle cx="5" cy="12" r="1.1"/><circle cx="10" cy="12" r="1.1"/></svg>',
+  eye: '<svg viewBox="0 0 15 15" fill="none"><path d="M1 7.5S3.5 3 7.5 3s6.5 4.5 6.5 4.5-2.5 4.5-6.5 4.5S1 7.5 1 7.5z" stroke="currentColor" stroke-width="1.2"/><circle cx="7.5" cy="7.5" r="1.8" stroke="currentColor" stroke-width="1.2"/></svg>',
+  up: '<svg viewBox="0 0 15 15" fill="none"><path d="M7.5 12V3.5M3.8 7.2 7.5 3.5l3.7 3.7" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  down: '<svg viewBox="0 0 15 15" fill="none"><path d="M7.5 3v8.5M3.8 7.8l3.7 3.7 3.7-3.7" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  zoom: '<svg viewBox="0 0 15 15" fill="none"><circle cx="6.6" cy="6.6" r="4.6" stroke="currentColor" stroke-width="1.3"/><path d="M10 10l3.4 3.4M6.6 4.6v4M4.6 6.6h4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>',
+  style: '<svg viewBox="0 0 15 15" fill="none"><path d="M7.5 1.5A6 6 0 0 0 7.5 13.5c.9 0 1.4-.6 1.4-1.3 0-.7-.5-1.2-.5-1.8 0-.5.4-.9 1-.9h1.2a3.4 3.4 0 0 0 3.4-3.4c0-2.6-2.7-4.6-6.5-4.6z" stroke="currentColor" stroke-width="1.2"/><circle cx="5" cy="6" r=".9" fill="currentColor"/><circle cx="8.4" cy="4.4" r=".9" fill="currentColor"/></svg>',
+  info: '<svg viewBox="0 0 15 15" fill="none"><circle cx="7.5" cy="7.5" r="6" stroke="currentColor" stroke-width="1.2"/><path d="M7.5 6.6v4.2M7.5 4.3v.9" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>',
+  table: '<svg viewBox="0 0 15 15" fill="none"><rect x="1.8" y="2.5" width="11.4" height="10" rx="1.4" stroke="currentColor" stroke-width="1.2"/><path d="M1.8 6h11.4M6 6v6.5" stroke="currentColor" stroke-width="1.2"/></svg>',
+  trash: '<svg viewBox="0 0 15 15" fill="none"><path d="M2.8 4h9.4M5.8 4V2.8h3.4V4M4 4l.6 8.2h5.8L11 4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+};
+
+const KIND_LABEL = { raster: "raster", vector: "vector", result: "query",
+                     live: "live", tool: "derived" };
+
+let selectedLayerId = null;
+
+function renderUserLayers() {
+  // Nothing below this line may run before the module has finished: it reaches
+  // for constants declared later in the file.
+  if (!shellReady) return;
+  const host = document.getElementById("dock-left-body");
+  if (!host) return;
+
+  const fixed = LAYERS.filter((l) => state.active.has(l.id));
+  const added = [...userLayers.values()].reverse();
+
+  if (!fixed.length && !added.length) {
+    host.innerHTML = `<p class="hint">Nothing on the map. Add Data → a live layer,
+      or turn on a boundary below.</p>` + baseLayerToggles();
+  } else {
+    host.innerHTML = added.map(layerCard).join("") + baseLayerToggles();
+  }
+
+  wireLayerCards(host);
+  const count = document.getElementById("sb-layers");
+  if (count) count.textContent = String(userLayers.size);
+
+  // The legend describes what is drawn, so it is redrawn whenever that set
+  // changes. Every path that adds, hides or removes a layer comes through
+  // here, which is one place rather than five that drift apart.
+  renderLegend();
+}
+
+function layerCard(entry) {
+  const selected = selectedLayerId === entry.id;
+  const action = (act, icon, title, danger) =>
+    `<button type="button" data-lc="${act}" data-id="${entry.id}" title="${title}"
+             ${danger ? 'class="danger"' : ""}>${ICON[icon]}</button>`;
+
+  return `
+    <div class="layer-card" data-selected="${selected}" data-card="${entry.id}">
+      <div class="lc-top">
+        <span class="lc-grip">${ICON.grip}</span>
+        <button type="button" class="lc-eye" data-lc="eye" data-id="${entry.id}"
+                aria-pressed="${entry.visible}"
+                aria-label="${entry.visible ? "Hide" : "Show"} ${escapeHtml(entry.label)}">
+          ${ICON.eye}</button>
+        <span class="lc-swatch" style="background:${entry.colour || "var(--accent)"}"></span>
+        <button type="button" class="lc-name" data-lc="select" data-id="${entry.id}"
+                title="${escapeHtml(entry.label)}">${escapeHtml(entry.label)}</button>
+        <span class="lc-kind">${KIND_LABEL[entry.kind] ?? entry.kind}</span>
+      </div>
+
+      <div class="lc-opacity">
+        <span>Opacity</span>
+        <input type="range" min="0" max="1" step="0.05" value="${entry.opacity}"
+               data-lc="opacity" data-id="${entry.id}" aria-label="Opacity">
+        <output>${entry.opacity.toFixed(2)}</output>
+      </div>
+
+      ${selected ? `<div class="lc-actions">
+        ${action("up", "up", "Bring forward")}
+        ${action("down", "down", "Send back")}
+        ${action("zoom", "zoom", "Zoom to this layer")}
+        ${action("style", "style", "Style it")}
+        ${action("table", "table", "Open in the SQL workspace")}
+        ${action("info", "info", "What is this")}
+        ${action("remove", "trash", "Remove", true)}
+      </div>` : ""}
+
+      ${selected && entry.note ? `<p class="tb-hint" style="margin:7px 0 0">
+        ${escapeHtml(entry.note)} · added ${entry.added}</p>` : ""}
+    </div>`;
+}
+
+/* The fixed boundary layers stay listed below, as a background group. */
+function baseLayerToggles() {
+  return `
+    <h4 style="margin:16px 0 6px;font-size:10.5px;letter-spacing:.07em;
+               text-transform:uppercase;opacity:.55">Reference</h4>
+    ${LAYERS.filter((l) => !l.table || state.tilesOk).map((l) => `
+      <div class="layer-card" style="padding:7px 10px">
+        <div class="lc-top">
+          <span class="lc-grip" style="opacity:.15">${ICON.grip}</span>
+          <button type="button" class="lc-eye" data-base="${l.id}"
+                  aria-pressed="${state.active.has(l.id)}"
+                  aria-label="Toggle ${escapeHtml(l.name)}">${ICON.eye}</button>
+          <span class="lc-swatch" style="background:${l.colour ? colours()[l.colour] : "var(--text-3)"}"></span>
+          <span class="lc-name">${escapeHtml(l.name)}</span>
+          <span class="lc-kind">base</span>
+        </div>
+      </div>`).join("")}`;
+}
+
+function wireLayerCards(host) {
+  for (const el of host.querySelectorAll("[data-lc]")) {
+    const id = el.dataset.id;
+    const what = el.dataset.lc;
+
+    if (what === "opacity") {
+      el.addEventListener("input", () => {
+        setUserLayerOpacity(id, Number(el.value));
+        const out = el.parentElement.querySelector("output");
+        if (out) out.textContent = Number(el.value).toFixed(2);
+      });
+      continue;
+    }
+
+    el.addEventListener("click", () => {
+      const entry = userLayers.get(id);
+      if (what === "eye") return setUserLayerVisible(id, !entry.visible);
+      if (what === "select") {
+        selectedLayerId = selectedLayerId === id ? null : id;
+        return renderUserLayers();
+      }
+      if (what === "up") return moveUserLayer(id, +1);
+      if (what === "down") return moveUserLayer(id, -1);
+      if (what === "zoom") return zoomToUserLayer(id);
+      if (what === "remove") {
+        selectedLayerId = null;
+        return forgetUserLayer(id);
+      }
+      if (what === "style") { showPanel("style"); return; }
+      if (what === "info") {
+        setStatus(`${entry.label} — ${entry.note || KIND_LABEL[entry.kind]}, added ${entry.added}`);
+        return;
+      }
+      if (what === "table") {
+        document.getElementById("sql").value =
+          `-- ${entry.label}\n-- Drawn layers are queryable once written to a table.\n`
+          + `SELECT * FROM ghana.district LIMIT 20;`;
+        showPanel("query");
+      }
+    });
+  }
+
+  for (const el of host.querySelectorAll("[data-base]")) {
+    el.addEventListener("click", () => {
+      const id = el.dataset.base;
+      setLayerVisible(id, !state.active.has(id));
+      renderUserLayers(); renderLegend();
+    });
+  }
+}
+
+/* ── The toolbox ───────────────────────────────────────────────────────────
+
+   GeoLibre puts processing behind a Processing menu that opens a searchable
+   toolbox: a filter, a list of tools by category, and the selected tool's
+   parameters as a form with a Run button. Clip is one of those tools, in
+   Vector — Overlay Analysis, taking an input and a clip layer.
+
+   That is the right shape and this adopts it rather than approximating it.
+   The previous arrangement had clipping as a dropdown in a tab that silently
+   governed every other operation on the page, which is a strange thing to do
+   to somebody: a setting with global reach and no local presence.
+
+   A tool declares its parameters; the form, the validation and the run button
+   are generated from that declaration. Adding a tool is one entry.          */
+
+const TOOLBOX = {
+  clip: {
+    name: "Clip",
+    category: "Vector — Overlay Analysis",
+    summary: "Keep only the parts of a layer that fall inside a boundary.",
+    description:
+      "Cuts an input layer to a clip boundary. Points are kept or dropped by " +
+      "a point-in-polygon test, polygons are cut at the edge and keep their " +
+      "attributes, and lines that cross the boundary are kept whole — Turf has " +
+      "no line-polygon clip, so that last one is an approximation rather than " +
+      "a silent truncation.",
+    params: {
+      input: { kind: "layer", label: "Input layer", required: true,
+               hint: "Any drawn vector layer." },
+      boundary: { kind: "boundary", label: "Clip boundary", required: true,
+                  hint: "A region, a district, or the current view." }
+    },
+    run: async ({ input, boundary }, t) => {
+      const mask = await boundaryFeature(boundary, t);
+      if (!mask) return { error: "That boundary could not be resolved." };
+      const out = clipCollection(t, input.collection, mask.geometry);
+      return {
+        collection: out,
+        label: `${input.label} clipped to ${mask.label}`,
+        message: `${out.features.length.toLocaleString()} of `
+               + `${input.collection.features.length.toLocaleString()} features `
+               + `fall inside ${mask.label}.`
+      };
+    }
+  },
+
+  buffer: {
+    name: "Buffer",
+    category: "Vector — Proximity",
+    summary: "A zone of a given distance around each feature.",
+    description:
+      "Buffers in kilometres on the WGS84 ellipsoid. Ghana straddles the " +
+      "prime meridian, so no single UTM zone fits the country and a projected " +
+      "buffer would be wrong at one edge or the other.",
+    params: {
+      input: { kind: "layer", label: "Input layer", required: true },
+      distance: { kind: "number", label: "Distance", unit: "km",
+                  value: 5, min: 0.05, max: 200, required: true },
+      boundary: { kind: "boundary", label: "Clip the result to", required: false,
+                  hint: "Optional. A buffer near a border otherwise spills across it." }
+    },
+    run: async ({ input, distance, boundary }, t) => {
+      let out = t.buffer(input.collection, distance, { units: "kilometers" });
+      out.features = out.features.filter((f) => f && f.geometry);
+      let suffix = "";
+      if (boundary && boundary !== "none") {
+        const mask = await boundaryFeature(boundary, t);
+        if (mask) { out = clipCollection(t, out, mask.geometry); suffix = ` in ${mask.label}`; }
+      }
+      return { collection: out, label: `${distance} km buffer${suffix}`,
+               message: `${out.features.length.toLocaleString()} buffers drawn.` };
+    }
+  },
+
+  centroid: {
+    name: "Centroids",
+    category: "Vector — Geometry",
+    summary: "One point at the middle of each feature.",
+    description: "The centroid of a concave shape can fall outside it. For a " +
+                 "point guaranteed to be inside, use Point on feature instead.",
+    params: { input: { kind: "layer", label: "Input layer", required: true } },
+    run: async ({ input }, t) => ({
+      collection: t.featureCollection(input.collection.features.map((f) =>
+        ({ ...t.centroid(f), properties: { ...f.properties } }))),
+      label: `${input.label} centroids`
+    })
+  },
+
+  pointon: {
+    name: "Point on feature",
+    category: "Vector — Geometry",
+    summary: "One point guaranteed to lie inside each feature.",
+    description: "Unlike a centroid this is always within the shape, which " +
+                 "matters for labelling a crescent-shaped district.",
+    params: { input: { kind: "layer", label: "Input layer", required: true } },
+    run: async ({ input }, t) => ({
+      collection: t.featureCollection(input.collection.features.map((f) =>
+        ({ ...t.pointOnFeature(f), properties: { ...f.properties } }))),
+      label: `${input.label} label points`
+    })
+  },
+
+  dissolve: {
+    name: "Dissolve",
+    category: "Vector — Overlay Analysis",
+    summary: "Merge every feature into one shape.",
+    description: "Attributes are not carried over, because there is no honest " +
+                 "way to combine them. Use zonal statistics if you want totals.",
+    params: { input: { kind: "layer", label: "Input layer", required: true } },
+    run: async ({ input }, t) => {
+      let merged = null;
+      for (const f of input.collection.features) {
+        if (f.geometry?.type !== "Polygon" && f.geometry?.type !== "MultiPolygon") continue;
+        merged = merged ? t.union(t.featureCollection([merged, f])) : f;
+      }
+      if (!merged) return { error: "Dissolve needs polygons." };
+      return { collection: t.featureCollection([merged]), label: `${input.label} dissolved` };
+    }
+  },
+
+  convex: {
+    name: "Convex hull",
+    category: "Vector — Geometry",
+    summary: "The tightest convex shape containing every feature.",
+    description: "A rubber band stretched around the whole layer. It says " +
+                 "where things reach, not where they are.",
+    params: { input: { kind: "layer", label: "Input layer", required: true } },
+    run: async ({ input }, t) => {
+      const hull = t.convex(input.collection);
+      if (!hull) return { error: "Not enough points for a hull." };
+      return { collection: t.featureCollection([hull]), label: `${input.label} hull` };
+    }
+  },
+
+  envelope: {
+    name: "Bounding box",
+    category: "Vector — Geometry",
+    summary: "The rectangle containing every feature.",
+    description: "Useful as a clip boundary or to see a layer's true reach.",
+    params: { input: { kind: "layer", label: "Input layer", required: true } },
+    run: async ({ input }, t) => ({
+      collection: t.featureCollection([t.envelope(input.collection)]),
+      label: `${input.label} extent`
+    })
+  },
+
+  simplify: {
+    name: "Simplify",
+    category: "Vector — Geometry",
+    summary: "Fewer vertices, roughly the same shape.",
+    description: "Tolerance is in degrees. 0.001 is about 110 m at Ghana's " +
+                 "latitude. Simplifying adjacent polygons independently opens " +
+                 "gaps between them, which is a reason to do it late.",
+    params: {
+      input: { kind: "layer", label: "Input layer", required: true },
+      tolerance: { kind: "number", label: "Tolerance", unit: "degrees",
+                   value: 0.001, min: 0.00001, max: 0.5, step: 0.0001, required: true }
+    },
+    run: async ({ input, tolerance }, t) => ({
+      collection: t.simplify(input.collection, { tolerance, highQuality: true }),
+      label: `${input.label} simplified`
+    })
+  },
+
+  voronoi: {
+    name: "Voronoi catchments",
+    category: "Vector — Proximity",
+    summary: "The area closest to each point.",
+    description: "Straight-line catchments. They ignore roads, rivers and " +
+                 "administrative boundaries, so they are a first approximation " +
+                 "of a service area rather than one.",
+    params: {
+      input: { kind: "layer", label: "Input points", required: true },
+      boundary: { kind: "boundary", label: "Clip the cells to", required: false }
+    },
+    run: async ({ input, boundary }, t) => {
+      const points = t.featureCollection(input.collection.features
+        .filter((f) => f.geometry?.type === "Point"));
+      if (points.features.length < 3) return { error: "Voronoi needs at least three points." };
+
+      const box = t.bbox(points);
+      let out = t.voronoi(points, { bbox: box });
+      out.features = out.features.filter((f) => f && f.geometry);
+
+      let suffix = "";
+      if (boundary && boundary !== "none") {
+        const mask = await boundaryFeature(boundary, t);
+        if (mask) { out = clipCollection(t, out, mask.geometry); suffix = ` in ${mask.label}`; }
+      }
+      return { collection: out, label: `${input.label} catchments${suffix}` };
+    }
+  },
+
+  nearest: {
+    name: "Distance to nearest",
+    category: "Vector — Proximity",
+    summary: "How far each feature is from the closest feature in another layer.",
+    description: "Great-circle distance in kilometres, written onto each input " +
+                 "feature as nearest_km. Straight-line, not travel distance.",
+    params: {
+      input: { kind: "layer", label: "From", required: true },
+      target: { kind: "layer", label: "To the nearest", required: true }
+    },
+    run: async ({ input, target }, t) => {
+      const targets = t.featureCollection(target.collection.features
+        .map((f) => f.geometry?.type === "Point" ? f : t.centroid(f)));
+      if (!targets.features.length) return { error: "The target layer is empty." };
+
+      const features = input.collection.features.map((f) => {
+        const from = f.geometry?.type === "Point" ? f : t.centroid(f);
+        const near = t.nearestPoint(from, targets);
+        return { ...f, properties: { ...f.properties,
+          nearest_km: Number(t.distance(from, near, { units: "kilometers" }).toFixed(3)) } };
+      });
+      const values = features.map((f) => f.properties.nearest_km);
+      return {
+        collection: t.featureCollection(features),
+        label: `${input.label} → nearest ${target.label}`,
+        message: `Median ${values.sort((a, b) => a - b)[Math.floor(values.length / 2)]} km, `
+               + `furthest ${Math.max(...values).toFixed(1)} km.`
+      };
+    }
+  },
+
+  elevation: {
+    name: "Sample elevation",
+    category: "Raster — Terrain",
+    summary: "Read the terrain height under each point.",
+    description: "Samples the Terrarium elevation tiles already loaded for the " +
+                 "relief. Requires terrain to be on, and returns nothing where " +
+                 "its tiles have not loaded — honest about a gap rather than " +
+                 "reporting a confident zero.",
+    params: { input: { kind: "layer", label: "Input points", required: true } },
+    run: async ({ input }, t) => {
+      if (!state.terrain) return { error: "Turn 3D terrain on first, in View → Basemap." };
+      const features = input.collection.features.map((f) => {
+        const point = f.geometry?.type === "Point" ? f : t.centroid(f);
+        const [lon, lat] = point.geometry.coordinates;
+        const value = terrainElevationAt({ lng: lon, lat });
+        return { ...f, properties: { ...f.properties,
+          elevation_m: value === null ? null : Math.round(value) } };
+      });
+      const got = features.filter((f) => f.properties.elevation_m !== null).length;
+      return { collection: t.featureCollection(features),
+               label: `${input.label} elevation`,
+               message: `${got} of ${features.length} sampled; the rest had no tile loaded.` };
+    }
+  },
+
+  measure: {
+    name: "Measure",
+    category: "Vector — Geometry",
+    summary: "Area and length for every feature.",
+    description: "Area in square kilometres, length in kilometres, computed on " +
+                 "the ellipsoid rather than in a projection — which is the right " +
+                 "choice for a country that straddles the prime meridian.",
+    params: { input: { kind: "layer", label: "Input layer", required: true } },
+    run: async ({ input }, t) => ({
+      collection: t.featureCollection(input.collection.features.map((f) => {
+        const polygon = f.geometry?.type === "Polygon" || f.geometry?.type === "MultiPolygon";
+        const line = f.geometry?.type === "LineString" || f.geometry?.type === "MultiLineString";
+        return { ...f, properties: { ...f.properties,
+          area_km2: polygon ? Number((t.area(f) / 1e6).toFixed(4)) : null,
+          length_km: line ? Number(t.length(f, { units: "kilometers" }).toFixed(4)) : null } };
+      })),
+      label: `${input.label} measured`
+    })
+  }
+};
+
+/* ── Inputs a tool can be given ────────────────────────────────────────── */
+
+/* Any drawn vector layer is a possible input, which is what makes the toolbox
+   compose: the output of one tool is the input of the next. */
+function toolboxLayers() {
+  const options = [];
+  for (const entry of [...userLayers.values()].reverse()) {
+    const source = map.getSource(entry.sourceId);
+    const data = source?._data ?? source?.serialize?.().data;
+    if (!data || typeof data === "string" || !data.features?.length) continue;
+    options.push({ id: entry.id, label: entry.label, collection: data,
+                   count: data.features.length });
+  }
+  for (const layer of LAYERS) {
+    if (!state.active.has(layer.id) || !layer.file) continue;
+    options.push({ id: `base-${layer.id}`, label: layer.name, file: layer.file });
+  }
+  return options;
+}
+
+async function resolveToolboxLayer(id) {
+  const option = toolboxLayers().find((o) => o.id === id);
+  if (!option) return null;
+  if (option.collection) return option;
+  const response = await fetch(option.file);
+  const collection = await response.json();
+  return { ...option, collection };
+}
+
+/* A boundary is a region, a district, the current view, or another layer's
+   dissolved extent. Named boundaries come from the tables already loaded. */
+async function boundaryFeature(value, t) {
+  if (!value || value === "none") return null;
+
+  if (value === "view") {
+    const b = map.getBounds();
+    return { label: "the current view",
+             geometry: t.bboxPolygon([b.getWest(), b.getSouth(),
+                                      b.getEast(), b.getNorth()]).geometry };
+  }
+
+  const [kind, name] = value.split(":");
+  if (kind !== "region" && kind !== "district") return null;
+
+  const column = kind === "region" ? "adm1_name" : "adm2_name";
+  const table = kind === "region" ? "region" : "district";
+  const safe = String(name).replace(/'/g, "''");
+  const result = await conn.query(
+    `SELECT ${column} AS name, geom FROM ghana.${table} WHERE ${column} = '${safe}' LIMIT 1;`);
+  const row = result.toArray()[0]?.toJSON();
+  if (!row?.geom) return null;
+  return { label: row.name, geometry: JSON.parse(row.geom) };
+}
+
+/* The clip itself, shared by every tool that offers one. */
+function clipCollection(t, collection, maskGeometry) {
+  const mask = t.feature(maskGeometry);
+  const kept = [];
+
+  for (const feature of collection.features) {
+    const type = feature.geometry?.type;
+    if (!type) continue;
+    try {
+      if (type === "Point") {
+        if (t.booleanPointInPolygon(feature, mask)) kept.push(feature);
+      } else if (type === "Polygon" || type === "MultiPolygon") {
+        const piece = t.intersect(t.featureCollection([feature, mask]));
+        // Turf's intersect discards properties, so they are put back.
+        if (piece) kept.push({ ...piece, properties: { ...feature.properties } });
+      } else if (t.booleanIntersects(feature, mask)) {
+        kept.push(feature);
+      }
+    } catch {
+      kept.push(feature);   // a geometry Turf cannot handle is kept, not lost
+    }
+  }
+  return t.featureCollection(kept);
+}
+
+/* ── The window ────────────────────────────────────────────────────────── */
+
+const toolboxState = { selected: null, values: {} };
+
+function openToolbox(category) {
+  const box = document.getElementById("toolbox");
+  box.dataset.open = "true";
+  if (category) {
+    const select = document.getElementById("tb-category");
+    const match = [...select.options].find((o) =>
+      o.value.toLowerCase().includes(category.toLowerCase()));
+    if (match) select.value = match.value;
+  }
+  renderToolboxList();
+  document.getElementById("tb-search").focus();
+}
+
+function renderToolboxList() {
+  const host = document.getElementById("tb-results");
+  const term = document.getElementById("tb-search").value.trim().toLowerCase();
+  const category = document.getElementById("tb-category").value;
+
+  const matches = Object.entries(TOOLBOX).filter(([id, tool]) => {
+    if (category && category !== "all" && tool.category !== category) return false;
+    if (!term) return true;
+    return `${tool.name} ${id} ${tool.summary} ${tool.category}`.toLowerCase().includes(term);
+  });
+
+  host.innerHTML = matches.length
+    ? matches.map(([id, tool]) => `
+        <button type="button" class="tb-item" data-tool="${id}"
+                aria-current="${toolboxState.selected === id}">
+          <strong>${escapeHtml(tool.name)}</strong>
+          <span>${escapeHtml(tool.category)}</span>
+        </button>`).join("")
+    : `<p class="hint" style="padding:10px">No tool matches that.</p>`;
+
+  for (const button of host.querySelectorAll("[data-tool]")) {
+    button.addEventListener("click", () => selectTool(button.dataset.tool));
+  }
+  if (!toolboxState.selected && matches.length) selectTool(matches[0][0]);
+}
+
+function selectTool(id) {
+  toolboxState.selected = id;
+  toolboxState.values = {};
+  renderToolboxList();
+  renderToolDetail();
+}
+
+/* The parameter form, generated from the tool's own declaration. */
+async function renderToolDetail() {
+  const host = document.getElementById("tb-detail");
+  const id = toolboxState.selected;
+  const tool = TOOLBOX[id];
+  if (!tool) { host.innerHTML = ""; return; }
+
+  const layers = toolboxLayers();
+  const boundaries = await boundaryOptions();
+
+  const field = (key, spec) => {
+    const meta = `<span class="tb-meta">${spec.kind}${spec.required ? " | required" : ""}</span>`;
+    const hint = spec.hint ? `<p class="tb-hint">${escapeHtml(spec.hint)}</p>` : "";
+
+    if (spec.kind === "layer") {
+      return `<div class="tb-param">${meta}
+        <label for="tb-${key}">${escapeHtml(spec.label)}</label>
+        <select id="tb-${key}" data-param="${key}">
+          <option value="">Choose a layer…</option>
+          ${layers.map((l) => `<option value="${escapeHtml(l.id)}">${escapeHtml(l.label)}${
+            l.count ? ` — ${l.count.toLocaleString()} features` : ""}</option>`).join("")}
+        </select>${hint}
+        ${layers.length ? "" : `<p class="tb-hint" style="color:var(--clay)">
+          Nothing is drawn yet. Run a query, fetch a live layer, or turn on a
+          boundary layer first.</p>`}</div>`;
+    }
+
+    if (spec.kind === "boundary") {
+      return `<div class="tb-param">${meta}
+        <label for="tb-${key}">${escapeHtml(spec.label)}</label>
+        <select id="tb-${key}" data-param="${key}">
+          ${spec.required ? "" : `<option value="none">Do not clip</option>`}
+          ${boundaries.map((b) => `<option value="${escapeHtml(b.value)}">${escapeHtml(b.label)}</option>`).join("")}
+        </select>${hint}</div>`;
+    }
+
+    return `<div class="tb-param">${meta}
+      <label for="tb-${key}">${escapeHtml(spec.label)}${
+        spec.unit ? ` <span style="opacity:.55;font-weight:400">(${spec.unit})</span>` : ""}</label>
+      <input id="tb-${key}" data-param="${key}" type="number" value="${spec.value ?? ""}"
+             ${spec.min !== undefined ? `min="${spec.min}"` : ""}
+             ${spec.max !== undefined ? `max="${spec.max}"` : ""}
+             step="${spec.step ?? "any"}">${hint}</div>`;
+  };
+
+  host.innerHTML = `
+    <div class="tb-run">
+      <div style="flex:1">
+        <h3>${escapeHtml(tool.name)}</h3>
+        <div class="tb-id">${escapeHtml(id)} · ${escapeHtml(tool.category)}</div>
+      </div>
+      <button class="btn btn-primary" id="tb-go">Run</button>
+    </div>
+    <p style="font-size:13px;line-height:1.55;margin:0 0 16px">${escapeHtml(tool.description)}</p>
+    ${Object.entries(tool.params).map(([k, s]) => field(k, s)).join("")}
+    <div class="tb-status" id="tb-status"></div>`;
+
+  for (const el of host.querySelectorAll("[data-param]")) {
+    el.addEventListener("change", () => { toolboxState.values[el.dataset.param] = el.value; });
+    toolboxState.values[el.dataset.param] = el.value;
+  }
+  document.getElementById("tb-go").addEventListener("click", () => runToolboxTool(id));
+}
+
+async function boundaryOptions() {
+  const options = [{ value: "view", label: "The current view" }];
+  if (!conn) return options;
+  try {
+    const regions = (await conn.query(
+      "SELECT adm1_name AS n FROM ghana.region ORDER BY 1;")).toArray().map((r) => r.toJSON().n);
+    const districts = (await conn.query(
+      "SELECT adm2_name AS n FROM ghana.district ORDER BY 1;")).toArray().map((r) => r.toJSON().n);
+    for (const n of regions) options.push({ value: `region:${n}`, label: `${n} (region)` });
+    for (const n of districts) options.push({ value: `district:${n}`, label: `${n} (district)` });
+  } catch { /* boundaries not loaded */ }
+  return options;
+}
+
+async function runToolboxTool(id) {
+  const tool = TOOLBOX[id];
+  const status = document.getElementById("tb-status");
+  const say = (message, bad) => {
+    status.innerHTML = message;
+    status.style.color = bad ? "var(--clay)" : "";
+  };
+
+  // Validate against the declaration rather than inside each tool.
+  const args = {};
+  for (const [key, spec] of Object.entries(tool.params)) {
+    const raw = toolboxState.values[key];
+    if (spec.required && (raw === undefined || raw === "" || raw === "none")) {
+      return say(`${spec.label} is required.`, true);
+    }
+    if (spec.kind === "layer") {
+      if (!raw) { args[key] = null; continue; }
+      const layer = await resolveToolboxLayer(raw);
+      if (!layer) return say(`${spec.label} is no longer on the map.`, true);
+      args[key] = layer;
+    } else if (spec.kind === "number") {
+      const value = Number(raw);
+      if (!Number.isFinite(value)) return say(`${spec.label} must be a number.`, true);
+      if (spec.min !== undefined && value < spec.min) return say(`${spec.label} is below ${spec.min}.`, true);
+      if (spec.max !== undefined && value > spec.max) return say(`${spec.label} is above ${spec.max}.`, true);
+      args[key] = value;
+    } else {
+      args[key] = raw;
+    }
+  }
+
+  say("Running…");
+  window.ghLog?.("info", `Tool: ${tool.name}`, jsonSafe(
+    Object.fromEntries(Object.entries(args).map(([k, v]) =>
+      [k, v?.label ?? v]))));
+
+  try {
+    const t = await loadTurf();
+    await new Promise((r) => setTimeout(r, 0));    // let "Running…" paint
+    const result = await tool.run(args, t);
+
+    if (result.error) return say(escapeHtml(result.error), true);
+    if (!result.collection?.features?.length) {
+      return say("The tool produced nothing. Check the inputs and the clip.", true);
+    }
+
+    drawToolboxResult(result.collection, result.label || tool.name);
+    say(`<strong>${result.collection.features.length.toLocaleString()} features.</strong> `
+      + (result.message ? escapeHtml(result.message) : "")
+      + ` Added as <em>${escapeHtml(result.label || tool.name)}</em>.`);
+  } catch (err) {
+    window.ghLog?.("error", `Tool ${tool.name} failed`, err.message || String(err));
+    say(`It failed: ${escapeHtml(err.message ?? err)}`, true);
+  }
+}
+
+/* Each run makes its own layer, so results stack rather than replacing one
+   another — which is what makes chaining tools possible at all. */
+let toolboxRunSeq = 0;
+
+function drawToolboxResult(collection, label) {
+  const id = `tb-out-${++toolboxRunSeq}`;
+  const colour = TOOLBOX_COLOURS[toolboxRunSeq % TOOLBOX_COLOURS.length];
+
+  map.addSource(id, { type: "geojson", data: collection });
+  map.addLayer({ id: `${id}-fill`, type: "fill", source: id,
+    filter: ["in", ["geometry-type"], ["literal", ["Polygon", "MultiPolygon"]]],
+    paint: { "fill-color": colour, "fill-opacity": 0.3 } });
+  map.addLayer({ id: `${id}-line`, type: "line", source: id,
+    filter: ["in", ["geometry-type"], ["literal", ["LineString", "MultiLineString", "Polygon", "MultiPolygon"]]],
+    paint: { "line-color": colour, "line-width": 1.5 } });
+  map.addLayer({ id: `${id}-point`, type: "circle", source: id,
+    filter: ["in", ["geometry-type"], ["literal", ["Point", "MultiPoint"]]],
+    paint: { "circle-radius": 4, "circle-color": colour,
+             "circle-stroke-width": 1, "circle-stroke-color": colours().ground } });
+
+  registerUserLayer({
+    id, label, kind: "tool", sourceId: id,
+    layerIds: [`${id}-fill`, `${id}-line`, `${id}-point`],
+    bbox: bboxOfCollection(collection),
+    colour,
+    note: `${collection.features.length.toLocaleString()} features`
+  });
+
+  const box = bboxOfCollection(collection);
+  if (box) map.fitBounds([[box[0], box[1]], [box[2], box[3]]],
+                         { padding: 60, duration: 900 });
+  lastRows = collection.features.map((f) =>
+    ({ ...f.properties, geom: JSON.stringify(f.geometry) }));
+}
+
+const TOOLBOX_COLOURS = ["#C2603C", "#3E8E7E", "#B58A3B", "#5B7FA6", "#8E6BA8", "#6E8B4E"];
+
+/* ── Driving the shell ─────────────────────────────────────────────────── */
+
+const PANEL_TITLES = {
+  style: "Style", data: "Data", query: "SQL workspace", ask: "AI Assistant",
+  log: "Log", sources: "About the data", settings: "Map", layers: "Layers"
+};
+
+function showPanel(name) {
+  selectTab(name);
+  const title = document.getElementById("panel-title");
+  if (title) title.textContent = PANEL_TITLES[name] ?? name;
+  document.getElementById("panel").hidden = false;
+  for (const button of document.querySelectorAll('[data-rail="right"]')) {
+    button.setAttribute("aria-pressed", "true");
+  }
+  if (name === "style") renderStylePane();
+  if (name === "log") renderLog();
+}
+
+/* ── The search box at the foot of the layers dock ─────────────────────────
+   Three kinds of answer, told apart by what was typed rather than by a mode
+   the person has to set first. A coordinate pair goes straight to the map;
+   anything else filters the drawn layers and, if the database is loaded, the
+   administrative names as well. */
+
+function wireDockSearch() {
+  const form = document.getElementById("dock-search");
+  const input = document.getElementById("dock-search-input");
+  const results = document.getElementById("dock-search-results");
+  if (!form || !input || !results) return;
+
+  let pending = 0;
+
+  const close = () => { results.hidden = true; results.innerHTML = ""; };
+
+  form.addEventListener("submit", (e) => {
+    e.preventDefault();
+    results.querySelector("button")?.click();
+  });
+
+  input.addEventListener("input", () => {
+    const term = input.value.trim();
+    if (term.length < 2) return close();
+
+    // A later keystroke must win even if an earlier query comes back after it.
+    const mine = ++pending;
+    dockSearchHits(term).then((hits) => {
+      if (mine !== pending) return;
+      renderDockSearch(results, hits, term);
+    });
+  });
+
+  input.addEventListener("keydown", (e) => { if (e.key === "Escape") { input.value = ""; close(); } });
+
+  results.addEventListener("click", (e) => {
+    const button = e.target.closest("button[data-go]");
+    if (!button) return;
+    const [kind, ...rest] = button.dataset.go.split(":");
+    const value = rest.join(":");
+
+    if (kind === "coord") {
+      const [lng, lat] = value.split(",").map(Number);
+      map.flyTo({ center: [lng, lat], zoom: Math.max(map.getZoom(), 11), duration: 1200 });
+    } else if (kind === "bbox") {
+      const [w, s, e2, n] = value.split(",").map(Number);
+      map.fitBounds([[w, s], [e2, n]], { padding: 60, duration: 1200 });
+    } else if (kind === "layer") {
+      const entry = userLayers.get(value);
+      selectedLayerId = value;
+      renderUserLayers();
+      if (entry?.bbox) {
+        map.fitBounds([[entry.bbox[0], entry.bbox[1]], [entry.bbox[2], entry.bbox[3]]],
+                      { padding: 60, duration: 1200 });
+      }
+    }
+    close();
+    input.value = "";
+  });
+}
+
+/* A coordinate, then the drawn layers, then the boundaries. The boundary
+   lookup needs the database, so it is skipped rather than waited for when
+   nothing is loaded — a search box that stalls is worse than one that finds
+   less. */
+async function dockSearchHits(term) {
+  const hits = [];
+
+  const pair = term.match(/^\s*(-?\d+(?:\.\d+)?)\s*[, ]\s*(-?\d+(?:\.\d+)?)\s*$/);
+  if (pair) {
+    const a = Number(pair[1]), b = Number(pair[2]);
+    // Written latitude first, as people do, unless that cannot be a latitude.
+    const [lat, lng] = Math.abs(a) <= 90 ? [a, b] : [b, a];
+    hits.push({ label: `${lat.toFixed(4)}, ${lng.toFixed(4)}`,
+                note: "Coordinate — latitude, longitude",
+                go: `coord:${lng},${lat}` });
+  }
+
+  const needle = term.toLowerCase();
+  for (const entry of userLayers.values()) {
+    if (entry.label.toLowerCase().includes(needle)) {
+      hits.push({ label: entry.label, note: `Layer — ${entry.note || entry.kind}`,
+                  go: `layer:${entry.id}` });
+    }
+  }
+
+  if (conn) {
+    try {
+      const safe = term.replace(/'/g, "''");
+      const rows = await conn.query(
+        `SELECT adm1_name AS name, 'Region' AS kind, NULL AS parent,
+                bbox_xmin, bbox_ymin, bbox_xmax, bbox_ymax
+         FROM ghana.region WHERE lower(adm1_name) LIKE lower('%${safe}%')
+         UNION ALL
+         SELECT adm2_name, 'District', adm1_name,
+                bbox_xmin, bbox_ymin, bbox_xmax, bbox_ymax
+         FROM ghana.district WHERE lower(adm2_name) LIKE lower('%${safe}%')
+         LIMIT 8;`);
+      for (const row of rows.toArray().map((r) => r.toJSON())) {
+        hits.push({
+          label: row.name,
+          note: row.parent ? `${row.kind} in ${row.parent}` : row.kind,
+          go: `bbox:${row.bbox_xmin},${row.bbox_ymin},${row.bbox_xmax},${row.bbox_ymax}`
+        });
+      }
+    } catch { /* the boundaries are not loaded; layers and coordinates still work */ }
+  }
+
+  return hits.slice(0, 12);
+}
+
+function renderDockSearch(host, hits, term) {
+  host.hidden = false;
+  host.innerHTML = hits.length
+    ? hits.map((h) => `
+        <button type="button" data-go="${escapeHtml(h.go)}">
+          ${escapeHtml(h.label)}<span>${escapeHtml(h.note)}</span>
+        </button>`).join("")
+    : `<p class="hint">Nothing matching “${escapeHtml(term)}”.</p>`;
+}
+
+function toggleDock(side) {
+  const dock = document.getElementById(side === "left" ? "dock-left" : "panel");
+  const button = document.querySelector(`[data-rail="${side}"]`);
+  const open = dock.hidden;
+  dock.hidden = !open;
+  button?.setAttribute("aria-pressed", String(open));
+  map.resize();
+}
+
+/* The menus. One handler for the whole bar, because a menu is a list of
+   actions and the alternative is a listener per item that drifts. */
+(function wireMenus() {
+  const bar = document.getElementById("menubar");
+  if (!bar) return;
+
+  const closeAll = () => {
+    for (const menu of bar.querySelectorAll(".menu")) menu.dataset.open = "false";
+  };
+
+  for (const menu of bar.querySelectorAll(".menu")) {
+    const button = menu.querySelector(":scope > button");
+    button.addEventListener("click", (event) => {
+      event.stopPropagation();
+      const wasOpen = menu.dataset.open === "true";
+      closeAll();
+      menu.dataset.open = String(!wasOpen);
+    });
+    // Hovering moves between menus once one is open, as a menu bar should.
+    menu.addEventListener("mouseenter", () => {
+      if (bar.querySelector('.menu[data-open="true"]')) {
+        closeAll();
+        menu.dataset.open = "true";
+      }
+    });
+  }
+
+  addEventListener("click", closeAll);
+  addEventListener("keydown", (e) => { if (e.key === "Escape") closeAll(); });
+
+  bar.addEventListener("click", async (event) => {
+    const button = event.target.closest("[data-act]");
+    if (!button) return;
+    closeAll();
+    await runShellAction(button.dataset.act);
+  });
+
+  for (const button of document.querySelectorAll("[data-rail]")) {
+    button.addEventListener("click", () => toggleDock(button.dataset.rail));
+  }
+  for (const button of document.querySelectorAll("#dock-left [data-act]")) {
+    button.addEventListener("click", () => runShellAction(button.dataset.act));
+  }
+})();
+
+async function runShellAction(action) {
+  const [verb, argument] = action.split(":");
+
+  if (verb === "panel") return showPanel(argument);
+  if (verb === "dock") return toggleDock(argument);
+  if (verb === "toolbox") return openToolbox(argument);
+  if (verb === "clip") return openClipPicker();
+  if (verb === "live") return fetchLive(argument);
+  if (verb === "theme") return document.getElementById("theme-toggle")?.click();
+  if (verb === "locate") return document.getElementById("btn-locate")?.click();
+  if (verb === "reset") return document.getElementById("btn-reset")?.click();
+  if (verb === "tour") return document.getElementById("story-go")?.click();
+  if (verb === "docs") return window.open("https://desmond-lartey.github.io/ghana-geostack/", "_blank");
+
+  if (verb === "download") {
+    const button = document.getElementById(
+      argument === "csv" ? "download-csv" : "download-geojson");
+    if (button) button.click();
+    else setStatus("Nothing to download yet", true);
+    return;
+  }
+
+  if (verb === "zoom") {
+    let box = null;
+    for (const entry of userLayers.values()) {
+      if (!entry.bbox) continue;
+      box = box ? [Math.min(box[0], entry.bbox[0]), Math.min(box[1], entry.bbox[1]),
+                   Math.max(box[2], entry.bbox[2]), Math.max(box[3], entry.bbox[3])]
+                : [...entry.bbox];
+    }
+    if (box) map.fitBounds([[box[0], box[1]], [box[2], box[3]]], { padding: 60 });
+    else map.flyTo({ ...HOME, duration: 900 });
+    return;
+  }
+
+  if (verb === "allvis") {
+    for (const id of userLayers.keys()) setUserLayerVisible(id, argument === "true");
+    return;
+  }
+}
+
+/* ── The status bar ────────────────────────────────────────────────────── */
+
+function renderStatusBar() {
+  const set = (id, value) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = value;
+  };
+  const centre = map.getCenter();
+  const bounds = map.getBounds();
+
+  set("sb-zoom", map.getZoom().toFixed(2));
+  set("sb-bbox", [bounds.getWest(), bounds.getSouth(), bounds.getEast(), bounds.getNorth()]
+    .map((v) => v.toFixed(4)).join(", "));
+  set("sb-layers", String(userLayers.size));
+
+  // A scale that means something: how wide the view is on the ground.
+  const width = turfLikeDistanceKm(bounds.getWest(), centre.lat, bounds.getEast(), centre.lat);
+  set("sb-scale", width > 10 ? `${Math.round(width)} km wide` : `${Math.round(width * 1000)} m wide`);
+
+  // Eye altitude, from the view rather than from the zoom number: how far the
+  // camera would have to be to see this much ground through MapLibre's field
+  // of view, which is a fixed 36.87° vertically.
+  const canvas = map.getCanvas?.();
+  const ratio = canvas && canvas.width ? canvas.height / canvas.width : 0.6;
+  const heightKm = width * ratio;
+  const altKm = (heightKm / 2) / Math.tan(0.6435 / 2);
+  set("sb-alt", altKm >= 10 ? `${Math.round(altKm)} km` : `${Math.round(altKm * 1000)} m`);
+
+  const bearing = map.getBearing?.() ?? 0;
+  const pitch = map.getPitch?.() ?? 0;
+  set("sb-bearing", `${bearing.toFixed(1)}°`);
+  set("sb-pitch", `${pitch.toFixed(1)}°`);
+
+  // The projection is a rendering choice; the coordinates are always the same.
+  set("sb-crs", `EPSG:4326 · ${state.projection === "globe" ? "globe" : "web mercator"}`);
+}
+
+/* Great-circle distance without waiting for Turf to load. */
+function turfLikeDistanceKm(lon1, lat1, lon2, lat2) {
+  const toRad = (d) => (d * Math.PI) / 180;
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const a = Math.sin(dLat / 2) ** 2
+          + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+  return 6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+/* Last wiring: the pieces that need the map and the toolbox to both exist. */
+(function startShell() {
+  try {
+    // Status bar follows the map.
+    map.on("move", renderStatusBar);
+    map.on("zoom", renderStatusBar);
+    map.on("mousemove", (e) => {
+      const el = document.getElementById("sb-coords");
+      if (el) el.textContent = `${e.lngLat.lng.toFixed(5)}, ${e.lngLat.lat.toFixed(5)}`;
+    });
+    map.on("mouseout", () => {
+      const el = document.getElementById("sb-coords");
+      if (el) el.textContent = "—";
+    });
+    renderStatusBar();
+
+    // Toolbox categories, taken from the tools themselves.
+    const select = document.getElementById("tb-category");
+    if (select) {
+      const categories = [...new Set(Object.values(TOOLBOX).map((x) => x.category))].sort();
+      select.innerHTML = `<option value="all">All tools (${Object.keys(TOOLBOX).length})</option>`
+        + categories.map((c) => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join("");
+      select.addEventListener("change", () => { toolboxState.selected = null; renderToolboxList(); });
+    }
+    document.getElementById("tb-search")?.addEventListener("input", renderToolboxList);
+    document.getElementById("tb-close")?.addEventListener("click", () => {
+      document.getElementById("toolbox").dataset.open = "false";
+    });
+
+    // The toolbox window drags by its header, as a window should.
+    const head = document.getElementById("tb-head");
+    const box = document.getElementById("toolbox");
+    if (head && box) {
+      let from = null;
+      head.addEventListener("pointerdown", (e) => {
+        if (e.target.closest("button")) return;
+        const r = box.getBoundingClientRect();
+        from = { x: e.clientX, y: e.clientY, left: r.left, top: r.top };
+        box.style.transform = "none";
+        box.style.left = `${r.left}px`;
+        box.style.top = `${r.top}px`;
+        head.setPointerCapture(e.pointerId);
+      });
+      head.addEventListener("pointermove", (e) => {
+        if (!from) return;
+        box.style.left = `${from.left + e.clientX - from.x}px`;
+        box.style.top = `${from.top + e.clientY - from.y}px`;
+      });
+      head.addEventListener("pointerup", () => { from = null; });
+    }
+
+    wireDockSearch();
+
+    // The clip: readable in the status bar at all times, changed from there or
+    // from Processing → Clip results to.
+    document.getElementById("sb-clip")?.addEventListener("click", openClipPicker);
+    document.getElementById("clip-dialog-close")?.addEventListener("click", () => {
+      document.getElementById("clip-dialog").hidden = true;
+    });
+    renderClip();
+
+    shellReady = true;
+    renderUserLayers();
+    renderLegend();
+
+    // The right dock opens on Style. Left to itself it would show whichever
+    // pane the old tab strip selected first, which was Layers — and the layer
+    // list now lives in the left dock, so that put the same content on both
+    // sides of the map.
+    showPanel("style");
+  } catch (err) {
+    console.error("Shell start-up:", err);
+  }
+})();
 
 /* ── The Log pane ──────────────────────────────────────────────────────────
    The recorder itself lives in the classic script at the top of the page, so
@@ -6554,6 +8006,14 @@ async function addEeLayer(d) {
     registerUserLayer({
       id: sourceId, label: d.title, kind: "raster",
       layerIds: [sourceId], sourceId,
+      // The legend the panel already draws is the legend the map should show,
+      // so it is handed over rather than described a second time.
+      legend: d.classes
+        ? { type: "classes", names: d.classes.names,
+            colours: d.classes.colours, values: d.classes.values }
+        : (form.palette.length
+            ? { type: "ramp", stops: form.palette, min: form.min, max: form.max }
+            : null),
       note: d.classes ? `${d.classes.names.length} classes, producer's colours`
                       : `${d.provider || "Earth Engine"}`
     });
