@@ -174,8 +174,22 @@ the producer's own.
 A raster on the map is a picture. **Summarise by region** and **Summarise by
 district** turn it into numbers.
 
-That runs `reduceRegions` on Google's machines against the geoBoundaries
-administrative units for Ghana, and brings back one row per unit. The result
+That runs `reduceRegions` on Google's machines against **this site's own
+boundaries**, sent as coordinates, and brings back one row per unit.
+
+It used to reduce against geoBoundaries CGAZ, held on Google's side. That asset
+carries Ghana's *pre-2018* ten regions. The country was reorganised in December
+2018 into sixteen, so every summary was computed over the old boundaries and
+then joined to the modern ones by name: nine names matched, seven regions
+vanished from the map, and the nine that survived were measured over the wrong
+areas — the old Northern region is the modern Northern plus Savannah plus North
+East. A missing row is a visible failure. A row measured over the wrong shape
+is not.
+
+The boundaries are simplified to 0.001° — about 110 m — before being sent, which
+takes the sixteen regions from 23,669 vertices to 10,738 and changes the largest
+area by 0.024%. That is nothing beside counting 5 km rainfall pixels, and it is
+measured rather than assumed. The result
 lands in the browser database as `ghana.ee_<dataset>_<level>`, which means the
 rest of the page already knows what to do with it:
 

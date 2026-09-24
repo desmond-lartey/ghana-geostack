@@ -135,3 +135,7 @@ jobs:
       # step nothing it could use, so this checks what each tool passes on.
       - name: The rainfall chain runs end to end
         run: node tests/ee_rainfall.cjs
+
+      # A choropleth with no legend is a picture of a country in colours.
+      - name: A styled result explains itself
+        run: node tests/legend.cjs

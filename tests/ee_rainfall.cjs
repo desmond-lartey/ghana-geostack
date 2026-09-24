@@ -85,7 +85,12 @@ function serve() {
         getMap: (o, cb) => cb({ urlFormat: "https://tiles/{z}/{x}/{y}" }, null)
       };
       return new Proxy(target, {
-        get: (t, prop) => prop in t ? t[prop]
+        // `then` must stay undefined. Awaiting a value whose `then` is a
+        // function makes JavaScript treat it as a promise and call it, so a
+        // recorder that answers every property turns `await someEeObject` into
+        // a wait for a resolve that never comes.
+        get: (t, prop) => prop === "then" ? undefined
+          : prop in t ? t[prop]
           : (typeof prop === "string" ? (...a) => node(prop, a) : undefined)
       });
     };

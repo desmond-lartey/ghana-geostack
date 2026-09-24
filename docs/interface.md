@@ -113,11 +113,20 @@ The legend sits at the bottom left of the map, and it is only there when there
 is something to explain. It describes what is *drawn*, which is not the same as
 what is in the layer list — a layer switched off explains nothing.
 
+A layer coloured by a value comes first and says which value: the column name,
+the ramp, and the real low, middle and high of what is drawn. That is the part
+that was missing — a choropleth whose legend does not name its column or its
+range is a picture of a country in colours. The numbers are the palette's own
+stops against the data's actual range, read from the features on screen, so the
+legend says what the map is doing rather than what it was asked to do.
+
 A classified raster brings the producer's own class table with it, so ESA
 WorldCover is listed class by class in the producer's colours. A continuous
-raster shows its ramp with the minimum and maximum it was stretched to. Anything
-else is one swatch. The reference boundaries keep the legend they were written
-with.
+raster shows its ramp with the minimum and maximum it was stretched to. Every
+other drawn layer is one row under *On the map*, so the legend is a list of
+what is on the map rather than a list of what happens to have a colour. A layer
+that has its own group is not repeated as a swatch. The reference boundaries
+keep the legend they were written with.
 
 ---
 
