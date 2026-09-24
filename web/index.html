@@ -5552,21 +5552,46 @@ const AGENT_TOOLS = {
       if (!catalog.length) {
         return { error: "The catalogue index is not present in this deployment." };
       }
-      const words = String(query).toLowerCase().split(/\s+/).filter(Boolean);
-      return catalog
-        .filter((d) => {
-          const hay = `${d.title} ${d.id} ${(d.keywords || []).join(" ")}`.toLowerCase();
-          return words.every((w) => hay.includes(w));
-        })
+      const words = String(query).toLowerCase().split(/\s+/).filter(Boolean)
+        .flatMap((w) => [w, ...(EE_SYNONYMS[w] || [])]);
+
+      const describe = (d) => ({
+        id: d.id, title: d.title, type: d.type,
+        resolution_m: d.resolution_m, start: d.start, end: d.end,
+        bands: (d.bands || []).map((b) => b.name),
+        classified: Boolean(d.classes),
+        classes: d.classes ? d.classes.names : undefined,
+        covers_ghana: d.covers_ghana
+      });
+
+      // The description is searched too. A person asking for rainfall should
+      // find CHIRPS, whose title and keywords say precipitation and never say
+      // rainfall — the word is in its description, and leaving that out made
+      // the obvious search for the obvious dataset return nothing.
+      const hay = (d) =>
+        `${d.title} ${d.id} ${(d.keywords || []).join(" ")} ${d.description || ""}`
+          .toLowerCase();
+
+      const all = words.some((w) => EE_SYNONYM_WORDS.has(w))
+        ? catalog.filter((d) => { const h = hay(d); return words.some((w) => h.includes(w)); })
+        : catalog.filter((d) => { const h = hay(d); return words.every((w) => h.includes(w)); });
+
+      if (!all.length) {
+        return {
+          error: `Nothing in the catalogue matches "${query}". ${catalog.length} `
+               + `datasets were searched by title, id, keywords and description. `
+               + `Try a different word — the catalogue uses the producer's own `
+               + `vocabulary, so precipitation rather than rain, land cover `
+               + `rather than landuse, LST rather than temperature.`
+        };
+      }
+
+      // The ones covering Ghana first: a dataset that does not is a blank
+      // rectangle, and the model should not have to work that out.
+      return all
+        .sort((a, b) => Number(Boolean(b.covers_ghana)) - Number(Boolean(a.covers_ghana)))
         .slice(0, Math.min(limit ?? 8, 20))
-        .map((d) => ({
-          id: d.id, title: d.title, type: d.type,
-          resolution_m: d.resolution_m, start: d.start, end: d.end,
-          bands: (d.bands || []).map((b) => b.name),
-          classified: Boolean(d.classes),
-          classes: d.classes ? d.classes.names : undefined,
-          covers_ghana: d.covers_ghana
-        }));
+        .map(describe);
     }
   },
 
@@ -5579,7 +5604,12 @@ const AGENT_TOOLS = {
     schema: {
       type: "object",
       properties: {
-        dataset_id: { type: "string", description: "Exact Earth Engine id" },
+        dataset_id: { type: "string",
+                      description: "The Earth Engine id, or the name the person "
+                                 + "used — CHIRPS, ESA WorldCover. An exact id "
+                                 + "is used as given; a name that matches "
+                                 + "several comes back as a list to choose "
+                                 + "from rather than a guess." },
         start: { type: "string", description: "Start date, YYYY-MM-DD" },
         end: { type: "string", description: "End date, YYYY-MM-DD" },
         band: { type: "string", description: "Band to draw, for unclassified data" },
@@ -5596,13 +5626,14 @@ const AGENT_TOOLS = {
         return { error: "Earth Engine is not connected. The person must sign in " +
                         "on the Data tab first — you cannot do it for them." };
       }
-      const catalog = await loadEeCatalog();
-      const dataset = catalog.find((d) => d.id === dataset_id);
-      if (!dataset) {
-        return { error: `No dataset "${dataset_id}". Use search_earth_engine.` };
-      }
+      const found = await eeDatasetFor(dataset_id);
+      if (!found.dataset) return found;
+      const dataset = found.dataset;
 
-      showEeDataset(dataset_id);
+      // The resolved id, not what was typed: the form only renders for an
+      // exact id, and a name that missed left the previous dataset's form up
+      // to be read back as if it were this one's.
+      showEeDataset(dataset.id);
       await new Promise((r) => setTimeout(r, 60));   // let the form render
 
       const set = (id, value) => {
@@ -5653,14 +5684,17 @@ const AGENT_TOOLS = {
     },
     run: async ({ dataset_id, level }) => {
       if (!eeState.ready) return { error: "Earth Engine is not connected." };
-      const catalog = await loadEeCatalog();
-      const dataset = catalog.find((d) => d.id === dataset_id);
-      if (!dataset) return { error: `No dataset "${dataset_id}".` };
+      const found = await eeDatasetFor(dataset_id);
+      if (!found.dataset) return found;
+      const dataset = found.dataset;
       if (!dataset.classes) {
-        return { error: `${dataset_id} is not classified. Use summarise_earth_engine.` };
+        return { error: `${dataset.id} is not classified. Use summarise_earth_engine.` };
       }
 
-      showEeDataset(dataset_id);
+      // The resolved id, not what was typed: the form only renders for an
+      // exact id, and a name that missed left the previous dataset's form up
+      // to be read back as if it were this one's.
+      showEeDataset(dataset.id);
       await new Promise((r) => setTimeout(r, 60));
 
       const outcome = await runClassAreas(dataset, level === "district" ? "district" : "region");
@@ -5670,7 +5704,8 @@ const AGENT_TOOLS = {
         `SELECT ${outcome.nameColumn}, class_name, area_km2, pct_of_zone\n` +
         `FROM ghana.${outcome.table}\nORDER BY area_km2 DESC;`;
 
-      return { table: `ghana.${outcome.table}`, rows: outcome.rows,
+      return { dataset_id: dataset.id, dataset_title: dataset.title,
+               table: `ghana.${outcome.table}`, rows: outcome.rows,
                columns: [outcome.nameColumn, "class_name", "class_value",
                          "area_km2", "pct_of_zone"],
                next: "Query it with run_sql to answer the actual question." };
@@ -5681,38 +5716,92 @@ const AGENT_TOOLS = {
     category: "earth_engine",
     description: "For an UNCLASSIFIED dataset — elevation, temperature, " +
                  "rainfall, population — reduce it onto regions or districts " +
-                 "and return a queryable table. Choose sum for counts and " +
-                 "rainfall, mean for temperature and cover.",
+                 "and return a queryable table. There are two separate " +
+                 "choices and getting either wrong produces a number in no " +
+                 "unit: over_time combines the images in the date range into " +
+                 "one, and statistic combines the pixels inside each zone. " +
+                 "Annual rainfall is over_time=sum (the year's total at each " +
+                 "pixel) with statistic=mean (that total averaged over the " +
+                 "region, in millimetres) — summing millimetres across pixels " +
+                 "measures nothing. Population is over_time=mosaic with " +
+                 "statistic=sum, because people add up and a count per zone is " +
+                 "the point. Temperature is mean and mean.",
     schema: {
       type: "object",
       properties: {
         dataset_id: { type: "string" },
         level: { type: "string", description: "region or district" },
         band: { type: "string" },
-        statistic: { type: "string", description: "sum or mean" },
+        statistic: { type: "string",
+                     description: "How to combine the pixels inside each zone: "
+                                + "sum or mean. Default mean." },
+        over_time: { type: "string",
+                     description: "How to combine the images across the date "
+                                + "range into one: sum, mean, median, max, min "
+                                + "or mosaic. Default median, which is the "
+                                + "usual way to see through cloud but is wrong "
+                                + "for anything that accumulates." },
         start: { type: "string" }, end: { type: "string" }
       },
       required: ["dataset_id"]
     },
-    run: async ({ dataset_id, level, band, statistic, start, end }) => {
+    run: async ({ dataset_id, level, band, statistic, over_time, start, end }) => {
       if (!eeState.ready) return { error: "Earth Engine is not connected." };
-      const catalog = await loadEeCatalog();
-      const dataset = catalog.find((d) => d.id === dataset_id);
-      if (!dataset) return { error: `No dataset "${dataset_id}".` };
+      const found = await eeDatasetFor(dataset_id);
+      if (!found.dataset) return found;
+      const dataset = found.dataset;
       if (dataset.classes) {
-        return { error: `${dataset_id} is classified. Use land_cover_areas.` };
+        return { error: `${dataset.id} is classified. Use land_cover_areas.` };
       }
 
-      showEeDataset(dataset_id);
+      // The resolved id, not what was typed: the form only renders for an
+      // exact id, and a name that missed left the previous dataset's form up
+      // to be read back as if it were this one's.
+      showEeDataset(dataset.id);
       await new Promise((r) => setTimeout(r, 60));
       const set = (id, v) => { const el = document.getElementById(id);
                                if (el && v) el.value = v; };
       set("ee-bands", band); set("ee-start", start); set("ee-end", end);
-      set("ee-reducer", statistic === "sum" ? "sum" : "median");
+      // Two controls, not one. `ee-reducer` composites the images over the
+      // date range; `ee-zonal` combines the pixels inside each zone. The tool
+      // used to set only the first and the summary only reads the second, so
+      // whatever statistic was asked for, every summary came back a mean.
+      set("ee-reducer", over_time);
+      set("ee-zonal", statistic === "sum" ? "sum" : "mean");
 
-      await summariseEe(dataset, level === "district" ? "district" : "region");
-      return { note: "Summarised. The table name is in the Data tab and the " +
-                     "Log; query it with run_sql." };
+      const outcome = await summariseEe(dataset, level === "district" ? "district" : "region");
+      if (!outcome?.ok) {
+        return { error: outcome?.error
+          || "The summary produced no table, and no reason was given. Check the Log panel." };
+      }
+
+      // The name is built from the last path segment of the dataset id, so it
+      // is not guessable — UCSB-CHG/CHIRPS/DAILY becomes ee_daily_region. It
+      // is returned, and the query to run next is written out.
+      lastAgentSql =
+        `SELECT t.${outcome.name_column}, t.${outcome.statistic}, b.geom\n` +
+        `FROM ${outcome.table} t\n` +
+        `JOIN ghana.${outcome.level === "region" ? "region" : "district"} b\n` +
+        `  ON b.${outcome.name_column} = t.${outcome.name_column}\n` +
+        `ORDER BY t.${outcome.statistic} DESC;`;
+
+      return {
+        // The id resolved from whatever was asked for. Name this one.
+        dataset_id: dataset.id,
+        dataset_title: dataset.title,
+        table: outcome.table,
+        columns: [outcome.name_column, outcome.statistic],
+        zones: outcome.zones,
+        statistic: outcome.statistic,
+        over_time: outcome.over_time,
+        range: [outcome.min, outcome.max],
+        total: outcome.total,
+        unmatched_names: outcome.unmatched_names,
+        next: `Query it with run_sql. To map it, select ${outcome.name_column}, `
+            + `${outcome.statistic} and b.geom joined to ghana.`
+            + `${outcome.level === "region" ? "region" : "district"} on `
+            + `${outcome.name_column}, then show_result_on_map and style_by_column.`
+      };
     }
   },
 
@@ -5912,7 +6001,111 @@ let lastAgentSql = null;
    The limit is not a formality. A loop with tools and no bound is a way to
    spend someone's money while they watch a spinner.                        */
 
-const AGENT_MAX_TURNS = 8;
+// Eight was too few for the chain this is for. Finding a dataset, drawing it,
+// reducing it, querying the result, mapping it and styling it is six tool
+// calls before a word is said, and the limit was cutting the answer off at the
+// styling — the step that makes the map worth looking at.
+/* What people call things, against what the catalogue calls them. Earth
+   Engine's vocabulary is the producer's: CHIRPS is precipitation, never
+   rainfall; land surface temperature is LST; night lights are radiance. A
+   search that only matches the producer's word makes the obvious question
+   fail, and a model handed an empty list guesses an id.
+
+   A query containing one of these widens to any of the alternatives rather
+   than requiring all the words, because "rainfall data" should not have to
+   match a title containing both. */
+const EE_SYNONYMS = {
+  rainfall: ["precipitation", "rain", "chirps"],
+  rain: ["precipitation", "rainfall", "chirps"],
+  precipitation: ["rainfall", "chirps"],
+  temperature: ["lst", "land surface temperature", "thermal", "era5"],
+  population: ["worldpop", "ghsl", "population count", "population density"],
+  nightlights: ["viirs", "dmsp", "night lights", "radiance", "nighttime"],
+  landcover: ["land cover", "worldcover", "landuse", "land use"],
+  elevation: ["dem", "srtm", "terrain", "topography"],
+  vegetation: ["ndvi", "evi", "modis"],
+  fire: ["burned area", "burn", "firms", "active fire"],
+  water: ["surface water", "jrc", "occurrence"],
+  soil: ["soilgrids", "soil moisture"],
+  flood: ["inundation", "surface water", "flooded"]
+};
+const EE_SYNONYM_WORDS = new Set(Object.keys(EE_SYNONYMS));
+
+/* Naming a dataset should mean using that dataset.
+
+   Every tool used to require an exact catalogue id and refuse anything else,
+   so a person saying "use CHIRPS" or "ESA WorldCover" sent the model through a
+   search, and a search returns a list — from which it picked one and then
+   described a different one. That is how a layer labelled v100 came with a
+   sentence about v200.
+
+   So a name is resolved here, once, and the rules are the boring ones:
+
+     an exact id wins outright;
+     one match is used, and the tool reports which;
+     several matches are not guessed between — they are handed back so the
+       choice is made deliberately, in the open, by exact id.
+
+   Ranking puts a dataset covering Ghana first, then the later one, so among
+   ESA/WorldCover/v100 and v200 the newest heads the list. It is a ranking, not
+   a decision: two versions of the same product are still two datasets, and
+   picking silently is what this exists to stop. */
+function resolveEeDataset(catalog, query) {
+  const wanted = String(query || "").trim();
+  if (!wanted) return { error: "No dataset was named." };
+  const lower = wanted.toLowerCase();
+
+  const exact = catalog.find((d) => d.id.toLowerCase() === lower);
+  if (exact) return { dataset: exact, how: "exact id" };
+
+  const rank = (a, b) =>
+    Number(Boolean(b.covers_ghana)) - Number(Boolean(a.covers_ghana))
+    || String(b.end || "").localeCompare(String(a.end || ""))
+    || String(b.start || "").localeCompare(String(a.start || ""))
+    || b.id.localeCompare(a.id);
+
+  // Tried narrowest first, so "CHIRPS" matches the id before it matches some
+  // other dataset that merely mentions CHIRPS in its description.
+  const tiers = [
+    (d) => d.id.toLowerCase().includes(lower),
+    (d) => (d.title || "").toLowerCase().includes(lower),
+    (d) => {
+      const words = lower.split(/\s+/).filter(Boolean);
+      const hay = `${d.title} ${d.id} ${(d.keywords || []).join(" ")}`.toLowerCase();
+      return words.every((w) => hay.includes(w));
+    }
+  ];
+
+  for (const test of tiers) {
+    const hits = catalog.filter(test).sort(rank);
+    if (hits.length === 1) return { dataset: hits[0], how: "the only match" };
+    if (hits.length > 1) {
+      return {
+        ambiguous: hits.slice(0, 6).map((d) => ({
+          id: d.id, title: d.title, start: d.start, end: d.end,
+          classified: Boolean(d.classes), covers_ghana: d.covers_ghana
+        })),
+        error: `"${wanted}" matches ${hits.length} datasets. Call this again `
+             + `with one of these exact ids — and name that id in your answer, `
+             + `because the layer will be labelled with it.`
+      };
+    }
+  }
+
+  return { error: `Nothing in the catalogue matches "${wanted}". `
+                + `Use search_earth_engine to find the id.` };
+}
+
+/* The three tools that take a dataset all resolve it the same way. */
+async function eeDatasetFor(query) {
+  const catalog = await loadEeCatalog();
+  if (!catalog.length) {
+    return { error: "The catalogue index is not present in this deployment." };
+  }
+  return resolveEeDataset(catalog, query);
+}
+
+const AGENT_MAX_TURNS = 12;
 
 /* The module's own scope is private, which is right, but it also means nobody
    can ask the page what the agent is allowed to do. This one hook answers
@@ -5934,6 +6127,12 @@ window.__ghClip = {
   },
   breakLookup: () => { conn = null; },
   addLayer: (dataset, form) => addEeLayer(dataset, form),
+  summarise: (dataset, level) => summariseEe(dataset, level),
+  // The tool body, without the confirmation gate — the gate is a question put
+  // to a person, and a headless run has nobody to answer it.
+  tool: (name, args) => AGENT_TOOLS[name].run(args ?? {}),
+  catalog: (rows) => { eeState.catalog = rows; },
+  setDb: (db, connection) => { duckDb = db; conn = connection; },
   zones: (level) => eeZonesFor(level)
 };
 
@@ -6032,8 +6231,13 @@ How to work:
   p-code column, then show_result_on_map, then style_by_column if the answer
   is a quantity rather than a place.
 - Prefer zoom_to_place over guessing coordinates.
-- For satellite data: search_earth_engine first, then add_earth_engine_layer to
-  show it. To get numbers from it, land_cover_areas for a CLASSIFIED dataset
+- If the person names a dataset — CHIRPS, ESA WorldCover, ERA5, or a full id —
+  pass that name straight to the Earth Engine tool. Do not search first and do
+  not substitute something similar. The tools resolve a name themselves and
+  hand back a list when it is ambiguous, so choosing is done in the open.
+  search_earth_engine is for when no dataset has been named.
+- For satellite data with none named: search_earth_engine first, then
+  add_earth_engine_layer to show it. To get numbers from it, land_cover_areas for a CLASSIFIED dataset
   such as land cover, summarise_earth_engine for a continuous one such as
   elevation or rainfall. A mean of class codes is meaningless, so never use the
   wrong one. Both land in a table you then query with run_sql.
@@ -7948,9 +8152,22 @@ function showEeDataset(id) {
             <option value="max">maximum</option>
             <option value="min">minimum</option>
             <option value="mosaic">most recent pixel</option>
-            <option value="sum">sum — for rainfall and counts</option>
+            <option value="sum">sum — accumulates, for rainfall and counts</option>
           </select>
         </div>` : ""}
+
+        ${d.classes ? "" : `
+        <div class="field">
+          <label for="ee-zonal">Combine the pixels in each zone by</label>
+          <select id="ee-zonal" style="width:100%;height:34px;border-radius:var(--radius);border:1px solid var(--border);background:var(--surface-2);color:var(--text);font-size:13px">
+            <option value="mean">mean — for a depth, a temperature or an index</option>
+            <option value="sum">sum — only for per-pixel counts, such as population</option>
+          </select>
+          <p class="legend-note">Rainfall in millimetres is a depth, not a
+            count: summing it across a region gives a number that grows with the
+            region's size and means nothing. The mean is the answer to "how much
+            rain fell there".</p>
+        </div>`}
 
         ${bandNames.length ? `
         <div class="field">
@@ -8083,6 +8300,7 @@ function readEeForm(d) {
     start: value("ee-start"),
     end: value("ee-end"),
     reducer: value("ee-reducer") || "median",
+    zonal: value("ee-zonal") || "mean",
     bands: list("ee-bands"),
     min: value("ee-min"),
     max: value("ee-max"),
@@ -8377,15 +8595,39 @@ async function redrawEeLayers() {
    with. The result lands in the browser database under ghana.ee_<name>, so
    the Query tab and the Style tab pick it up with no further plumbing.     */
 
+/* Like addEeLayer, every exit says what happened and names the table, because
+   the caller may be the agent and its next step is a query against that name.
+   It used to return nothing and the tool replied "the table name is in the Data
+   tab" — which the model cannot read, so it guessed, and a guess is wrong: the
+   name is built from the last path segment, so UCSB-CHG/CHIRPS/DAILY becomes
+   ee_daily_region, not ee_chirps_region. */
 async function summariseEe(d, level) {
   if (!eeState.ready) {
-    eeDetailStatus("Connect to Earth Engine first — the panel at the top of this tab.",
-                   "error");
-    return;
+    const message = "Earth Engine is not connected. Sign in on the Data panel first.";
+    eeDetailStatus(message, "error");
+    return { error: message };
+  }
+
+  if (clipState.kind === "region" || clipState.kind === "district") {
+    await ensureClipGeometry();
+    if (!clipState.geometry) {
+      const message = `The boundary for ${clipLabel()} is not loaded in this `
+        + `browser, so there is no shape to reduce inside.`;
+      eeDetailStatus(message, "error");
+      return { error: message };
+    }
   }
 
   const form = readEeForm(d);
-  const stat = form.reducer === "sum" ? "sum" : "mean";
+  // Two reducers, two questions. One combines the IMAGES over the date range:
+  // sum for rainfall, because a year of rain is the year's days added up.
+  // The other combines the PIXELS inside each zone, and for rainfall that is
+  // the mean, because millimetres are a depth. They used to be the same
+  // setting, so asking for a sum of rainfall summed the millimetres across
+  // every pixel in the region — a number that grows with the region's area and
+  // answers "which region is biggest" while looking like "which region is
+  // wettest".
+  const stat = form.zonal === "sum" ? "sum" : "mean";
 
   eeDetailStatus(`Reducing to ${level}s in Earth Engine. This runs on Google's
     machines and takes as long as it takes — usually under a minute.`);
@@ -8431,10 +8673,10 @@ async function summariseEe(d, level) {
       .filter((r) => r[nameColumn] && r[stat] !== null && r[stat] !== undefined);
 
     if (!features.length) {
-      eeDetailStatus(
-        "The reduction returned nothing. Usually the band is wrong, or the " +
-        "date range has no images over Ghana.", "error");
-      return;
+      const message = "The reduction returned nothing. Usually the band is "
+        + "wrong, or the date range has no images over the clip.";
+      eeDetailStatus(message, "error");
+      return { error: message };
     }
 
     const table = `ee_${d.id.split("/").pop().toLowerCase().replace(/[^a-z0-9]/g, "_")}_${level}`;
@@ -8451,26 +8693,55 @@ async function summariseEe(d, level) {
     const values = features.map((f) => f[stat]);
     const total = values.reduce((a, b) => a + b, 0);
 
+    // The zone names come from geoBoundaries; the map joins them to this
+    // project's own boundary table. Where the two spell a name differently the
+    // join silently drops that row, and a region missing from a choropleth
+    // looks like missing data rather than a missing match. So it is checked.
+    let unmatched = [];
+    try {
+      const local = await conn.query(
+        `SELECT ${nameColumn} AS n FROM ghana.${level === "region" ? "region" : "district"};`);
+      const known = new Set(local.toArray().map((r) => r.toJSON().n));
+      unmatched = features.map((f) => f[nameColumn]).filter((n) => !known.has(n));
+    } catch { /* the boundaries are not loaded; the join is not happening either */ }
+
     eeDetailStatus(
       `<strong>${features.length} ${level}s.</strong>
        ${stat} ranges ${Math.min(...values).toLocaleString(undefined, { maximumFractionDigits: 2 })}
        to ${Math.max(...values).toLocaleString(undefined, { maximumFractionDigits: 2 })}${
          stat === "sum" ? `, totalling ${total.toLocaleString(undefined, { maximumFractionDigits: 0 })}` : ""}.
-       <br>Queryable as <code style="font-family:var(--font-mono);color:var(--accent)">ghana.${table}</code>
+       <br>Queryable as <code style="font-family:var(--font-mono);color:var(--accent)">ghana.${table}</code>${
+         unmatched.length ? `<div style="margin-top:6px;color:var(--clay);font-size:11.5px">
+           ${unmatched.length} zone name${unmatched.length === 1 ? "" : "s"} from
+           Earth Engine do not match this site's boundaries and will not draw:
+           ${escapeHtml(unmatched.slice(0, 6).join(", "))}.</div>` : ""}
        <div style="margin-top:6px"><button class="btn btn-quiet" id="ee-open-query">Open in Query</button></div>`);
 
-    document.getElementById("ee-open-query").addEventListener("click", () => {
+    document.getElementById("ee-open-query")?.addEventListener("click", () => {
       document.getElementById("sql").value =
         `SELECT t.${nameColumn}, t.${stat}, b.geom\n` +
         `FROM ghana.${table} t\n` +
         `JOIN ghana.${level === "region" ? "region" : "district"} b\n` +
         `  ON b.${nameColumn} = t.${nameColumn}\n` +
         `ORDER BY t.${stat} DESC;`;
-      selectTab("query");
+      showPanel("query");
     });
 
+    return {
+      ok: true, table: `ghana.${table}`, statistic: stat,
+      over_time: form.reducer, level,
+      combined_over_time_by: form.reducer,
+      name_column: nameColumn, zones: features.length,
+      min: Math.min(...values), max: Math.max(...values),
+      total: stat === "sum" ? total : undefined,
+      unmatched_names: unmatched.length ? unmatched : undefined
+    };
+
   } catch (err) {
-    eeDetailStatus(`Earth Engine refused it: ${escapeHtml(err.message || err)}`, "error");
+    console.error("summariseEe:", err);
+    const message = `Earth Engine refused it: ${err.message || err}`;
+    eeDetailStatus(escapeHtml(message), "error");
+    return { error: message };
   }
 }
 

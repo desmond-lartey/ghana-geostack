@@ -117,7 +117,8 @@ format:  ## Apply the automatic fixes ruff can make safely
 test:  ## Run the test suite
 	pytest -q tests/
 	@command -v node >/dev/null && { $(MAKE) -s web >/dev/null && \
-	  node tests/smoke_viewer.cjs && node tests/ee_clip.cjs; } || \
+	  node tests/smoke_viewer.cjs && node tests/ee_clip.cjs && \
+	  node tests/ee_rainfall.cjs; } || \
 	 echo "node not installed, skipping the browser tests"
 
 # ── Housekeeping ──────────────────────────────────────────────────────────

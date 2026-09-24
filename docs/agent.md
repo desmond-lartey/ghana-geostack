@@ -66,8 +66,12 @@ deliberate: an answer you cannot check is worth less than one you can.
 
 ## What stops it
 
-**A turn limit.** Eight steps, then it stops and says so. A loop with tools and
-no bound is a way to spend your money while you watch a spinner.
+**A turn limit.** Twelve steps, then it stops and says so. A loop with tools and
+no bound is a way to spend your money while you watch a spinner. It was eight,
+which was too few for the chain this is for: finding a dataset, drawing it,
+reducing it, querying the result, mapping it and colouring it is six tool calls
+before a word is said, and the limit was cutting the answer off at the
+colouring — the step that makes the map worth looking at.
 
 **Read-only SQL.** `run_sql` refuses anything that is not a `SELECT` or `WITH`,
 by the same check the Query tab uses.
@@ -85,6 +89,32 @@ anything, and an agent that produces one produces it confidently.
 for the map, but the model is sent the row count and the attributes only.
 Coordinates are megabytes and tell a language model nothing.
 
+**A named dataset is used.** Saying "use CHIRPS" or "ESA WorldCover" used to
+send the model through a search, which returns a list — from which it picked
+one and then described another. That is how a layer labelled v100 arrived with
+a sentence about v200. The Earth Engine tools now resolve a name themselves,
+and the rules are the boring ones: an exact id wins outright; one match is used
+and reported; several matches are handed back as a list, newest first, to be
+chosen between by exact id rather than guessed at.
+
+**Two reducers, not one.** `summarise_earth_engine` takes `over_time` — how the
+images in the date range become one image — and `statistic` — how the pixels
+inside a zone become one number. They are independent and getting either wrong
+produces a number in no unit. Annual rainfall is `over_time=sum` with
+`statistic=mean`: the year's total at each pixel, averaged over the region, in
+millimetres. Summing millimetres across pixels measures nothing. Population is
+`mosaic` and `sum`, because people add up. The tool used to expose one control
+and set the wrong one of the two, so every summary came back a mean whatever
+was asked for.
+
+**Search speaks both vocabularies.** The catalogue uses the producer's words:
+CHIRPS is *precipitation* and never says rainfall in its title or keywords,
+land surface temperature is *LST*, night lights are *radiance*. Searching the
+obvious word returned an empty list, and a model handed an empty list guesses
+an id. Descriptions are searched too now, and a short synonym table widens the
+common cases. A search that still finds nothing says how many datasets it
+looked through and what kind of word to try, rather than returning `[]`.
+
 **A tool that fails says so.** `add_earth_engine_layer` used to report the
 dataset it had been asked for whether or not anything was drawn, so a layer
 that failed came back as a confident sentence about a map with nothing new on
@@ -93,6 +123,20 @@ actually used, the boundary it was clipped to and how many images went into it.
 The model is told to report those rather than its intention — the person is
 looking at a layer labelled with that id, so naming a different one is a
 mistake they can see.
+
+`summarise_earth_engine` had the same shape and one extra problem: it replied
+"the table name is in the Data tab and the Log", which the model cannot read.
+The name is built from the last segment of the dataset id, so
+`UCSB-CHG/CHIRPS/DAILY` becomes `ghana.ee_daily_region` — not guessable, and a
+guess is a query against a table that does not exist. It now returns the table,
+its columns, the number of zones, the range of values, and the query to run
+next.
+
+It also checks the names it wrote against this site's own boundaries. The zone
+names come from geoBoundaries and the map joins them to the local admin table;
+where the two spell a name differently that row silently vanishes from the
+choropleth, which reads as missing data rather than as a missing match. Any
+unmatched names are named.
 
 ---
 

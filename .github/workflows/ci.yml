@@ -129,3 +129,9 @@ jobs:
       # page actually builds.
       - name: The Earth Engine clip is this page's own boundary
         run: node tests/ee_clip.cjs
+
+      # One sentence to the assistant should produce a map and a table. Each
+      # link in that chain has broken by reporting success and handing the next
+      # step nothing it could use, so this checks what each tool passes on.
+      - name: The rainfall chain runs end to end
+        run: node tests/ee_rainfall.cjs
