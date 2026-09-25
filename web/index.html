@@ -809,6 +809,11 @@ td { font-family: var(--font-mono); font-size: 12.5px; font-variant-numeric: tab
 #maptools button[aria-pressed="true"] {
   background: var(--accent); border-color: var(--accent); color: #fff;
 }
+.maptools-sep {
+  width: 1px; align-self: stretch; margin: 2px 3px;
+  background: var(--border);
+}
+#compass-needle { transition: transform .2s var(--ease); }
 
 .dock-close svg, #panel-close svg { width: 15px; height: 15px; }
 #panel-close {
@@ -917,6 +922,35 @@ td { font-family: var(--font-mono); font-size: 12.5px; font-variant-numeric: tab
   background: var(--surface-2); color: var(--text); font: inherit; font-size: 13px;
 }
 #clip-dialog .clip-actions { display: flex; justify-content: flex-end; margin-top: 10px; }
+
+#export-dialog {
+  position: fixed; right: 16px; top: 62px; z-index: 60;
+  width: 330px; max-width: calc(100vw - 32px);
+  max-height: calc(100vh - 120px); overflow-y: auto;
+  padding: 14px 15px 12px;
+  background: var(--surface);
+  border: 1px solid var(--border); border-radius: 12px;
+  box-shadow: 0 18px 44px rgba(0, 0, 0, .34);
+}
+#export-dialog[hidden] { display: none; }
+#export-dialog h2 {
+  margin: 0 0 12px; font-family: var(--font-display);
+  font-size: 14px; font-weight: 700; letter-spacing: -.01em;
+}
+#export-dialog .field { margin-bottom: 10px; }
+#export-dialog label { display: block; font-size: 11.5px; color: var(--text-2); margin-bottom: 4px; }
+#export-dialog input[type="text"], #export-dialog select {
+  width: 100%; height: 32px; padding: 0 9px;
+  border: 1px solid var(--border); border-radius: var(--radius);
+  background: var(--surface-2); color: var(--text); font: inherit; font-size: 13px;
+}
+#export-dialog .export-checks {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 4px 10px; margin: 12px 0 2px;
+}
+#export-dialog .export-checks label {
+  display: flex; align-items: center; gap: 6px; margin: 0; font-size: 12.5px; color: var(--text);
+}
+#export-dialog .clip-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 12px; }
 
 /* — Layer cards — */
 
@@ -1141,6 +1175,7 @@ td { font-family: var(--font-mono); font-size: 12.5px; font-variant-numeric: tab
       <button data-act="download:geojson">Download the drawn layer</button>
       <button data-act="download:csv">Download the query result</button>
       <div class="sep"></div>
+      <button data-act="export">Map image…</button>
       <button data-act="reset">Reset the view</button>
     </div>
   </div>
@@ -1252,7 +1287,49 @@ td { font-family: var(--font-mono); font-size: 12.5px; font-variant-numeric: tab
      opened. They sit on the map rather than in a strip beside it, so nothing
      spends width on a permanent label and any panel can be put away entirely
      when the map is what matters. -->
-<div id="maptools" role="toolbar" aria-label="Panels">
+<div id="maptools" role="toolbar" aria-label="Map controls and panels">
+  <button type="button" data-map="zoom-in" title="Zoom in">
+    <svg viewBox="0 0 18 18" fill="none" aria-hidden="true">
+      <path d="M9 3.6v10.8M3.6 9h10.8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+    </svg>
+  </button>
+  <button type="button" data-map="zoom-out" title="Zoom out">
+    <svg viewBox="0 0 18 18" fill="none" aria-hidden="true">
+      <path d="M3.6 9h10.8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+    </svg>
+  </button>
+  <!-- The needle turns with the map and clicking it puts north back up, which
+       is the one thing every GIS compass button does. -->
+  <button type="button" data-map="north" title="Point north">
+    <svg viewBox="0 0 18 18" fill="none" aria-hidden="true" id="compass-needle">
+      <path d="M9 2.2 12 12 9 10.2 6 12z" fill="currentColor"/>
+      <path d="M9 10.2 9 15.8" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+    </svg>
+  </button>
+  <button type="button" data-map="projection" title="Globe or flat">
+    <svg viewBox="0 0 18 18" fill="none" aria-hidden="true">
+      <circle cx="9" cy="9" r="6.6" stroke="currentColor" stroke-width="1.3"/>
+      <path d="M2.4 9h13.2M9 2.4c1.9 2 2.9 4.2 2.9 6.6S10.9 13.6 9 15.6C7.1 13.6 6.1 11.4 6.1 9s1-4.6 2.9-6.6z"
+            stroke="currentColor" stroke-width="1.2"/>
+    </svg>
+  </button>
+  <button type="button" data-map="fullscreen" title="Full screen">
+    <svg viewBox="0 0 18 18" fill="none" aria-hidden="true">
+      <path d="M6.6 2.8H2.8v3.8M11.4 2.8h3.8v3.8M15.2 11.4v3.8h-3.8M2.8 11.4v3.8h3.8"
+            stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+  </button>
+  <button type="button" data-map="export" title="Export a map image">
+    <svg viewBox="0 0 18 18" fill="none" aria-hidden="true">
+      <rect x="2.4" y="3.6" width="13.2" height="10.8" rx="1.4" stroke="currentColor" stroke-width="1.3"/>
+      <path d="M2.4 11.2 6.4 7.6l3.2 2.8 2.4-2 3.6 3.2" stroke="currentColor" stroke-width="1.3"
+            stroke-linecap="round" stroke-linejoin="round"/>
+      <circle cx="6.2" cy="6.6" r="1.1" fill="currentColor"/>
+    </svg>
+  </button>
+
+  <span class="maptools-sep" aria-hidden="true"></span>
+
   <button type="button" data-toggle="dock-left" aria-pressed="true" title="Layers">
     <svg viewBox="0 0 18 18" fill="none" aria-hidden="true">
       <path d="M9 2 2 5.6 9 9.2l7-3.6z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/>
@@ -1737,6 +1814,49 @@ ORDER BY km2 DESC;</textarea>
      result and every Earth Engine layer, so it is set in one place and read
      from the status bar rather than living inside whichever panel happens to
      be open. -->
+<!-- The print layout. A screenshot of a web map is a picture of a browser;
+     what a report needs is a map with a frame, a title, a north arrow, a scale
+     bar, a legend and its attributions. -->
+<div id="export-dialog" hidden role="dialog" aria-modal="false" aria-labelledby="export-dialog-title">
+  <h2 id="export-dialog-title">Export a map image</h2>
+
+  <div class="field">
+    <label for="export-title">Title</label>
+    <input id="export-title" type="text" placeholder="Average annual rainfall">
+  </div>
+  <div class="field">
+    <label for="export-subtitle">Subtitle</label>
+    <input id="export-subtitle" type="text" placeholder="Ghana · 2024">
+  </div>
+  <div class="field">
+    <label for="export-size">Size</label>
+    <select id="export-size">
+      <option value="wide">Landscape — 1600 × 1100</option>
+      <option value="tall">Portrait — 1100 × 1600</option>
+      <option value="square">Square — 1400 × 1400</option>
+      <option value="slide">Slide — 1920 × 1080</option>
+    </select>
+  </div>
+
+  <div class="export-checks">
+    <label><input type="checkbox" id="export-legend" checked> Legend</label>
+    <label><input type="checkbox" id="export-scale" checked> Scale bar</label>
+    <label><input type="checkbox" id="export-north" checked> North arrow</label>
+    <label><input type="checkbox" id="export-dark"> Dark paper</label>
+  </div>
+
+  <p class="legend-note" style="margin:10px 0 0">The frame takes the middle of
+    the current view, at the shape you choose. Pan and zoom until the map looks
+    right, then export — what you see is what is drawn.</p>
+
+  <div id="export-status" class="legend-note" style="margin-top:8px"></div>
+
+  <div class="clip-actions">
+    <button type="button" class="btn btn-quiet" id="export-cancel">Close</button>
+    <button type="button" class="btn btn-primary" id="export-run">Save PNG</button>
+  </div>
+</div>
+
 <div id="clip-dialog" hidden role="dialog" aria-modal="false" aria-labelledby="clip-dialog-title">
   <h2 id="clip-dialog-title">Clip results to</h2>
   <div id="clip-picker"></div>
@@ -2288,11 +2408,17 @@ const map = new maplibregl.Map({
   style: buildStyle(),
   center: HOME.center,
   zoom: 2.2,
-  attributionControl: { compact: true }
+  attributionControl: { compact: true },
+  // Without this the WebGL buffer is cleared after each frame and
+  // canvas.toDataURL() returns an empty image, which is the whole of the map
+  // export. It costs an optimisation on some drivers; a mapping tool that
+  // cannot produce a map image is a worse trade.
+  preserveDrawingBuffer: true
 });
 
-map.addControl(new maplibregl.NavigationControl({ showCompass: true, visualizePitch: true }), "bottom-right");
-map.addControl(new maplibregl.ScaleControl({ unit: "metric", maxWidth: 100 }), "bottom-right");
+// Zoom, north and the rest are in the toolbar on the map, with the panels, so
+// there is one place for controls rather than two corners.
+map.addControl(new maplibregl.ScaleControl({ unit: "metric", maxWidth: 110 }), "bottom-right");
 
 map.on("load", async () => {
   applyProjection();
@@ -2841,6 +2967,64 @@ function terrainElevationAt(lngLat) {
    swatch. So it is built from the drawn layers in the order they were added,
    newest group first, and it takes itself off the map when there is nothing to
    say. */
+/* Graduated classes, the way a desktop GIS does them.
+
+   Equal count puts the same number of features in each class, which is what
+   QGIS calls quantile and what most choropleths want: it uses the whole
+   palette even when the data is skewed, and Ghana's rainfall is skewed.
+   Equal interval cuts the range into equal widths, which is right when the
+   number itself has meaning — a percentage, a temperature.
+
+   Breaks are rounded to something a person would write down. An unrounded
+   break is honest to five decimal places and unreadable, and rounding moves a
+   boundary by less than the precision anyone reads it at. */
+function classify(values, stops, mode = "quantile", count = 5) {
+  const clean = values.filter(Number.isFinite).sort((a, b) => a - b);
+  if (clean.length < 2 || !stops?.length) return null;
+
+  const min = clean[0];
+  const max = clean[clean.length - 1];
+  if (max <= min) return null;
+
+  const n = Math.min(count, stops.length, clean.length);
+  const edges = [min];
+  for (let i = 1; i < n; i += 1) {
+    edges.push(mode === "equal"
+      ? min + (max - min) * (i / n)
+      : clean[Math.floor(clean.length * (i / n))]);
+  }
+  edges.push(max);
+
+  const rounded = edges.map((v, i) =>
+    (i === 0 || i === edges.length - 1) ? v : roundBreak(v, max - min));
+
+  // Rounding can collapse two edges together; a class with no width is a row
+  // in the legend that can never be read off the map.
+  const kept = rounded.filter((v, i) => i === 0 || v > rounded[i - 1]);
+  if (kept.length < 3) return null;
+
+  const palette = stops.length === kept.length - 1
+    ? stops
+    : pickStops(stops, kept.length - 1);
+
+  return kept.slice(0, -1).map((from, i) => ({
+    from, to: kept[i + 1], colour: palette[i]
+  }));
+}
+
+/* A break at the precision a person would use for a range of this size. */
+function roundBreak(value, span) {
+  const step = Math.pow(10, Math.floor(Math.log10(span / 10)));
+  return Math.round(value / step) * step;
+}
+
+/* Spread n colours across a palette, ends included. */
+function pickStops(stops, n) {
+  if (n <= 1) return [stops[stops.length - 1]];
+  return Array.from({ length: n }, (_, i) =>
+    stops[Math.round((i / (n - 1)) * (stops.length - 1))]);
+}
+
 /* Numbers people can read: thousands separated, and only as many decimals as
    the size of the number warrants. A legend reading 1499.0599999 is worse than
    no legend. */
@@ -2873,7 +3057,7 @@ function renderLegend() {
   for (const target of styleTargets()) {
     const st = styleState[target.key];
     if (!st?.classified) continue;
-    const { field, stops, breaks, count } = st.classified;
+    const { field, classes, mode, count } = st.classified;
     explained.add(target.key);
     for (const id of target.ids) explained.add(id);
 
@@ -2881,13 +3065,13 @@ function renderLegend() {
       <div class="legend-group">
         <h4>${escapeHtml(target.label)}</h4>
         <div class="legend-field">${escapeHtml(field)}</div>
-        <div class="legend-ramp" style="background:linear-gradient(90deg,${stops.join(",")})"></div>
-        <div class="legend-ends">
-          <span>${legendNumber(breaks[0])}</span>
-          <span>${legendNumber(breaks[Math.floor(breaks.length / 2)])}</span>
-          <span>${legendNumber(breaks[breaks.length - 1])}</span>
-        </div>
-        <p class="legend-note">${count} feature${count === 1 ? "" : "s"} drawn</p>
+        ${classes.map((cl) => `
+          <div class="legend-row">
+            <i style="background:${cl.colour}"></i>
+            <span>${legendNumber(cl.from)} – ${legendNumber(cl.to)}</span>
+          </div>`).join("")}
+        <p class="legend-note">${count} feature${count === 1 ? "" : "s"},
+          ${mode === "equal" ? "equal interval" : "equal count"}</p>
       </div>`);
   }
 
@@ -4333,22 +4517,18 @@ function applyStyle(target) {
       const values = map.queryRenderedFeatures({ layers: [id] })
         .map((f) => Number(f.properties?.[st.field]))
         .filter(Number.isFinite);
-      if (values.length > 1) {
-        const min = Math.min(...values);
-        const max = Math.max(...values);
-        if (max > min) {
-          const stops = PALETTES[st.palette] ?? PALETTES.warm;
-          colour = ["interpolate", ["linear"], ["coalesce", ["to-number", ["get", st.field]], min],
-            ...stops.flatMap((c, i) => [min + (max - min) * (i / (stops.length - 1)), c])];
-          // What the ramp actually means, kept so the legend can say it. The
-          // breaks are the palette's own stops against the real range, which
-          // is the only honest reading of a continuous interpolation.
-          st.classified = {
-            field: st.field, stops,
-            breaks: stops.map((_, i) => min + (max - min) * (i / (stops.length - 1))),
-            count: values.length
-          };
-        }
+      const classes = classify(values, PALETTES[st.palette] ?? PALETTES.warm,
+                               st.mode || "quantile");
+      if (classes) {
+        // A step expression, not an interpolation: the map draws the classes
+        // the legend lists, so a colour on the map can be found in the legend
+        // and read off as a range. That is what a graduated symbology is, and
+        // a smooth ramp cannot be read that way at all.
+        colour = ["step", ["coalesce", ["to-number", ["get", st.field]], classes[0].from],
+          classes[0].colour,
+          ...classes.slice(1).flatMap((cl) => [cl.from, cl.colour])];
+        st.classified = { field: st.field, mode: st.mode || "quantile",
+                          classes, count: values.length };
       }
     }
 
@@ -6193,6 +6373,15 @@ window.__ghClip = {
   zones: (level) => eeZonesFor(level)
 };
 
+/* A way in for the export test: the composition is canvas drawing, so the only
+   honest check is to run it and read the image that comes out. */
+window.__ghExport = {
+  open: () => openMapExport(),
+  run: () => runMapExport(),
+  idle: () => map.fire?.("idle"),
+  lastDataUrl: () => lastExportDataUrl
+};
+
 window.__ghLayers = {
   list: () => [...userLayers.values()],
   add: (entry) => registerUserLayer(entry),
@@ -7136,6 +7325,407 @@ function drawToolboxResult(collection, label) {
 
 const TOOLBOX_COLOURS = ["#C2603C", "#3E8E7E", "#B58A3B", "#5B7FA6", "#8E6BA8", "#6E8B4E"];
 
+
+/* ── Exporting a map image ─────────────────────────────────────────────────
+
+   A screenshot of a web map is a picture of a browser. What a report needs is
+   a map: a frame, a title, a north arrow, a scale bar, a legend and the
+   attribution the licences require. That is a print layout, and QGIS and
+   ArcGIS both have one because every printed map needs the same six things.
+
+   This draws them onto a canvas at twice the screen resolution and hands back
+   a PNG. The map itself comes from the live WebGL canvas, which is why the map
+   is built with preserveDrawingBuffer.                                      */
+
+let lastExportDataUrl = null;
+
+const EXPORT_SIZES = {
+  wide:     { label: "Landscape — 1600 × 1100", width: 1600, height: 1100 },
+  tall:     { label: "Portrait — 1100 × 1600",  width: 1100, height: 1600 },
+  square:   { label: "Square — 1400 × 1400",    width: 1400, height: 1400 },
+  slide:    { label: "Slide — 1920 × 1080",     width: 1920, height: 1080 }
+};
+
+function openMapExport() {
+  const dialog = document.getElementById("export-dialog");
+  if (!dialog) return;
+  dialog.hidden = false;
+
+  const title = document.getElementById("export-title");
+  if (title && !title.value) title.value = exportDefaultTitle();
+  const sub = document.getElementById("export-subtitle");
+  if (sub && !sub.value) sub.value = `Ghana · ${clipLabel()}`;
+  document.getElementById("export-status").textContent = "";
+}
+
+/* Whatever is on the map, named. A title someone has to type every time is a
+   title most exports will not have. */
+function exportDefaultTitle() {
+  for (const target of styleTargets()) {
+    const st = styleState[target.key];
+    if (st?.classified) return `${target.label} by ${st.classified.field}`;
+  }
+  const added = [...userLayers.values()].filter((e) => e.visible !== false);
+  if (added.length) return added[added.length - 1].label;
+  return "Ghana GeoStack";
+}
+
+/* The scale bar's ground distance, rounded to something a person would write:
+   1, 2 or 5 times a power of ten. Measured from the map rather than computed
+   from the zoom, so it stays right under any projection. */
+function exportScale(maxPixels) {
+  const b = map.getBounds();
+  const centre = map.getCenter();
+  const across = turfLikeDistanceKm(b.getWest(), centre.lat, b.getEast(), centre.lat);
+  const canvas = map.getCanvas();
+  const kmPerPixel = across / (canvas.clientWidth || canvas.width || 1);
+
+  const rough = kmPerPixel * maxPixels;
+  const power = Math.pow(10, Math.floor(Math.log10(rough)));
+  const nice = [1, 2, 5, 10].map((m) => m * power).filter((v) => v <= rough).pop() || rough;
+
+  return {
+    km: nice,
+    pixels: nice / kmPerPixel,
+    label: nice >= 1 ? `${nice.toLocaleString()} km` : `${Math.round(nice * 1000)} m`
+  };
+}
+
+/* The legend, as data, so the panel and the exported image cannot disagree
+   about what the map shows. */
+function exportLegendModel() {
+  const sections = [];
+  const explained = new Set();
+
+  for (const target of styleTargets()) {
+    const st = styleState[target.key];
+    if (!st?.classified) continue;
+    explained.add(target.key);
+    for (const id of target.ids) explained.add(id);
+    sections.push({
+      title: target.label,
+      note: st.classified.field,
+      rows: st.classified.classes.map((cl) => ({
+        colour: cl.colour,
+        label: `${legendNumber(cl.from)} – ${legendNumber(cl.to)}`
+      }))
+    });
+  }
+
+  for (const entry of [...userLayers.values()].reverse()) {
+    if (entry.visible === false) continue;
+    if (explained.has(entry.id) || entry.layerIds.some((l) => explained.has(l))) continue;
+    const l = entry.legend;
+    if (l?.type === "classes" && l.names?.length) {
+      sections.push({
+        title: entry.label,
+        rows: l.names.map((name, i) => ({
+          colour: "#" + String(l.colours[i]).replace(/^#/, ""), label: name
+        }))
+      });
+    } else {
+      sections.push({
+        title: null,
+        rows: [{ colour: entry.colour || "#8a8f98", label: entry.label,
+                 hatched: entry.kind === "raster" && !entry.colour }]
+      });
+    }
+  }
+
+  const c = colours();
+  const reference = LAYERS.filter((l) => state.active.has(l.id))
+    .map((l) => ({ colour: l.key ? c[l.key] : "#8a8f98", label: l.name }));
+  if (reference.length) sections.push({ title: "Reference", rows: reference });
+
+  return sections;
+}
+
+/* Every source drawn, so the image carries its licences with it. Both of the
+   main ones require attribution and one of them requires share-alike, and an
+   image that leaves the site without them is the site's problem. */
+function exportCredits() {
+  const seen = new Set(["© OpenStreetMap contributors"]);
+  for (const entry of userLayers.values()) {
+    if (entry.visible === false) continue;
+    const source = map.getSource(entry.sourceId);
+    if (source?.attribution) seen.add(String(source.attribution).replace(/<[^>]+>/g, ""));
+  }
+  if (LAYERS.some((l) => state.active.has(l.id))) {
+    seen.add("Boundaries: OCHA / geoBoundaries (CC-BY)");
+  }
+  return [...seen].join("  ·  ");
+}
+
+async function runMapExport() {
+  const status = document.getElementById("export-status");
+  const say = (text, error) => {
+    if (!status) return;
+    status.textContent = text;
+    status.style.color = error ? "var(--clay)" : "";
+  };
+
+  try {
+    const size = EXPORT_SIZES[document.getElementById("export-size").value] ?? EXPORT_SIZES.wide;
+    const title = document.getElementById("export-title").value.trim();
+    const subtitle = document.getElementById("export-subtitle").value.trim();
+    const want = (id) => document.getElementById(id)?.checked;
+    const dark = document.getElementById("export-dark")?.checked;
+
+    say("Drawing…");
+    // One frame, so anything just changed is on the canvas being copied.
+    await new Promise((resolve) => map.once("idle", resolve));
+
+    const scale = 2;
+    const W = size.width, H = size.height;
+    const canvas = document.createElement("canvas");
+    canvas.width = W * scale;
+    canvas.height = H * scale;
+    const ctx = canvas.getContext("2d");
+    ctx.scale(scale, scale);
+
+    const paper = dark ? "#14171b" : "#ffffff";
+    const ink = dark ? "#e9edf2" : "#1d2228";
+    const faint = dark ? "#8b939d" : "#6b7280";
+    const rule = dark ? "#2c3239" : "#d4d7dc";
+
+    ctx.fillStyle = paper;
+    ctx.fillRect(0, 0, W, H);
+
+    const pad = Math.round(W * 0.035);
+    const titleSpace = title || subtitle ? Math.round(H * 0.085) : pad;
+    const creditSpace = Math.round(H * 0.045);
+    const frame = { x: pad, y: titleSpace, w: W - pad * 2, h: H - titleSpace - creditSpace - pad };
+
+    if (title) {
+      ctx.fillStyle = ink;
+      ctx.font = `600 ${Math.round(W * 0.026)}px Georgia, "Times New Roman", serif`;
+      ctx.textBaseline = "alphabetic";
+      ctx.fillText(title, pad, Math.round(titleSpace * 0.55));
+    }
+    if (subtitle) {
+      ctx.fillStyle = faint;
+      ctx.font = `${Math.round(W * 0.013)}px system-ui, -apple-system, "Segoe UI", sans-serif`;
+      ctx.fillText(subtitle, pad, Math.round(titleSpace * 0.82));
+    }
+
+    // The map, cropped to the frame's aspect from the middle of the view, so
+    // the exported picture is the middle of what is on screen rather than a
+    // squashed copy of all of it.
+    const source = map.getCanvas();
+    const srcAspect = source.width / source.height;
+    const dstAspect = frame.w / frame.h;
+    let sw = source.width, sh = source.height;
+    if (srcAspect > dstAspect) sw = source.height * dstAspect;
+    else sh = source.width / dstAspect;
+    const sx = (source.width - sw) / 2;
+    const sy = (source.height - sh) / 2;
+
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(frame.x, frame.y, frame.w, frame.h);
+    ctx.clip();
+    ctx.drawImage(source, sx, sy, sw, sh, frame.x, frame.y, frame.w, frame.h);
+    ctx.restore();
+
+    ctx.strokeStyle = ink;
+    ctx.lineWidth = 1.2;
+    ctx.strokeRect(frame.x + 0.5, frame.y + 0.5, frame.w - 1, frame.h - 1);
+
+    if (want("export-north")) drawNorthArrow(ctx, frame, ink, paper);
+    if (want("export-scale")) drawScaleBar(ctx, frame, W, ink, paper, rule);
+    if (want("export-legend")) drawLegend(ctx, frame, W, ink, faint, paper, rule);
+
+    ctx.fillStyle = faint;
+    ctx.font = `${Math.round(W * 0.0085)}px system-ui, -apple-system, "Segoe UI", sans-serif`;
+    ctx.fillText(exportCredits(), pad, H - pad * 0.55);
+    const made = `Ghana GeoStack · ${new Date().toISOString().slice(0, 10)}`;
+    ctx.textAlign = "right";
+    ctx.fillText(made, W - pad, H - pad * 0.55);
+    ctx.textAlign = "left";
+
+    const name = (title || "ghana-geostack").toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "map";
+    const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/png"));
+    if (!blob) throw new Error("The browser would not produce an image from the canvas.");
+    // Kept so the export can be inspected without a download folder.
+    lastExportDataUrl = canvas.toDataURL("image/png");
+
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `${name}.png`;
+    link.click();
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
+
+    say(`Saved ${name}.png — ${size.width} × ${size.height}, drawn at ${scale}×.`);
+    window.ghLog?.("ok", `Map image exported: ${name}.png`);
+  } catch (err) {
+    console.error("Map export:", err);
+    say(`Could not make the image: ${err.message || err}`, true);
+  }
+}
+
+function drawNorthArrow(ctx, frame, ink, paper) {
+  const size = Math.max(34, frame.w * 0.035);
+  const cx = frame.x + frame.w - size * 0.9;
+  const cy = frame.y + size * 0.95;
+  const bearing = map.getBearing() * Math.PI / 180;
+
+  ctx.save();
+  ctx.translate(cx, cy);
+
+  ctx.fillStyle = paper;
+  ctx.globalAlpha = 0.85;
+  ctx.beginPath();
+  ctx.arc(0, 0, size * 0.78, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.globalAlpha = 1;
+
+  ctx.rotate(-bearing);
+  // Half filled, half hollow: the conventional needle, which reads as north
+  // even at thumbnail size.
+  ctx.beginPath();
+  ctx.moveTo(0, -size * 0.55);
+  ctx.lineTo(size * 0.24, size * 0.34);
+  ctx.lineTo(0, size * 0.16);
+  ctx.closePath();
+  ctx.fillStyle = ink;
+  ctx.globalAlpha = 0.45;
+  ctx.fill();
+
+  ctx.beginPath();
+  ctx.moveTo(0, -size * 0.55);
+  ctx.lineTo(-size * 0.24, size * 0.34);
+  ctx.lineTo(0, size * 0.16);
+  ctx.closePath();
+  ctx.globalAlpha = 1;
+  ctx.fillStyle = ink;
+  ctx.fill();
+
+  ctx.font = `600 ${Math.round(size * 0.36)}px system-ui, -apple-system, sans-serif`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText("N", 0, -size * 0.74);
+  ctx.restore();
+  ctx.textAlign = "left";
+  ctx.textBaseline = "alphabetic";
+}
+
+function drawScaleBar(ctx, frame, W, ink, paper, rule) {
+  const bar = exportScale(frame.w * 0.22);
+  if (!Number.isFinite(bar.pixels) || bar.pixels < 10) return;
+
+  const h = Math.max(7, W * 0.006);
+  const x = frame.x + frame.w * 0.028;
+  const y = frame.y + frame.h - frame.w * 0.028 - h;
+
+  ctx.save();
+  ctx.fillStyle = paper;
+  ctx.globalAlpha = 0.85;
+  ctx.fillRect(x - h, y - h * 2.6, bar.pixels + h * 2, h * 4.4);
+  ctx.globalAlpha = 1;
+
+  // Four alternating blocks, the way a printed map draws a scale.
+  const blocks = 4;
+  const step = bar.pixels / blocks;
+  for (let i = 0; i < blocks; i += 1) {
+    ctx.fillStyle = i % 2 ? paper : ink;
+    ctx.fillRect(x + i * step, y, step, h);
+    ctx.strokeStyle = ink;
+    ctx.lineWidth = 0.8;
+    ctx.strokeRect(x + i * step, y, step, h);
+  }
+
+  ctx.fillStyle = ink;
+  ctx.font = `${Math.round(W * 0.0095)}px system-ui, -apple-system, sans-serif`;
+  ctx.fillText("0", x - 2, y - h * 0.7);
+  ctx.fillText(bar.label, x + bar.pixels - ctx.measureText(bar.label).width + 2, y - h * 0.7);
+  ctx.restore();
+}
+
+function drawLegend(ctx, frame, W, ink, faint, paper, rule) {
+  const sections = exportLegendModel();
+  if (!sections.length) return;
+
+  const fs = Math.round(W * 0.0105);
+  const swatch = Math.round(fs * 1.15);
+  const lineH = Math.round(fs * 1.75);
+  const padding = Math.round(fs * 1.4);
+
+  let width = 0;
+  ctx.font = `${fs}px system-ui, -apple-system, sans-serif`;
+  let rows = 0;
+  for (const section of sections) {
+    if (section.title) {
+      ctx.font = `600 ${fs}px system-ui, -apple-system, sans-serif`;
+      width = Math.max(width, ctx.measureText(section.title).width);
+      rows += 1;
+    }
+    if (section.note) {
+      ctx.font = `${Math.round(fs * 0.88)}px ui-monospace, "SF Mono", Menlo, monospace`;
+      width = Math.max(width, ctx.measureText(section.note).width);
+      rows += 1;
+    }
+    ctx.font = `${fs}px system-ui, -apple-system, sans-serif`;
+    for (const row of section.rows) {
+      width = Math.max(width, swatch + fs * 0.6 + ctx.measureText(row.label).width);
+      rows += 1;
+    }
+    rows += 0.5;
+  }
+
+  const boxW = Math.min(width + padding * 2, frame.w * 0.34);
+  const boxH = rows * lineH + padding * 1.4;
+  const x = frame.x + frame.w * 0.028;
+  const y = frame.y + frame.h - frame.w * 0.028 - boxH - frame.w * 0.05;
+
+  ctx.save();
+  ctx.fillStyle = paper;
+  ctx.globalAlpha = 0.92;
+  ctx.fillRect(x, y, boxW, boxH);
+  ctx.globalAlpha = 1;
+  ctx.strokeStyle = rule;
+  ctx.lineWidth = 1;
+  ctx.strokeRect(x + 0.5, y + 0.5, boxW - 1, boxH - 1);
+
+  let cursor = y + padding + fs;
+  for (const section of sections) {
+    if (section.title) {
+      ctx.fillStyle = ink;
+      ctx.font = `600 ${fs}px system-ui, -apple-system, sans-serif`;
+      ctx.fillText(section.title, x + padding, cursor);
+      cursor += lineH;
+    }
+    if (section.note) {
+      ctx.fillStyle = faint;
+      ctx.font = `${Math.round(fs * 0.88)}px ui-monospace, "SF Mono", Menlo, monospace`;
+      ctx.fillText(section.note, x + padding, cursor);
+      cursor += lineH;
+    }
+    ctx.font = `${fs}px system-ui, -apple-system, sans-serif`;
+    for (const row of section.rows) {
+      ctx.fillStyle = row.colour;
+      ctx.fillRect(x + padding, cursor - swatch * 0.8, swatch, swatch);
+      if (row.hatched) {
+        ctx.strokeStyle = paper;
+        ctx.lineWidth = 1.4;
+        ctx.beginPath();
+        ctx.moveTo(x + padding, cursor - swatch * 0.8 + swatch);
+        ctx.lineTo(x + padding + swatch, cursor - swatch * 0.8);
+        ctx.stroke();
+      }
+      ctx.strokeStyle = rule;
+      ctx.lineWidth = 0.8;
+      ctx.strokeRect(x + padding + 0.5, cursor - swatch * 0.8 + 0.5, swatch - 1, swatch - 1);
+      ctx.fillStyle = ink;
+      ctx.fillText(row.label, x + padding + swatch + fs * 0.6, cursor);
+      cursor += lineH;
+    }
+    cursor += lineH * 0.5;
+  }
+  ctx.restore();
+}
+
 /* ── Driving the shell ─────────────────────────────────────────────────── */
 
 const PANEL_TITLES = {
@@ -7300,6 +7890,33 @@ function renderDockSearch(host, hits, term) {
     : `<p class="hint">Nothing matching “${escapeHtml(term)}”.</p>`;
 }
 
+/* The map controls. Zoom and north are what every GIS puts on a map; full
+   screen and the projection toggle are what this one adds. */
+function runMapControl(what) {
+  if (what === "zoom-in") return map.zoomIn();
+  if (what === "zoom-out") return map.zoomOut();
+  if (what === "north") return map.easeTo({ bearing: 0, pitch: 0, duration: 600 });
+  if (what === "export") return openMapExport();
+
+  if (what === "projection") {
+    const next = state.projection === "globe" ? "mercator" : "globe";
+    const button = document.querySelector(`[data-projection="${next}"]`);
+    if (button) return button.click();          // one definition, in the Map panel
+    state.projection = next;
+    store.set("projection", next);
+    try { map.setProjection({ type: next }); } catch { /* older runtime */ }
+    return undefined;
+  }
+
+  if (what === "fullscreen") {
+    const shell = document.getElementById("shell");
+    if (document.fullscreenElement) return document.exitFullscreen();
+    return shell?.requestFullscreen?.().catch((err) =>
+      setStatus(`Full screen was refused: ${err.message}`, true));
+  }
+  return undefined;
+}
+
 function toggleDock(side) {
   const dock = document.getElementById(side === "left" ? "dock-left" : "panel");
   dock.hidden = !dock.hidden;
@@ -7358,6 +7975,7 @@ async function runShellAction(action) {
   if (verb === "dock") return toggleDock(argument);
   if (verb === "toolbox") return openToolbox(argument);
   if (verb === "clip") return openClipPicker();
+  if (verb === "export") return openMapExport();
   if (verb === "live") return fetchLive(argument);
   if (verb === "theme") return document.getElementById("theme-toggle")?.click();
   if (verb === "locate") return document.getElementById("btn-locate")?.click();
@@ -7503,12 +8121,31 @@ function turfLikeDistanceKm(lon1, lat1, lon2, lat2) {
     }
     document.getElementById("panel-close")?.addEventListener("click", hidePanel);
 
+    // The map's own controls, in the same strip as the panels.
+    for (const button of document.querySelectorAll("#maptools [data-map]")) {
+      button.addEventListener("click", () => runMapControl(button.dataset.map));
+    }
+    // The needle turns with the map, so it reads as a compass rather than a
+    // button that happens to be shaped like one.
+    const needle = document.getElementById("compass-needle");
+    if (needle) {
+      const turn = () => {
+        needle.style.transform = `rotate(${-(map.getBearing?.() ?? 0)}deg)`;
+      };
+      map.on("rotate", turn);
+      turn();
+    }
+
     // The clip: readable in the status bar at all times, changed from there or
     // from Processing → Clip results to.
     document.getElementById("sb-clip")?.addEventListener("click", openClipPicker);
     document.getElementById("clip-dialog-close")?.addEventListener("click", () => {
       document.getElementById("clip-dialog").hidden = true;
     });
+    document.getElementById("export-cancel")?.addEventListener("click", () => {
+      document.getElementById("export-dialog").hidden = true;
+    });
+    document.getElementById("export-run")?.addEventListener("click", runMapExport);
     renderClip();
 
     shellReady = true;

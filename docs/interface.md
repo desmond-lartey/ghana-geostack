@@ -35,9 +35,12 @@ knows where to look, and a layout people already know needs no explaining.
 *Project* is data and exports, *View* is the map itself, *Add Data* brings
 something new in, *Processing* opens the toolbox, *Help* explains the place.
 
-**The toolbar** sits on the map at the top right: one button per panel, and
-each one closes the panel it opened. It stays in the same place whatever is
-open, because a control that moves is a control to hunt for.
+**The toolbar** sits on the map at the top right. The left half is the map
+itself — zoom in, zoom out, a compass whose needle turns with the map and puts
+north back up when pressed, a globe/flat toggle, full screen, and the map
+image export. The right half is one button per panel, each closing the panel it
+opened. It stays in the same place whatever is open, because a control that
+moves is a control to hunt for.
 
 **The panels float on the map** rather than taking columns out of it. Layers on
 the left, everything else on the right — Style, Data, the SQL workspace, Ask,
@@ -113,12 +116,17 @@ The legend sits at the bottom left of the map, and it is only there when there
 is something to explain. It describes what is *drawn*, which is not the same as
 what is in the layer list — a layer switched off explains nothing.
 
-A layer coloured by a value comes first and says which value: the column name,
-the ramp, and the real low, middle and high of what is drawn. That is the part
-that was missing — a choropleth whose legend does not name its column or its
-range is a picture of a country in colours. The numbers are the palette's own
-stops against the data's actual range, read from the features on screen, so the
-legend says what the map is doing rather than what it was asked to do.
+A layer coloured by a value comes first, names the column, and lists its
+classes: a swatch and a range for each, the way QGIS and ArcGIS write a
+graduated legend. The map draws those same classes — a `step` expression, not a
+smooth interpolation — so a colour on the map can be found in the legend and
+read off as a range. A gradient cannot be read that way at all, which is why
+this changed.
+
+Classes are equal count by default, which QGIS calls quantile: the same number
+of features in each, so the whole palette is used even when the data is skewed,
+and rainfall is skewed. Breaks are rounded to what a person would write down,
+since an unrounded break is honest to five decimal places and unreadable.
 
 A classified raster brings the producer's own class table with it, so ESA
 WorldCover is listed class by class in the producer's colours. A continuous
@@ -127,6 +135,25 @@ other drawn layer is one row under *On the map*, so the legend is a list of
 what is on the map rather than a list of what happens to have a colour. A layer
 that has its own group is not repeated as a swatch. The reference boundaries
 keep the legend they were written with.
+
+---
+
+## Exporting a map image
+
+**Project → Map image…**, or the picture button in the toolbar. A screenshot of
+a web map is a picture of a browser; what a report needs is a map, so this
+draws a print layout: a frame, a title and subtitle, a north arrow that turns
+with the map, a scale bar rounded to a distance someone would write, the legend
+with the classes the map is drawing, and the attributions the licences require.
+
+Four shapes — landscape, portrait, square and a 16:9 slide — drawn at twice the
+nominal size so the type stays sharp in print. The frame takes the middle of
+the current view at the shape chosen, so panning and zooming until it looks
+right is the composition step; what is on screen is what is drawn.
+
+The map image comes from the live WebGL canvas, which is why the map is built
+with `preserveDrawingBuffer`. Without it the buffer is cleared after each frame
+and the export is a blank rectangle.
 
 ---
 

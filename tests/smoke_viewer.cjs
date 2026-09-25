@@ -32,6 +32,7 @@ class FakeMap {
   constructor() { this.style = { layers: [] }; }
   on(name, fn) { (handlers[name] ??= []).push(fn); return this; }
   once(name, fn) { return this.on(name, fn); }
+  fire(name) { for (const fn of handlers[name] ?? []) fn({}); return this; }
   off() { return this; }
   addControl() { return this; }
   removeControl() { return this; }
@@ -42,6 +43,9 @@ class FakeMap {
   getPaintProperty() { return 1; } setLayoutProperty() {}
   getCenter() { return { lng: -1.09, lat: 7.95 }; }
   getZoom() { return 6.2; }
+  getBearing() { return 0; }
+  getPitch() { return 0; }
+  getCanvas() { return { width: 1200, height: 800, clientWidth: 1200, clientHeight: 800 }; }
   getBounds() { return { getSouth: () => 4.7, getWest: () => -3.3,
                          getNorth: () => 11.2, getEast: () => 1.3,
                          toArray: () => [[-3.3, 4.7], [1.3, 11.2]] }; }

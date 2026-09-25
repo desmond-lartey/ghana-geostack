@@ -101,7 +101,7 @@ function serve() {
   const after = await page.evaluate(() => ({
     hidden: document.getElementById("legend").hidden,
     text: document.getElementById("legend-body").innerText.replace(/\s+/g, " ").trim(),
-    ramps: document.querySelectorAll("#legend-body .legend-ramp").length
+    classes: document.querySelectorAll("#legend-body .legend-group .legend-row").length
   }));
 
   await page.screenshot({ path: "/tmp/legend.png", clip: { x: 330, y: 380, width: 340, height: 470 } })
@@ -112,11 +112,14 @@ function serve() {
   const bad = [];
   if (typeof styling === "object" && styling?.error) bad.push("styling failed: " + styling.error);
   if (after.hidden) bad.push("the legend is hidden while three layers are drawn");
-  if (!after.ramps) bad.push("no ramp was drawn for the graduated layer");
+  if (!after.classes) bad.push("no classes were drawn for the graduated layer");
+  // A range per class, the way a desktop GIS writes it.
+  if (!/\d\s*–\s*\d/.test(after.text)) bad.push("the classes do not show their ranges");
   if (!/rainfall_mm/.test(after.text)) bad.push("the legend does not name the column it is coloured by");
   // The real minimum and maximum of the values the map rendered.
   if (!/880/.test(after.text)) bad.push("the legend does not show the low end (880)");
   if (!/1,499/.test(after.text)) bad.push("the legend does not show the high end (1,499)");
+  if (!/equal count/.test(after.text)) bad.push("the legend does not say how it classified");
   if (!/CHIRPS/i.test(after.text)) bad.push("the raster is missing from the legend");
   // The heading is uppercased in CSS, so innerText comes back shouting.
   if (!/query result/i.test(after.text)) bad.push("the styled layer is not named");

@@ -139,3 +139,8 @@ jobs:
       # A choropleth with no legend is a picture of a country in colours.
       - name: A styled result explains itself
         run: node tests/legend.cjs
+
+      # The export is canvas drawing, so the only honest check is to run it and
+      # read the image that comes out.
+      - name: The map exports as a laid-out image
+        run: node tests/export.cjs
