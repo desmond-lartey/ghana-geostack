@@ -702,7 +702,12 @@ td { font-family: var(--font-mono); font-size: 12.5px; font-variant-numeric: tab
   position: absolute; inset: 0;
   display: grid;
   grid-template-rows: auto 1fr 26px;
-  grid-template-columns: 1fr;
+  /* minmax(0, 1fr), not 1fr. A grid item's min-width is auto, so a track of
+     1fr is still at least as wide as its widest content — and the ribbon on
+     the Publish tab is far wider than any screen. That widened the whole
+     shell, which put the right-hand dock and the map toolbar several
+     thousand pixels off the side of the window. */
+  grid-template-columns: minmax(0, 1fr);
   background: var(--ground);
 }
 
@@ -775,7 +780,7 @@ td { font-family: var(--font-mono); font-size: 12.5px; font-variant-numeric: tab
    follow that a strip of docks either side could not do: closing a panel gives
    the map the full window rather than a wider column, and the map underneath
    is continuous, so panning does not stop at a panel's edge. */
-#workspace { position: relative; min-height: 0; }
+#workspace { position: relative; min-height: 0; min-width: 0; overflow: hidden; }
 
 .dock {
   position: absolute; top: 12px; bottom: 12px; left: 12px;
@@ -1088,6 +1093,7 @@ td { font-family: var(--font-mono); font-size: 12.5px; font-variant-numeric: tab
 
 #ribbon {
   display: flex; flex-direction: column;
+  min-width: 0;                    /* the band scrolls; the shell does not */
   background: var(--surface);
   border-bottom: 1px solid var(--border);
   position: relative; z-index: 60;
@@ -1129,6 +1135,7 @@ td { font-family: var(--font-mono); font-size: 12.5px; font-variant-numeric: tab
 #ribbon-head .ribbon-right button:hover { background: var(--surface-2); color: var(--text); }
 
 #ribbon-body {
+  min-width: 0;
   display: flex; align-items: stretch; gap: 0;
   padding: 0 4px; min-height: 86px;
   overflow-x: auto; overflow-y: hidden;
@@ -1254,6 +1261,69 @@ td { font-family: var(--font-mono); font-size: 12.5px; font-variant-numeric: tab
 .planned-card code { font-family: var(--font-mono); font-size: 11.5px; color: var(--accent); }
 .planned-actions { display: flex; gap: 8px; margin-top: 12px; }
 .planned-actions .btn { text-decoration: none; display: inline-flex; align-items: center; }
+
+/* --- Add data, and the basemap gallery ----------------------------------- */
+
+#pane-adddata .field { margin-bottom: 8px; }
+#pane-adddata label { display: block; font-size: 11.5px; color: var(--text-2); margin-bottom: 4px; }
+#pane-adddata input[type="text"] {
+  width: 100%; height: 32px; padding: 0 9px;
+  border: 1px solid var(--border); border-radius: var(--radius);
+  background: var(--surface-2); color: var(--text); font: inherit; font-size: 13px;
+}
+#pane-adddata code { font-family: var(--font-mono); font-size: 11.5px; color: var(--accent); }
+#pane-adddata .actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+#adddata-drop {
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  padding: 20px 14px; cursor: pointer;
+  border: 1.5px dashed var(--border); border-radius: 10px;
+  background: var(--surface-2); color: var(--text-2); text-align: center;
+}
+#adddata-drop:hover, #adddata-drop[data-over="true"] {
+  border-color: var(--accent); color: var(--text);
+  background: color-mix(in srgb, var(--accent) 8%, var(--surface-2));
+}
+#adddata-drop svg { width: 22px; height: 22px; color: var(--accent); }
+#adddata-drop strong { font-size: 13px; color: var(--text); }
+#adddata-drop span { font-size: 11px; color: var(--text-3); }
+
+/* The whole map is a drop target; this says so the moment a file is over it. */
+#drop-veil {
+  position: absolute; inset: 0; z-index: 40;
+  display: grid; place-items: center;
+  background: color-mix(in srgb, var(--accent) 14%, rgba(0, 0, 0, .35));
+  border: 3px dashed var(--accent);
+  pointer-events: none;
+}
+#drop-veil[hidden] { display: none; }
+#drop-veil div {
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  padding: 18px 26px; border-radius: 12px;
+  background: var(--surface); border: 1px solid var(--accent);
+  box-shadow: 0 18px 44px rgba(0, 0, 0, .4);
+}
+#drop-veil strong { font-size: 15px; }
+#drop-veil span { font-size: 12px; color: var(--text-3); }
+
+.basemap-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 4px; }
+.basemap-card {
+  text-align: left; padding: 8px 9px; cursor: pointer;
+  border: 1px solid var(--border); border-radius: var(--radius);
+  background: var(--surface-2); color: var(--text); font: inherit;
+}
+.basemap-card:hover { border-color: var(--text-3); }
+.basemap-card[aria-pressed="true"] {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, var(--surface-2));
+}
+.bm-name { display: block; font-size: 12.5px; font-weight: 600; }
+.bm-for { display: block; font-size: 10.5px; color: var(--text-3); line-height: 1.3; margin-top: 2px; }
+#pane-basemap .field input {
+  width: 100%; height: 32px; padding: 0 9px;
+  border: 1px solid var(--border); border-radius: var(--radius);
+  background: var(--surface-2); color: var(--text); font: inherit; font-size: 12.5px;
+}
 
 .identify-layer { margin-bottom: 14px; }
 .identify-layer h4 {
@@ -1603,6 +1673,13 @@ td { font-family: var(--font-mono); font-size: 12.5px; font-variant-numeric: tab
   </button>
 </div>
 
+<div id="drop-veil" hidden aria-hidden="true">
+  <div>
+    <strong>Drop to add it to the map</strong>
+    <span>GeoJSON · CSV · GPX · KML · zipped Shapefile</span>
+  </div>
+</div>
+
 <section id="legend" class="card" data-open="true" aria-label="Legend" hidden>
   <button id="legend-head" aria-expanded="true" aria-controls="legend-body">
     <span>
@@ -1746,6 +1823,41 @@ td { font-family: var(--font-mono); font-size: 12.5px; font-variant-numeric: tab
   <div class="tabpanel" id="pane-planned" role="tabpanel"></div>
   <div class="tabpanel" id="pane-bookmarks" role="tabpanel"></div>
   <div class="tabpanel" id="pane-identify" role="tabpanel"></div>
+  <div class="tabpanel" id="pane-basemap" role="tabpanel"></div>
+  <div class="tabpanel" id="pane-adddata" role="tabpanel">
+    <h3>Add data</h3>
+
+
+  <div id="adddata-drop" data-over="false" tabindex="0" role="button">
+    <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
+      <path d="M10 13.4V4.6m-3.4 3.4L10 4.6l3.4 3.4M3.6 15.4h12.8"
+            stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    <strong>Drop a file here, or choose one</strong>
+    <span>GeoJSON · CSV · GPX · KML · zipped Shapefile</span>
+  </div>
+  <input id="adddata-file" type="file" multiple hidden
+         accept=".geojson,.json,.csv,.tsv,.txt,.gpx,.kml,.zip">
+
+  <div class="field" style="margin-top:12px">
+    <label for="adddata-url">Or an address</label>
+    <input id="adddata-url" type="text" spellcheck="false"
+           placeholder="https://…/boundaries.geojson">
+  </div>
+
+  <div id="adddata-status" class="legend-note" style="margin-top:10px"></div>
+
+  <p class="legend-note">Nothing is uploaded. The file is read in this browser,
+    drawn on the map and registered as a table, so the SQL workspace, the
+    toolbox and the assistant can all reach it. A CSV needs a longitude and a
+    latitude column — lon/lat, x/y or easting/northing — or a WKT geometry
+    column.</p>
+
+  <div class="actions" style="margin-top:12px">
+    <button type="button" class="btn btn-primary" id="adddata-pick">Choose a file</button>
+    <button type="button" class="btn btn-quiet" id="adddata-url-go">Fetch the address</button>
+  </div>
+  </div>
 
   <div class="tabpanel" id="pane-data" role="tabpanel" aria-labelledby="tab-data">
     <div data-clip-badge></div>
@@ -2907,6 +3019,7 @@ async function rebuildStyle() {
   const visible = new Set(state.active);
   const camera = { center: map.getCenter(), zoom: map.getZoom(),
                    pitch: map.getPitch(), bearing: map.getBearing() };
+  const carried = captureUserLayers();
 
   map.setStyle(buildStyle());
   await new Promise((resolve) => map.once("styledata", resolve));
@@ -2917,9 +3030,65 @@ async function rebuildStyle() {
   applyProjection();
 
   for (const layer of LAYERS) setLayerVisible(layer.id, visible.has(layer.id), false);
+  restoreUserLayers(carried);
   applyTerrain();
   map.jumpTo(camera);
-  renderLayerList(); renderLegend();
+  renderLayerList(); renderLegend(); renderUserLayers();
+}
+
+/* The session's own layers are not in the catalogue, so buildLayers() cannot
+   put them back — and setStyle has already removed every source and layer on
+   the map. Each one is lifted out of the live style as its source and layer
+   definitions, which is how MapLibre describes them anyway, and re-added on
+   top of the new basemap in the order it had.
+
+   Without this, choosing a different basemap quietly discarded everything the
+   session had added: a dropped CSV, a buffer, an Earth Engine raster, a query
+   result. The map came back looking right, which is the worst version of that
+   bug, because what is missing is only noticed later. */
+function captureUserLayers() {
+  const style = map.getStyle() || {};
+  const sources = style.sources || {};
+  const defined = new Map((style.layers || []).map((l) => [l.id, l]));
+  const carried = [];
+
+  for (const entry of userLayers.values()) {
+    const layers = entry.layerIds.map((id) => defined.get(id)).filter(Boolean);
+    if (!layers.length) continue;
+    const used = [...new Set(layers.map((l) => l.source).filter(Boolean))];
+    carried.push({
+      entry,
+      // Cloned, because the style object is about to be thrown away and these
+      // are references into it.
+      sources: used.map((id) => [id, sources[id]]).filter(([, s]) => s)
+        .map(([id, s]) => [id, JSON.parse(JSON.stringify(s))]),
+      layers: layers.map((l) => JSON.parse(JSON.stringify(l)))
+    });
+  }
+  return carried;
+}
+
+function restoreUserLayers(carried) {
+  for (const item of carried) {
+    try {
+      for (const [id, spec] of item.sources) {
+        if (!map.getSource(id)) map.addSource(id, spec);
+      }
+      for (const spec of item.layers) {
+        if (!map.getLayer(spec.id)) map.addLayer(spec);
+      }
+      item.entry.layerIds = item.layers.map((l) => l.id).filter((id) => map.getLayer(id));
+      if (item.entry.visible === false) {
+        for (const id of item.entry.layerIds) {
+          map.setLayoutProperty(id, "visibility", "none");
+        }
+      }
+    } catch (err) {
+      // One layer that will not come back must not take the rest with it.
+      window.ghLog?.("error", `Could not carry "${item.entry.label}" to the new basemap`,
+                     String(err?.message ?? err));
+    }
+  }
 }
 
 /* ---------------------------------------------------------------------------
@@ -6635,6 +6804,14 @@ window.__ghExport = {
 
 /* A way in for the ribbon test: the registry is the public surface of the
    interface, so the test drives commands the way a button does. */
+/* A way in for the add-data test: the formats are the promise, so the test
+   opens one of each rather than trusting the dialog's own wording. */
+window.__ghAddData = {
+  files: (list) => ingestFiles(list),
+  url: (u) => ingestUrl(u),
+  open: () => openAddData()
+};
+
 window.__ghRibbon = {
   run: (id) => runCommand(id),
   search: () => openCommandSearch(),
@@ -6647,6 +6824,17 @@ window.__ghLayers = {
   list: () => [...userLayers.values()],
   add: (entry) => registerUserLayer(entry),
   render: () => renderUserLayers()
+};
+
+/* A way in for the basemap test. Changing the basemap replaces the style,
+   which is the one operation that removes every source and layer on the map
+   at once, so the test counts what is still drawn afterwards. */
+window.__ghBasemap = {
+  set: (id) => setBasemap(id),
+  current: () => state.basemap,
+  gallery: () => BASEMAP_GALLERY.map((b) => ({ id: b.id, group: b.group, label: b.label })),
+  drawn: () => [...userLayers.values()]
+    .flatMap((l) => l.layerIds || []).filter((id) => map.getLayer(id)).length
 };
 
 /* JSON.stringify refuses a BigInt outright, and DuckDB returns every BIGINT
@@ -8270,20 +8458,23 @@ const COMMANDS = {
   "data.addFile": {
     id: "data.addFile",
     label: "Add a File",
-    desc: "Open a GeoJSON, CSV, GeoPackage or Shapefile from this computer.",
-    icon: "file"
+    desc: "Open a GeoJSON, CSV, GPX, KML or zipped Shapefile from this computer, or drop one on the map.",
+    icon: "file",
+    run: () => openAddData()
   },
   "data.addUrl": {
     id: "data.addUrl",
     label: "Add from URL",
-    desc: "A GeoJSON, PMTiles or vector tile service by address.",
-    icon: "link"
+    desc: "Fetch a GeoJSON or CSV from an address.",
+    icon: "link",
+    run: () => openAddData()
   },
   "data.addWms": {
     id: "data.addWms",
     label: "Add WMS / WMTS",
-    desc: "An OGC web map service.",
-    icon: "server"
+    desc: "Add a tile service. OGC WMS is not read yet; an XYZ template works today, under Basemap.",
+    icon: "server",
+    run: () => openAddData()
   },
   "select.byRectangle": {
     id: "select.byRectangle",
@@ -8348,7 +8539,7 @@ const COMMANDS = {
     label: "SQL Workspace",
     desc: "Query the data directly.",
     icon: "sql",
-    run: () => showPanel("query", { toggle: true })
+    run: () => showPanel("query")
   },
   "data.catalogue": {
     id: "data.catalogue",
@@ -8896,7 +9087,7 @@ const COMMANDS = {
     label: "AI Assistant",
     desc: "Ask in plain English; it drives the map and the data.",
     icon: "assistant",
-    run: () => showPanel("ask", { toggle: true })
+    run: () => showPanel("ask")
   },
   "ai.explainLayer": {
     id: "ai.explainLayer",
@@ -8922,28 +9113,28 @@ const COMMANDS = {
     label: "Style",
     desc: "Symbology for the selected layer.",
     icon: "palette",
-    run: () => showPanel("style", { toggle: true })
+    run: () => showPanel("style")
   },
   "ui.catalogue": {
     id: "ui.catalogue",
     label: "Data",
     desc: "The Earth observation catalogue.",
     icon: "satellite",
-    run: () => showPanel("data", { toggle: true })
+    run: () => showPanel("data")
   },
   "ui.log": {
     id: "ui.log",
     label: "Log",
     desc: "Everything this session has done.",
     icon: "log",
-    run: () => showPanel("log", { toggle: true })
+    run: () => showPanel("log")
   },
   "map.basemap": {
     id: "map.basemap",
     label: "Basemap",
     desc: "Which backdrop the data sits on.",
     icon: "basemap",
-    run: () => showPanel("settings")
+    run: () => openBasemapGallery()
   },
   "map.projection": {
     id: "map.projection",
@@ -9137,7 +9328,7 @@ const COMMANDS = {
     label: "Map Settings",
     desc: "Basemap, projection, terrain and the model.",
     icon: "settings",
-    run: () => showPanel("settings", { toggle: true })
+    run: () => showPanel("settings")
   },
   "settings.language": {
     id: "settings.language",
@@ -9248,7 +9439,8 @@ const COMMANDS = {
     id: "layer.addSample",
     label: "Sample Data",
     desc: "Add one of the bundled sample layers to the map.",
-    icon: "plus"
+    icon: "plus",
+    run: () => openAddData()
   },
   "select.selectByAttributes": {
     id: "select.selectByAttributes",
@@ -10568,133 +10760,100 @@ const COMMANDS = {
 
 const RIBBON = [
   { tab: "Home", groups: [
-    { group: "Navigate", controls: [{ cmd: "map.pan", size: "big" }, { cmd: "map.bookmarkList", size: "big" }, { cmd: "map.zoomIn", size: "small" }, { cmd: "map.zoomOut", size: "small" }, { cmd: "map.fullExtent", size: "small" }, { cmd: "map.previous", size: "small" }, { cmd: "map.next", size: "small" }, { cmd: "map.north", size: "small" }, { cmd: "map.goToXY", size: "small" }, { cmd: "map.bookmarkNew", size: "small" }] },
-    { group: "Add Data", controls: [{ cmd: "data.eeSearch", size: "big" }, { cmd: "data.liveHealth", size: "small" }, { cmd: "data.liveEducation", size: "small" }, { cmd: "data.liveWater", size: "small" }, { cmd: "data.liveMarket", size: "small" }, { cmd: "data.liveRoad", size: "small" }, { cmd: "data.liveBuilding", size: "small" }, { cmd: "data.addFile", size: "small" }, { cmd: "data.addUrl", size: "small" }, { cmd: "data.addWms", size: "small" }] },
-    { group: "Selection", controls: [{ cmd: "select.byRectangle", size: "big" }, { cmd: "select.byAttributes", size: "small" }, { cmd: "select.byLocation", size: "small" }, { cmd: "select.clear", size: "small" }, { cmd: "select.zoomTo", size: "small" }, { cmd: "select.clip", size: "small" }] },
-    { group: "Inspect", controls: [{ cmd: "map.identify", size: "big" }, { cmd: "map.measure", size: "small" }, { cmd: "layer.table", size: "small" }, { cmd: "ui.query", size: "small" }] },
-    { group: "Add", controls: [{ cmd: "ui.addDelimited", size: "big" }, { cmd: "graphics.newLayer", size: "small" }, { cmd: "layer.addSample", size: "small" }] },
-    { group: "Selection", controls: [{ cmd: "select.selectByAttributes", size: "small" }, { cmd: "select.selectByLocation", size: "small" }, { cmd: "table.attributes", size: "small" }] },
-    { group: "Inspect", controls: [{ cmd: "tool.zoomBox", size: "small" }, { cmd: "ui.pane.infographics", size: "small" }] }
+    { group: "Navigate", controls: [{ cmd: "map.pan", size: "big" }, { cmd: "map.bookmarkList", size: "small" }, { cmd: "map.zoomIn", size: "small" }, { cmd: "map.zoomOut", size: "small" }, { cmd: "map.fullExtent", size: "small" }, { cmd: "map.previous", size: "small" }, { cmd: "map.next", size: "small" }, { cmd: "map.north", size: "small" }, { cmd: "map.goToXY", size: "small" }, { cmd: "map.bookmarkNew", size: "small" }] },
+    { group: "Add Data", controls: [{ cmd: "data.eeSearch", size: "big" }, { cmd: "data.liveHealth", size: "small" }, { cmd: "data.liveEducation", size: "small" }, { cmd: "data.liveWater", size: "small" }, { cmd: "data.liveMarket", size: "small" }, { cmd: "data.liveRoad", size: "small" }, { cmd: "data.liveBuilding", size: "small" }, { cmd: "data.addFile", size: "small" }, { cmd: "data.addUrl", size: "small" }, { cmd: "data.addWms", size: "small" }, { cmd: "layer.addSample", size: "small" }, { cmd: "ui.addDelimited", size: "small" }, { cmd: "graphics.newLayer", size: "small" }] },
+    { group: "Selection", controls: [{ cmd: "select.clip", size: "small" }, { cmd: "select.byRectangle", size: "big" }, { cmd: "select.byAttributes", size: "small" }, { cmd: "select.byLocation", size: "small" }, { cmd: "select.clear", size: "small" }, { cmd: "select.zoomTo", size: "small" }, { cmd: "select.selectByAttributes", size: "small" }, { cmd: "select.selectByLocation", size: "small" }, { cmd: "table.attributes", size: "small" }] },
+    { group: "Inspect", controls: [{ cmd: "map.identify", size: "big" }, { cmd: "map.measure", size: "small" }, { cmd: "layer.table", size: "small" }, { cmd: "ui.query", size: "small" }, { cmd: "tool.zoomBox", size: "small" }, { cmd: "ui.pane.infographics", size: "small" }] }
   ] },
   { tab: "Data", groups: [
-    { group: "Catalogue", controls: [{ cmd: "data.eeSearch", size: "big" }, { cmd: "data.catalogue", size: "small" }, { cmd: "data.refresh", size: "small" }, { cmd: "data.sources", size: "small" }] },
+    { group: "Catalogue", controls: [{ cmd: "data.eeSearch", size: "big" }, { cmd: "data.catalogue", size: "small" }, { cmd: "data.refresh", size: "small" }, { cmd: "data.sources", size: "small" }, { cmd: "data.rasterInformation", size: "small" }] },
     { group: "Connect", controls: [{ cmd: "data.connectPostgis", size: "big" }, { cmd: "data.connectDuckdb", size: "small" }, { cmd: "data.connectS3", size: "small" }, { cmd: "data.connectStac", size: "small" }] },
     { group: "Table", controls: [{ cmd: "table.open", size: "big" }, { cmd: "table.addField", size: "small" }, { cmd: "table.calculate", size: "small" }, { cmd: "table.statistics", size: "small" }, { cmd: "table.join", size: "small" }] },
     { group: "Definition Query", controls: [{ cmd: "data.definitionQuery", size: "big" }, { cmd: "data.clearQuery", size: "small" }] },
-    { group: "Export", controls: [{ cmd: "data.downloadGeoJSON", size: "big" }, { cmd: "data.downloadCSV", size: "small" }, { cmd: "data.exportGpkg", size: "small" }, { cmd: "data.exportParquet", size: "small" }, { cmd: "data.exportShapefile", size: "small" }] },
+    { group: "Export", controls: [{ cmd: "data.downloadGeoJSON", size: "big" }, { cmd: "data.downloadCSV", size: "small" }, { cmd: "data.exportGpkg", size: "small" }, { cmd: "data.exportParquet", size: "small" }, { cmd: "data.exportShapefile", size: "small" }, { cmd: "ui.exportRaster", size: "small" }, { cmd: "data.exportFeatures", size: "small" }, { cmd: "data.exportFeaturesTool", size: "small" }] },
     { group: "Offline", controls: [{ cmd: "offline.download", size: "big" }, { cmd: "offline.sync", size: "small" }, { cmd: "offline.clear", size: "small" }] },
     { group: "Feature Cache", controls: [{ cmd: "cache.fill", size: "big" }, { cmd: "cache.empty", size: "small" }, { cmd: "cache.cancel", size: "small" }, { cmd: "cache.auto", size: "small" }] },
-    { group: "Project", controls: [{ cmd: "map.new", size: "big" }, { cmd: "data.toolbox", size: "small" }, { cmd: "ui.open", size: "small" }, { cmd: "layout.new", size: "small" }, { cmd: "ui.importLayout", size: "small" }, { cmd: "data.browser", size: "small" }, { cmd: "ui.addFolder", size: "small" }, { cmd: "data.import", size: "small" }, { cmd: "data.newCustomTemplate", size: "small" }, { cmd: "data.openCustomTemplate", size: "small" }, { cmd: "task.task", size: "small" }, { cmd: "task.newTaskFromHistory", size: "small" }, { cmd: "data.importTask", size: "small" }] },
-    { group: "Layer Templates", controls: [{ cmd: "layer.layerTemplates", size: "big" }, { cmd: "layer.layerTemplate", size: "small" }] },
-    { group: "Information", controls: [{ cmd: "data.rasterInformation", size: "big" }] },
-    { group: "Export", controls: [{ cmd: "ui.exportRaster", size: "small" }, { cmd: "data.exportFeatures", size: "small" }, { cmd: "data.exportFeaturesTool", size: "small" }] },
+    { group: "Project", controls: [{ cmd: "map.new", size: "big" }, { cmd: "data.toolbox", size: "small" }, { cmd: "ui.open", size: "small" }, { cmd: "layout.new", size: "small" }, { cmd: "ui.importLayout", size: "small" }, { cmd: "data.browser", size: "small" }, { cmd: "ui.addFolder", size: "small" }, { cmd: "data.import", size: "small" }, { cmd: "data.newCustomTemplate", size: "small" }, { cmd: "data.openCustomTemplate", size: "small" }, { cmd: "task.task", size: "small" }, { cmd: "task.newTaskFromHistory", size: "small" }, { cmd: "data.importTask", size: "small" }, { cmd: "layer.layerTemplates", size: "small" }, { cmd: "layer.layerTemplate", size: "small" }] },
     { group: "Selection", controls: [{ cmd: "select.all", size: "big" }, { cmd: "select.switch", size: "small" }, { cmd: "select.layerFromSelection", size: "small" }] },
     { group: "Data Design", controls: [{ cmd: "data.fields", size: "big" }, { cmd: "data.calculate", size: "small" }, { cmd: "data.subtypes", size: "small" }, { cmd: "data.domains", size: "small" }, { cmd: "data.attributeRules", size: "small" }, { cmd: "data.contingentValues", size: "small" }] },
     { group: "Archiving", controls: [{ cmd: "data.archive", size: "big" }] },
     { group: "Relationship", controls: [{ cmd: "data.relatedData", size: "big" }, { cmd: "data.dataRelated", size: "small" }, { cmd: "data.newRelationship", size: "small" }] }
   ] },
   { tab: "Style", groups: [
-    { group: "Layer", controls: [{ cmd: "style.symbology", size: "big" }, { cmd: "style.graduated", size: "small" }, { cmd: "style.categorised", size: "small" }, { cmd: "style.single", size: "small" }, { cmd: "style.opacity", size: "small" }] },
-    { group: "Classification", controls: [{ cmd: "style.quantile", size: "small" }, { cmd: "style.equalInterval", size: "small" }, { cmd: "style.naturalBreaks", size: "small" }, { cmd: "style.classCount", size: "small" }, { cmd: "style.palette", size: "small" }] },
-    { group: "Labels", controls: [{ cmd: "labels.enable", size: "big" }, { cmd: "labels.field", size: "small" }, { cmd: "labels.placement", size: "small" }, { cmd: "labels.halo", size: "small" }, { cmd: "labels.scaleRange", size: "small" }] },
-    { group: "Effects", controls: [{ cmd: "style.extrude", size: "big" }, { cmd: "style.visibilityRange", size: "small" }, { cmd: "style.blend", size: "small" }, { cmd: "style.swipe", size: "small" }] },
-    { group: "Raster", controls: [{ cmd: "raster.stretch", size: "big" }, { cmd: "raster.bands", size: "small" }, { cmd: "raster.resampling", size: "small" }, { cmd: "raster.hillshade", size: "small" }] },
-    { group: "Labeling", controls: [{ cmd: "labels.lock", size: "big" }, { cmd: "labels.pause", size: "small" }, { cmd: "labels.viewUnplaced", size: "small" }, { cmd: "labels.convert", size: "small" }] },
+    { group: "Layer", controls: [{ cmd: "style.symbology", size: "big" }, { cmd: "style.graduated", size: "small" }, { cmd: "style.single", size: "small" }, { cmd: "style.opacity", size: "small" }, { cmd: "style.categorised", size: "small" }, { cmd: "layer.zoomTo", size: "small" }, { cmd: "layer.visibility", size: "small" }, { cmd: "layer.remove", size: "small" }, { cmd: "layer.symbology", size: "small" }] },
+    { group: "Classification", controls: [{ cmd: "style.quantile", size: "big" }, { cmd: "style.equalInterval", size: "small" }, { cmd: "style.palette", size: "small" }, { cmd: "style.naturalBreaks", size: "small" }, { cmd: "style.classCount", size: "small" }] },
+    { group: "Labels", controls: [{ cmd: "labels.enable", size: "big" }, { cmd: "labels.field", size: "small" }, { cmd: "labels.placement", size: "small" }, { cmd: "labels.halo", size: "small" }, { cmd: "labels.scaleRange", size: "small" }, { cmd: "labels.lock", size: "small" }, { cmd: "labels.pause", size: "small" }, { cmd: "labels.viewUnplaced", size: "small" }, { cmd: "labels.convert", size: "small" }, { cmd: "labels.bold", size: "small" }] },
+    { group: "Effects", controls: [{ cmd: "style.extrude", size: "big" }, { cmd: "style.visibilityRange", size: "small" }, { cmd: "style.blend", size: "small" }, { cmd: "style.swipe", size: "small" }, { cmd: "layer.displayFilters", size: "small" }, { cmd: "layer.aggregation", size: "small" }, { cmd: "layer.scaleRange", size: "small" }] },
+    { group: "Raster", controls: [{ cmd: "raster.stretch", size: "big" }, { cmd: "raster.bands", size: "small" }, { cmd: "raster.resampling", size: "small" }, { cmd: "raster.hillshade", size: "small" }, { cmd: "raster.symbology", size: "small" }, { cmd: "raster.dra", size: "small" }, { cmd: "layer.blend", size: "small" }, { cmd: "raster.enhance", size: "small" }] },
     { group: "Styles", controls: [{ cmd: "style.styles", size: "big" }, { cmd: "style.new", size: "small" }, { cmd: "style.addStyleFile", size: "small" }, { cmd: "style.importStylesFrom", size: "small" }] },
-    { group: "Layer", controls: [{ cmd: "layer.zoomTo", size: "small" }, { cmd: "layer.visibility", size: "small" }, { cmd: "layer.remove", size: "small" }] },
-    { group: "Drawing Effects", controls: [{ cmd: "layer.displayFilters", size: "big" }, { cmd: "layer.aggregation", size: "small" }] },
     { group: "Extrusion", controls: [{ cmd: "layer.extrusion", size: "big" }] },
     { group: "Faces", controls: [{ cmd: "layer.faceCulling", size: "big" }, { cmd: "layer.lighting", size: "small" }] },
-    { group: "Light and Shadow", controls: [{ cmd: "layer.enableLighting", size: "big" }, { cmd: "layer.castShadow", size: "small" }] },
-    { group: "Visibility Range", controls: [{ cmd: "layer.scaleRange", size: "big" }] },
-    { group: "Drawing", controls: [{ cmd: "layer.symbology", size: "big" }] },
-    { group: "Rendering", controls: [{ cmd: "raster.symbology", size: "big" }, { cmd: "raster.dra", size: "small" }] },
-    { group: "Raster Effects", controls: [{ cmd: "layer.blend", size: "big" }] },
-    { group: "Enhancement", controls: [{ cmd: "raster.enhance", size: "big" }] },
-    { group: "Text Symbol", controls: [{ cmd: "labels.bold", size: "big" }] }
+    { group: "Light and Shadow", controls: [{ cmd: "layer.enableLighting", size: "big" }, { cmd: "layer.castShadow", size: "small" }] }
   ] },
   { tab: "Edit", groups: [
-    { group: "Manage Edits", controls: [{ cmd: "edit.enable", size: "big" }, { cmd: "edit.save", size: "small" }, { cmd: "edit.discard", size: "small" }, { cmd: "edit.undo", size: "small" }, { cmd: "edit.redo", size: "small" }] },
-    { group: "Features", controls: [{ cmd: "edit.create", size: "big" }, { cmd: "edit.modify", size: "small" }, { cmd: "edit.delete", size: "small" }, { cmd: "edit.split", size: "small" }, { cmd: "edit.merge", size: "small" }] },
+    { group: "Manage Edits", controls: [{ cmd: "edit.enable", size: "big" }, { cmd: "edit.save", size: "small" }, { cmd: "edit.discard", size: "small" }, { cmd: "edit.undo", size: "small" }, { cmd: "edit.redo", size: "small" }, { cmd: "ui.save", size: "small" }, { cmd: "edit.status", size: "small" }, { cmd: "edit.settings", size: "small" }, { cmd: "edit.topology", size: "small" }, { cmd: "edit.topologyOptions", size: "small" }] },
+    { group: "Features", controls: [{ cmd: "edit.create", size: "big" }, { cmd: "edit.modify", size: "small" }, { cmd: "edit.delete", size: "small" }, { cmd: "edit.split", size: "small" }, { cmd: "edit.merge", size: "small" }, { cmd: "edit.createFeatures", size: "small" }, { cmd: "edit.groundToGrid", size: "small" }] },
     { group: "Draw", controls: [{ cmd: "edit.drawPolygon", size: "big" }, { cmd: "edit.drawLine", size: "small" }, { cmd: "edit.drawPoint", size: "small" }, { cmd: "edit.drawText", size: "small" }] },
     { group: "Snapping", controls: [{ cmd: "edit.snapping", size: "big" }, { cmd: "edit.snapVertex", size: "small" }, { cmd: "edit.snapEdge", size: "small" }] },
-    { group: "Clipboard", controls: [{ cmd: "edit.copy", size: "big" }, { cmd: "edit.paste", size: "small" }, { cmd: "edit.cut", size: "small" }] },
-    { group: "Clipboard", controls: [{ cmd: "edit.pasteSpecial", size: "small" }, { cmd: "ui.copyPath", size: "small" }] },
-    { group: "Manage Edits", controls: [{ cmd: "ui.save", size: "small" }, { cmd: "edit.status", size: "small" }, { cmd: "edit.settings", size: "small" }, { cmd: "edit.topology", size: "small" }, { cmd: "edit.topologyOptions", size: "small" }] },
-    { group: "Features", controls: [{ cmd: "edit.createFeatures", size: "small" }] },
+    { group: "Clipboard", controls: [{ cmd: "edit.copy", size: "big" }, { cmd: "edit.paste", size: "small" }, { cmd: "edit.cut", size: "small" }, { cmd: "edit.pasteSpecial", size: "small" }, { cmd: "ui.copyPath", size: "small" }] },
     { group: "Tools", controls: [{ cmd: "edit.moveRotateScale", size: "big" }] },
-    { group: "Elevation", controls: [{ cmd: "edit.elevation", size: "big" }, { cmd: "edit.constant", size: "small" }] },
-    { group: "Corrections", controls: [{ cmd: "edit.groundToGrid", size: "big" }] }
+    { group: "Elevation", controls: [{ cmd: "edit.elevation", size: "big" }, { cmd: "edit.constant", size: "small" }] }
   ] },
   { tab: "Analyze", groups: [
-    { group: "Geoprocessing", controls: [{ cmd: "gp.toolbox", size: "big" }, { cmd: "gp.clip", size: "small" }, { cmd: "gp.buffer", size: "small" }, { cmd: "gp.dissolve", size: "small" }, { cmd: "gp.overlay", size: "small" }, { cmd: "gp.history", size: "small" }] },
-    { group: "Vector", controls: [{ cmd: "gp.centroid", size: "small" }, { cmd: "gp.convex", size: "small" }, { cmd: "gp.envelope", size: "small" }, { cmd: "gp.simplify", size: "small" }, { cmd: "gp.voronoi", size: "small" }, { cmd: "gp.nearest", size: "small" }] },
-    { group: "Raster", controls: [{ cmd: "ee.summarise", size: "big" }, { cmd: "ee.classAreas", size: "small" }, { cmd: "gp.elevation", size: "small" }, { cmd: "raster.calculator", size: "small" }, { cmd: "raster.reclassify", size: "small" }] },
+    { group: "Geoprocessing", controls: [{ cmd: "gp.toolbox", size: "big" }, { cmd: "gp.clip", size: "small" }, { cmd: "gp.buffer", size: "small" }, { cmd: "gp.dissolve", size: "small" }, { cmd: "gp.overlay", size: "small" }, { cmd: "gp.history", size: "small" }, { cmd: "gp.tools", size: "small" }, { cmd: "gp.modelBuilder", size: "small" }, { cmd: "ui.pane.script", size: "small" }, { cmd: "gp.environments", size: "small" }, { cmd: "gp.readyToUse", size: "small" }] },
+    { group: "Vector", controls: [{ cmd: "gp.centroid", size: "big" }, { cmd: "gp.convex", size: "small" }, { cmd: "gp.envelope", size: "small" }, { cmd: "gp.simplify", size: "small" }, { cmd: "gp.voronoi", size: "small" }, { cmd: "gp.nearest", size: "small" }] },
+    { group: "Raster", controls: [{ cmd: "ee.summarise", size: "big" }, { cmd: "ee.classAreas", size: "small" }, { cmd: "gp.elevation", size: "small" }, { cmd: "raster.calculator", size: "small" }, { cmd: "raster.reclassify", size: "small" }, { cmd: "gp.rasterFunctions", size: "small" }, { cmd: "gp.functionEditor", size: "small" }] },
     { group: "Statistics", controls: [{ cmd: "gp.sql", size: "big" }, { cmd: "stats.summary", size: "small" }, { cmd: "stats.hotspot", size: "small" }, { cmd: "stats.correlation", size: "small" }] },
     { group: "Assistant", controls: [{ cmd: "ui.assistant", size: "big" }, { cmd: "ai.explainLayer", size: "small" }, { cmd: "ai.suggest", size: "small" }] },
     { group: "Notebook", controls: [{ cmd: "ui.newNotebook", size: "big" }, { cmd: "notebook.addAndOpen", size: "small" }, { cmd: "ui.pane.notebook", size: "small" }] },
-    { group: "Geoprocessing", controls: [{ cmd: "gp.tools", size: "small" }, { cmd: "gp.modelBuilder", size: "small" }, { cmd: "ui.pane.script", size: "small" }, { cmd: "gp.environments", size: "small" }, { cmd: "gp.readyToUse", size: "small" }] },
     { group: "Portal", controls: [{ cmd: "gp.uiPaneWorkflows", size: "big" }] },
     { group: "Workflows", controls: [{ cmd: "task.workflows", size: "big" }, { cmd: "task.uiPaneWorkflows", size: "small" }] },
-    { group: "Raster", controls: [{ cmd: "gp.rasterFunctions", size: "small" }, { cmd: "gp.functionEditor", size: "small" }] },
     { group: "Ortho Mapping", controls: [{ cmd: "gp.newWorkspace", size: "big" }, { cmd: "gp.options", size: "small" }] },
     { group: "Alignment", controls: [{ cmd: "gp.georeference", size: "big" }] },
-    { group: "Image Analysis", controls: [{ cmd: "gp.changeDetection", size: "big" }, { cmd: "gp.spectralAnalysis", size: "small" }] },
+    { group: "Image Analysis", controls: [{ cmd: "gp.changeDetection", size: "big" }, { cmd: "gp.spectralAnalysis", size: "small" }, { cmd: "gp.process", size: "small" }, { cmd: "gp.indices", size: "small" }, { cmd: "gp.pixelEditor", size: "small" }] },
     { group: "Image Classification", controls: [{ cmd: "gp.classificationWizard", size: "big" }, { cmd: "gp.classificationTools", size: "small" }, { cmd: "gp.deepLearningTools", size: "small" }] },
     { group: "Imagery Sharing", controls: [{ cmd: "gp.createHostedImagery", size: "big" }] },
-    { group: "Mensuration", controls: [{ cmd: "gp.mensuration", size: "big" }, { cmd: "gp.results", size: "small" }] },
-    { group: "Imagery Tools", controls: [{ cmd: "gp.process", size: "big" }, { cmd: "gp.indices", size: "small" }, { cmd: "gp.pixelEditor", size: "small" }] }
+    { group: "Mensuration", controls: [{ cmd: "gp.mensuration", size: "big" }, { cmd: "gp.results", size: "small" }] }
   ] },
   { tab: "View", groups: [
     { group: "Panels", controls: [{ cmd: "ui.layers", size: "big" }, { cmd: "ui.style", size: "small" }, { cmd: "ui.catalogue", size: "small" }, { cmd: "ui.query", size: "small" }, { cmd: "ui.assistant", size: "small" }, { cmd: "ui.log", size: "small" }] },
     { group: "Map", controls: [{ cmd: "map.basemap", size: "big" }, { cmd: "map.projection", size: "small" }, { cmd: "map.terrain", size: "small" }, { cmd: "map.theme", size: "small" }, { cmd: "map.locate", size: "small" }, { cmd: "map.fullscreen", size: "small" }] },
-    { group: "Display", controls: [{ cmd: "view.grid", size: "small" }, { cmd: "view.scalebar", size: "small" }, { cmd: "view.northArrow", size: "small" }, { cmd: "view.legend", size: "small" }] },
-    { group: "Windows", controls: [{ cmd: "ui.commands", size: "big" }, { cmd: "ui.splitView", size: "small" }, { cmd: "ui.sync", size: "small" }] },
-    { group: "Display", controls: [{ cmd: "ui.theme", size: "small" }] },
-    { group: "View", controls: [{ cmd: "map.globe", size: "big" }, { cmd: "map.global", size: "small" }, { cmd: "map.local", size: "small" }] },
+    { group: "Display", controls: [{ cmd: "view.grid", size: "big" }, { cmd: "view.scalebar", size: "small" }, { cmd: "view.northArrow", size: "small" }, { cmd: "view.legend", size: "small" }, { cmd: "ui.theme", size: "small" }, { cmd: "map.globe", size: "small" }, { cmd: "map.global", size: "small" }, { cmd: "map.local", size: "small" }, { cmd: "ui.pane.profile", size: "small" }] },
+    { group: "Windows", controls: [{ cmd: "ui.commands", size: "big" }, { cmd: "ui.splitView", size: "small" }, { cmd: "ui.sync", size: "small" }, { cmd: "view.browserPane", size: "small" }, { cmd: "view.toolsPane", size: "small" }, { cmd: "view.details", size: "small" }] },
     { group: "Effects", controls: [{ cmd: "map.illumination", size: "big" }, { cmd: "map.weather", size: "small" }, { cmd: "map.visualEffect", size: "small" }, { cmd: "map.cameraEffect", size: "small" }, { cmd: "map.postprocessing", size: "small" }, { cmd: "map.colorVision", size: "small" }] },
     { group: "Scene", controls: [{ cmd: "map.drawingMode", size: "big" }, { cmd: "layer.raisePriority", size: "small" }, { cmd: "layer.lowerPriority", size: "small" }, { cmd: "map.clipping", size: "small" }, { cmd: "map.displayType", size: "small" }] },
-    { group: "Windows", controls: [{ cmd: "view.browserPane", size: "small" }, { cmd: "view.toolsPane", size: "small" }, { cmd: "view.details", size: "small" }] },
     { group: "Navigation", controls: [{ cmd: "map.zoomWorld", size: "big" }, { cmd: "map.navigator", size: "small" }, { cmd: "view.camera", size: "small" }, { cmd: "ui.magnifier", size: "small" }] },
     { group: "Link", controls: [{ cmd: "ui.linkCursors", size: "big" }] },
     { group: "Workspace", controls: [{ cmd: "ui.catalogView", size: "big" }, { cmd: "ui.pane.tasks", size: "small" }, { cmd: "ui.pane.jobs", size: "small" }, { cmd: "ui.paneSet", size: "small" }, { cmd: "ui.itemPopups", size: "small" }] },
-    { group: "Animation", controls: [{ cmd: "animation.add", size: "big" }, { cmd: "animation.remove", size: "small" }, { cmd: "ui.animationPlay", size: "small" }, { cmd: "ui.exportAnimation", size: "small" }] },
-    { group: "Profile", controls: [{ cmd: "ui.pane.profile", size: "big" }] }
+    { group: "Animation", controls: [{ cmd: "animation.add", size: "big" }, { cmd: "animation.remove", size: "small" }, { cmd: "ui.animationPlay", size: "small" }, { cmd: "ui.exportAnimation", size: "small" }] }
   ] },
   { tab: "Publish", groups: [
     { group: "Map Image", controls: [{ cmd: "layout.export", size: "big" }, { cmd: "layout.page", size: "small" }, { cmd: "layout.title", size: "small" }, { cmd: "layout.elements", size: "small" }] },
-    { group: "Export Data", controls: [{ cmd: "data.downloadGeoJSON", size: "big" }, { cmd: "data.downloadCSV", size: "small" }, { cmd: "publish.pdf", size: "small" }, { cmd: "publish.geotiff", size: "small" }] },
-    { group: "Share", controls: [{ cmd: "publish.link", size: "big" }, { cmd: "publish.embed", size: "small" }, { cmd: "publish.webmap", size: "small" }] },
-    { group: "Report", controls: [{ cmd: "report.new", size: "big" }, { cmd: "report.template", size: "small" }] },
-    { group: "Report", controls: [{ cmd: "report.reportSection", size: "small" }, { cmd: "report.supplementalPage", size: "small" }, { cmd: "report.supplementalPageAfter", size: "small" }, { cmd: "report.newTemplate", size: "small" }, { cmd: "report.existingTemplate", size: "small" }, { cmd: "ui.reportLayoutFile", size: "small" }, { cmd: "report.relatedReport", size: "small" }, { cmd: "report.subreport", size: "small" }, { cmd: "report.autofill", size: "small" }, { cmd: "report.statistics", size: "small" }, { cmd: "ui.pane.report", size: "small" }, { cmd: "report.importReport", size: "small" }] },
+    { group: "Export Data", controls: [{ cmd: "data.downloadGeoJSON", size: "big" }, { cmd: "data.downloadCSV", size: "small" }, { cmd: "publish.pdf", size: "small" }, { cmd: "publish.geotiff", size: "small" }, { cmd: "ui.exportMap", size: "small" }, { cmd: "publish.exportFeatures", size: "small" }, { cmd: "ui.printMap", size: "small" }, { cmd: "ui.captureMap", size: "small" }, { cmd: "publish.report", size: "small" }, { cmd: "publish.exportReport", size: "small" }, { cmd: "publish.saveAsReportFile", size: "small" }, { cmd: "publish.saveAsReportTemplate", size: "small" }, { cmd: "publish.presentation", size: "small" }, { cmd: "publish.exportPresentation", size: "small" }, { cmd: "publish.saveAsPresentationFile", size: "small" }, { cmd: "publish.exportTo3d", size: "small" }, { cmd: "publish.export", size: "small" }, { cmd: "publish.print", size: "small" }, { cmd: "publish.saveLayoutFile", size: "small" }, { cmd: "layout.close", size: "small" }] },
+    { group: "Share", controls: [{ cmd: "publish.link", size: "big" }, { cmd: "publish.embed", size: "small" }, { cmd: "publish.webmap", size: "small" }, { cmd: "publish.webMap", size: "small" }, { cmd: "publish.webLayer", size: "small" }, { cmd: "publish.webStyle", size: "small" }, { cmd: "publish.locator", size: "small" }, { cmd: "publish.geodataService", size: "small" }, { cmd: "publish.webTool", size: "small" }, { cmd: "publish.webScene", size: "small" }, { cmd: "publish.webLinkChart", size: "small" }, { cmd: "ui.pane.shares", size: "small" }, { cmd: "publish.deepLearning", size: "small" }] },
+    { group: "Report", controls: [{ cmd: "report.new", size: "big" }, { cmd: "report.template", size: "small" }, { cmd: "report.reportSection", size: "small" }, { cmd: "report.supplementalPage", size: "small" }, { cmd: "report.supplementalPageAfter", size: "small" }, { cmd: "report.newTemplate", size: "small" }, { cmd: "report.existingTemplate", size: "small" }, { cmd: "ui.reportLayoutFile", size: "small" }, { cmd: "report.relatedReport", size: "small" }, { cmd: "report.subreport", size: "small" }, { cmd: "report.autofill", size: "small" }, { cmd: "report.statistics", size: "small" }, { cmd: "ui.pane.report", size: "small" }, { cmd: "report.importReport", size: "small" }] },
     { group: "Presentation", controls: [{ cmd: "ui.newPresentation", size: "big" }, { cmd: "presentation.page", size: "small" }, { cmd: "presentation.mapTheCurrentView", size: "small" }, { cmd: "presentation.blankPage", size: "small" }, { cmd: "ui.presentationPicture", size: "small" }, { cmd: "ui.presentationVideo", size: "small" }, { cmd: "presentation.importPresentation", size: "small" }, { cmd: "ui.pane.presentation", size: "small" }] },
     { group: "Thumbnail", controls: [{ cmd: "project.thumbnail", size: "big" }, { cmd: "publish.importThumbnail", size: "small" }, { cmd: "map.thumbnail", size: "small" }, { cmd: "publish.import", size: "small" }] },
-    { group: "Output", controls: [{ cmd: "ui.exportMap", size: "big" }, { cmd: "publish.exportFeatures", size: "small" }, { cmd: "ui.printMap", size: "small" }, { cmd: "ui.captureMap", size: "small" }, { cmd: "publish.report", size: "small" }, { cmd: "publish.exportReport", size: "small" }, { cmd: "publish.saveAsReportFile", size: "small" }, { cmd: "publish.saveAsReportTemplate", size: "small" }, { cmd: "publish.presentation", size: "small" }, { cmd: "publish.exportPresentation", size: "small" }, { cmd: "publish.saveAsPresentationFile", size: "small" }, { cmd: "publish.exportTo3d", size: "small" }] },
     { group: "Package", controls: [{ cmd: "publish.projectPackage", size: "big" }, { cmd: "publish.map", size: "small" }, { cmd: "publish.mobileMap", size: "small" }, { cmd: "publish.results", size: "small" }] },
-    { group: "Share As", controls: [{ cmd: "publish.webMap", size: "big" }, { cmd: "publish.webLayer", size: "small" }, { cmd: "publish.webStyle", size: "small" }, { cmd: "publish.locator", size: "small" }, { cmd: "publish.geodataService", size: "small" }, { cmd: "publish.webTool", size: "small" }, { cmd: "publish.webScene", size: "small" }, { cmd: "publish.webLinkChart", size: "small" }, { cmd: "ui.pane.shares", size: "small" }, { cmd: "publish.deepLearning", size: "small" }] },
     { group: "Layout", controls: [{ cmd: "layout.exportLayout", size: "big" }, { cmd: "layout.printLayout", size: "small" }] },
     { group: "Save As", controls: [{ cmd: "ui.saveAs", size: "big" }, { cmd: "publish.layoutFile", size: "small" }, { cmd: "publish.mapFile", size: "small" }, { cmd: "publish.layerFile", size: "small" }, { cmd: "publish.styleItems", size: "small" }, { cmd: "publish.projectTemplate", size: "small" }, { cmd: "publish.taskItem", size: "small" }] },
     { group: "Map Frames", controls: [{ cmd: "layout.addFrame", size: "big" }, { cmd: "layout.grid", size: "small" }, { cmd: "layout.extentIndicator", size: "small" }, { cmd: "layout.series", size: "small" }, { cmd: "layout.previousPage", size: "small" }, { cmd: "layout.nextPage", size: "small" }] },
     { group: "Map Surrounds", controls: [{ cmd: "layout.tableFrame", size: "big" }, { cmd: "layout.chartFrame", size: "small" }, { cmd: "layout.more", size: "small" }] },
-    { group: "Text", controls: [{ cmd: "layout.dynamicText", size: "big" }, { cmd: "ui.layoutPicture", size: "small" }] },
-    { group: "Export", controls: [{ cmd: "publish.export", size: "big" }, { cmd: "publish.print", size: "small" }, { cmd: "publish.saveLayoutFile", size: "small" }, { cmd: "layout.close", size: "small" }] }
+    { group: "Text", controls: [{ cmd: "layout.dynamicText", size: "big" }, { cmd: "ui.layoutPicture", size: "small" }] }
   ] },
   { tab: "Plugins", groups: [
-    { group: "Plugins", controls: [{ cmd: "plugins.manage", size: "big" }, { cmd: "plugins.browse", size: "small" }, { cmd: "plugins.install", size: "small" }, { cmd: "plugins.develop", size: "small" }] },
-    { group: "Automation", controls: [{ cmd: "task.record", size: "big" }, { cmd: "task.run", size: "small" }, { cmd: "task.schedule", size: "small" }] },
-    { group: "Plugins", controls: [{ cmd: "plugins.pluginManager", size: "small" }, { cmd: "plugins.browsePlugins", size: "small" }] }
+    { group: "Plugins", controls: [{ cmd: "plugins.manage", size: "big" }, { cmd: "plugins.browse", size: "small" }, { cmd: "plugins.install", size: "small" }, { cmd: "plugins.develop", size: "small" }, { cmd: "plugins.pluginManager", size: "small" }, { cmd: "plugins.browsePlugins", size: "small" }] },
+    { group: "Automation", controls: [{ cmd: "task.record", size: "big" }, { cmd: "task.run", size: "small" }, { cmd: "task.schedule", size: "small" }] }
   ] },
   { tab: "Settings", groups: [
     { group: "Interface", controls: [{ cmd: "ui.settings", size: "big" }, { cmd: "map.theme", size: "small" }, { cmd: "settings.language", size: "small" }, { cmd: "settings.units", size: "small" }] },
     { group: "Data", controls: [{ cmd: "settings.crs", size: "big" }, { cmd: "settings.cache", size: "small" }, { cmd: "settings.privacy", size: "small" }] }
   ] },
   { tab: "Help", groups: [
-    { group: "Learn", controls: [{ cmd: "ui.tour", size: "big" }, { cmd: "ui.docs", size: "small" }, { cmd: "ui.commands", size: "small" }, { cmd: "ui.shortcuts", size: "small" }] },
-    { group: "Community", controls: [{ cmd: "ui.contribute", size: "big" }, { cmd: "ui.issues", size: "small" }, { cmd: "ui.about", size: "small" }] },
+    { group: "Learn", controls: [{ cmd: "ui.tour", size: "big" }, { cmd: "ui.docs", size: "small" }, { cmd: "ui.commands", size: "small" }, { cmd: "ui.shortcuts", size: "small" }, { cmd: "ui.learn", size: "small" }] },
+    { group: "Community", controls: [{ cmd: "ui.contribute", size: "big" }, { cmd: "ui.issues", size: "small" }, { cmd: "ui.about", size: "small" }, { cmd: "ui.checkUpdate", size: "small" }] },
     { group: "Customize", controls: [{ cmd: "ui.customizeRibbon", size: "big" }, { cmd: "ui.quickAccess", size: "small" }] },
-    { group: "Performance", controls: [{ cmd: "ui.pane.diagnostics", size: "big" }] },
-    { group: "Learn", controls: [{ cmd: "ui.learn", size: "small" }] },
-    { group: "Help", controls: [{ cmd: "ui.checkUpdate", size: "big" }] }
+    { group: "Performance", controls: [{ cmd: "ui.pane.diagnostics", size: "big" }] }
   ] }
 ];
 
@@ -11145,12 +11304,661 @@ function openSelectedLayerTable() {
   return undefined;
 }
 
+
+/* ── Adding your own data ──────────────────────────────────────────────────
+
+   A GIS that cannot open your file is not a GIS. This takes GeoJSON, CSV,
+   GPX, KML and a zipped Shapefile, from a file picker, from a drop onto the
+   map, or from a URL — and whatever comes in becomes a layer like any other:
+   it draws, it appears in the layer list with its own card, the toolbox can
+   clip and buffer it, and it is registered as a table so SQL can query it.
+
+   The parsers are here rather than pulled from a library because they are
+   small and the formats are stable. Shapefile is the exception: it is a
+   bundle of binary files and parsing it by hand would be a week, so that one
+   loads shpjs on first use.                                                 */
+
+const ADD_FORMATS = ".geojson,.json,.csv,.tsv,.txt,.gpx,.kml,.zip";
+let addedLayerSeq = 0;
+
+function openAddData() {
+  addDataStatus("");
+  showPanel("adddata");
+}
+
+function addDataStatus(message, tone) {
+  const host = document.getElementById("adddata-status");
+  if (!host) return;
+  host.innerHTML = message;
+  host.style.color = tone === "error" ? "var(--clay)" : tone === "ok" ? "var(--moss, #3E8E7E)" : "";
+}
+
+/* ── Parsers ───────────────────────────────────────────────────────────── */
+
+/* A CSV reader that handles quoted fields and embedded commas, because real
+   data has commas in place names. */
+function parseDelimited(text, delimiter) {
+  const rows = [];
+  let row = [], field = "", quoted = false;
+
+  for (let i = 0; i < text.length; i += 1) {
+    const c = text[i];
+    if (quoted) {
+      if (c === '"') {
+        if (text[i + 1] === '"') { field += '"'; i += 1; }
+        else quoted = false;
+      } else field += c;
+      continue;
+    }
+    if (c === '"') { quoted = true; continue; }
+    if (c === delimiter) { row.push(field); field = ""; continue; }
+    if (c === "\n") { row.push(field); rows.push(row); row = []; field = ""; continue; }
+    if (c === "\r") continue;
+    field += c;
+  }
+  if (field.length || row.length) { row.push(field); rows.push(row); }
+  return rows.filter((r) => r.some((v) => v !== ""));
+}
+
+/* Which columns hold the coordinates. People name them a dozen ways and none
+   of them is wrong, so the common ones are all recognised rather than
+   demanded. */
+const LON_NAMES = ["lon", "lng", "long", "longitude", "x", "x_coord", "easting", "gps_lon"];
+const LAT_NAMES = ["lat", "latitude", "y", "y_coord", "northing", "gps_lat"];
+
+function findCoordColumns(header) {
+  const lower = header.map((h) => h.trim().toLowerCase());
+  const pick = (names) => {
+    for (const n of names) {
+      const i = lower.indexOf(n);
+      if (i !== -1) return i;
+    }
+    return -1;
+  };
+  return { lon: pick(LON_NAMES), lat: pick(LAT_NAMES),
+           wkt: lower.findIndex((h) => ["wkt", "geom", "geometry", "the_geom"].includes(h)) };
+}
+
+function csvToGeoJson(text, name) {
+  const delimiter = text.slice(0, 2000).split("\t").length
+                  > text.slice(0, 2000).split(",").length ? "\t" : ",";
+  const rows = parseDelimited(text, delimiter);
+  if (rows.length < 2) throw new Error("That file has no rows under its header.");
+
+  const header = rows[0].map((h) => h.trim());
+  const { lon, lat, wkt } = findCoordColumns(header);
+  if (lon === -1 || lat === -1) {
+    if (wkt === -1) {
+      throw new Error(
+        `No coordinates in ${name}. A CSV needs a longitude and a latitude `
+        + `column — lon/lat, x/y, longitude/latitude or easting/northing — or `
+        + `a WKT geometry column. Its columns are: ${header.slice(0, 12).join(", ")}.`);
+    }
+  }
+
+  const features = [];
+  let dropped = 0;
+  for (const row of rows.slice(1)) {
+    const props = {};
+    header.forEach((h, i) => { props[h] = row[i] ?? ""; });
+
+    let geometry = null;
+    if (lon !== -1 && lat !== -1) {
+      // An empty cell must not become a coordinate. Number("") is 0, so a row
+      // with no position would land at 0°N 0°E — in the Gulf of Guinea, about
+      // 600 km south of Accra, which looks plausible enough on a map of Ghana
+      // to be believed.
+      const rawX = (row[lon] ?? "").trim(), rawY = (row[lat] ?? "").trim();
+      const x = Number(rawX), y = Number(rawY);
+      if (rawX !== "" && rawY !== "" && Number.isFinite(x) && Number.isFinite(y)
+          && Math.abs(y) <= 90 && Math.abs(x) <= 180) {
+        geometry = { type: "Point", coordinates: [x, y] };
+      }
+    } else if (wkt !== -1) {
+      geometry = wktToGeometry(row[wkt]);
+    }
+    if (!geometry) { dropped += 1; continue; }
+    features.push({ type: "Feature", properties: props, geometry });
+  }
+
+  if (!features.length) throw new Error(`No row in ${name} had a usable coordinate.`);
+  return { collection: { type: "FeatureCollection", features }, dropped, rows: rows.length - 1 };
+}
+
+/* Enough WKT for what comes out of PostGIS and QGIS exports. */
+function wktToGeometry(text) {
+  if (!text) return null;
+  const m = String(text).trim().match(/^(POINT|LINESTRING|POLYGON|MULTIPOINT|MULTILINESTRING|MULTIPOLYGON)\s*(Z|M|ZM)?\s*\((.*)\)$/i);
+  if (!m) return null;
+  const kind = m[1].toUpperCase();
+  const body = m[3];
+
+  const pair = (s) => {
+    const n = s.trim().split(/\s+/).map(Number);
+    return Number.isFinite(n[0]) && Number.isFinite(n[1]) ? [n[0], n[1]] : null;
+  };
+  const ring = (s) => s.split(",").map(pair).filter(Boolean);
+  const groups = (s) => {
+    const out = []; let depth = 0, start = 0;
+    for (let i = 0; i < s.length; i += 1) {
+      if (s[i] === "(") { if (depth === 0) start = i + 1; depth += 1; }
+      else if (s[i] === ")") { depth -= 1; if (depth === 0) out.push(s.slice(start, i)); }
+    }
+    return out;
+  };
+
+  try {
+    if (kind === "POINT") return { type: "Point", coordinates: pair(body) };
+    if (kind === "LINESTRING") return { type: "LineString", coordinates: ring(body) };
+    if (kind === "MULTIPOINT") return { type: "MultiPoint", coordinates: ring(body.replace(/[()]/g, "")) };
+    if (kind === "POLYGON") return { type: "Polygon", coordinates: groups(body).map(ring) };
+    if (kind === "MULTILINESTRING") return { type: "MultiLineString", coordinates: groups(body).map(ring) };
+    if (kind === "MULTIPOLYGON") {
+      return { type: "MultiPolygon",
+               coordinates: groups(body).map((poly) => groups(poly).map(ring)) };
+    }
+  } catch { return null; }
+  return null;
+}
+
+/* GPX: tracks, routes and waypoints. What a handheld GPS and every field app
+   in Ghana writes. */
+function gpxToGeoJson(text) {
+  const doc = new DOMParser().parseFromString(text, "application/xml");
+  if (doc.querySelector("parsererror")) throw new Error("That GPX file will not parse as XML.");
+  const features = [];
+
+  const coordsOf = (nodes) => [...nodes].map((n) => [
+    Number(n.getAttribute("lon")), Number(n.getAttribute("lat"))
+  ]).filter((c) => Number.isFinite(c[0]) && Number.isFinite(c[1]));
+
+  const textOf = (node, tag) => node.querySelector(tag)?.textContent?.trim() || undefined;
+
+  for (const wpt of doc.querySelectorAll("wpt")) {
+    const c = coordsOf([wpt])[0];
+    if (!c) continue;
+    features.push({ type: "Feature", geometry: { type: "Point", coordinates: c },
+      properties: { name: textOf(wpt, "name"), description: textOf(wpt, "desc"),
+                    elevation: textOf(wpt, "ele"), time: textOf(wpt, "time") } });
+  }
+  for (const seg of doc.querySelectorAll("trkseg")) {
+    const c = coordsOf(seg.querySelectorAll("trkpt"));
+    if (c.length > 1) {
+      features.push({ type: "Feature", geometry: { type: "LineString", coordinates: c },
+        properties: { name: textOf(seg.closest("trk") || seg, "name"), points: c.length } });
+    }
+  }
+  for (const rte of doc.querySelectorAll("rte")) {
+    const c = coordsOf(rte.querySelectorAll("rtept"));
+    if (c.length > 1) {
+      features.push({ type: "Feature", geometry: { type: "LineString", coordinates: c },
+        properties: { name: textOf(rte, "name"), points: c.length } });
+    }
+  }
+  if (!features.length) throw new Error("No waypoints, tracks or routes in that GPX file.");
+  return { type: "FeatureCollection", features };
+}
+
+/* KML: placemarks, which is what Google Earth and most field collection apps
+   export. Folders and styles are ignored; the geometry and the name are the
+   part anyone wants on a map. */
+function kmlToGeoJson(text) {
+  const doc = new DOMParser().parseFromString(text, "application/xml");
+  if (doc.querySelector("parsererror")) throw new Error("That KML file will not parse as XML.");
+
+  const coords = (node) => (node?.textContent || "").trim().split(/\s+/)
+    .map((t) => t.split(",").map(Number))
+    .filter((c) => Number.isFinite(c[0]) && Number.isFinite(c[1]))
+    .map((c) => [c[0], c[1]]);
+
+  const features = [];
+  for (const place of doc.querySelectorAll("Placemark")) {
+    const name = place.querySelector("name")?.textContent?.trim();
+    const description = place.querySelector("description")?.textContent?.trim();
+    const props = { name, description };
+    for (const d of place.querySelectorAll("SimpleData, Data")) {
+      const key = d.getAttribute("name");
+      if (key) props[key] = (d.querySelector("value") || d).textContent?.trim();
+    }
+
+    const point = place.querySelector("Point coordinates");
+    const line = place.querySelector("LineString coordinates");
+    const ring = place.querySelector("Polygon outerBoundaryIs LinearRing coordinates");
+
+    let geometry = null;
+    if (point) { const c = coords(point)[0]; if (c) geometry = { type: "Point", coordinates: c }; }
+    else if (line) { const c = coords(line); if (c.length > 1) geometry = { type: "LineString", coordinates: c }; }
+    else if (ring) {
+      const outer = coords(ring);
+      if (outer.length > 3) {
+        const holes = [...place.querySelectorAll("Polygon innerBoundaryIs LinearRing coordinates")]
+          .map(coords).filter((h) => h.length > 3);
+        geometry = { type: "Polygon", coordinates: [outer, ...holes] };
+      }
+    }
+    if (geometry) features.push({ type: "Feature", geometry, properties: props });
+  }
+  if (!features.length) throw new Error("No placemarks with geometry in that KML file.");
+  return { type: "FeatureCollection", features };
+}
+
+/* Shapefile. A .shp is binary and comes with a .dbf and a .prj beside it, so
+   this is the one format worth a library; shpjs is fetched on first use and
+   not before, because most sessions never open one. */
+let shpLib = null;
+async function loadShp() {
+  if (!shpLib) {
+    addDataStatus("Loading the Shapefile reader…");
+    shpLib = (await import("https://cdn.jsdelivr.net/npm/shpjs@6.1.0/+esm")).default;
+  }
+  return shpLib;
+}
+
+/* Whatever came in, as GeoJSON. */
+async function toCollection(name, buffer, text) {
+  const lower = name.toLowerCase();
+
+  if (lower.endsWith(".zip")) {
+    const shp = await loadShp();
+    const out = await shp(buffer);
+    const parts = Array.isArray(out) ? out : [out];
+    const features = parts.flatMap((p) => p.features || []);
+    if (!features.length) throw new Error("No features in that Shapefile.");
+    return { collection: { type: "FeatureCollection", features },
+             note: `${features.length.toLocaleString()} features` };
+  }
+  if (lower.endsWith(".gpx")) {
+    const c = gpxToGeoJson(text);
+    return { collection: c, note: `${c.features.length.toLocaleString()} from GPX` };
+  }
+  if (lower.endsWith(".kml")) {
+    const c = kmlToGeoJson(text);
+    return { collection: c, note: `${c.features.length.toLocaleString()} placemarks` };
+  }
+  if (lower.endsWith(".csv") || lower.endsWith(".tsv") || lower.endsWith(".txt")) {
+    const { collection, dropped, rows } = csvToGeoJson(text, name);
+    return { collection, csv: text,
+             note: `${collection.features.length.toLocaleString()} of ${rows.toLocaleString()} rows`
+                 + (dropped ? ` · ${dropped.toLocaleString()} without a coordinate` : "") };
+  }
+
+  // GeoJSON, or anything that parses as it.
+  let data;
+  try { data = JSON.parse(text); }
+  catch { throw new Error(`${name} is not GeoJSON, CSV, GPX, KML or a zipped Shapefile.`); }
+
+  if (data.type === "FeatureCollection") {
+    if (!data.features?.length) throw new Error(`${name} has no features.`);
+    return { collection: data, note: `${data.features.length.toLocaleString()} features` };
+  }
+  if (data.type === "Feature") {
+    return { collection: { type: "FeatureCollection", features: [data] }, note: "1 feature" };
+  }
+  if (data.type && data.coordinates) {
+    return { collection: { type: "FeatureCollection",
+      features: [{ type: "Feature", geometry: data, properties: {} }] }, note: "1 geometry" };
+  }
+  throw new Error(`${name} is JSON, but not GeoJSON — no FeatureCollection, Feature or geometry in it.`);
+}
+
+/* ── Drawing it ────────────────────────────────────────────────────────── */
+
+/* One source, three layers — polygons, lines and points — so a file holding a
+   mixture draws all of it. The layer registers like everything else, which is
+   what puts it in the layer list, the legend, the toolbox and the Style pane
+   without any of them being told about it. */
+function drawCollection(label, collection, note) {
+  const id = `added-${++addedLayerSeq}`;
+  const colour = TOOLBOX_COLOURS[addedLayerSeq % TOOLBOX_COLOURS.length];
+
+  map.addSource(id, { type: "geojson", data: collection });
+  map.addLayer({ id: `${id}-fill`, type: "fill", source: id,
+    filter: ["in", ["geometry-type"], ["literal", ["Polygon", "MultiPolygon"]]],
+    paint: { "fill-color": colour, "fill-opacity": 0.3 } });
+  map.addLayer({ id: `${id}-line`, type: "line", source: id,
+    filter: ["in", ["geometry-type"], ["literal",
+      ["LineString", "MultiLineString", "Polygon", "MultiPolygon"]]],
+    paint: { "line-color": colour, "line-width": 1.6 } });
+  map.addLayer({ id: `${id}-point`, type: "circle", source: id,
+    filter: ["in", ["geometry-type"], ["literal", ["Point", "MultiPoint"]]],
+    paint: { "circle-radius": 4.5, "circle-color": colour,
+             "circle-stroke-width": 1, "circle-stroke-color": colours().ground } });
+
+  const box = bboxOfCollection(collection);
+  registerUserLayer({ id, label, kind: "vector", sourceId: id,
+    layerIds: [`${id}-fill`, `${id}-line`, `${id}-point`],
+    bbox: box, colour, note });
+
+  if (box) map.fitBounds([[box[0], box[1]], [box[2], box[3]]], { padding: 60, duration: 900 });
+  return id;
+}
+
+/* Queryable as well as drawable. The attributes go into DuckDB under a name
+   made from the file's, so the SQL workspace and the assistant can reach what
+   was just added — which is the difference between a picture of your data and
+   your data. */
+async function registerCollectionTable(label, collection) {
+  if (!conn || !duckDb) return null;
+  const table = "add_" + label.toLowerCase().replace(/\.[a-z0-9]+$/, "")
+    .replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "").slice(0, 40) || "added";
+
+  const keys = [...new Set(collection.features.flatMap((f) =>
+    Object.keys(f.properties || {})))].filter((k) => k !== "geom").slice(0, 60);
+  const columns = [...keys, "lon", "lat", "geom"];
+
+  const rows = collection.features.map((f) => {
+    // The page's own centroid is area-weighted, which is better than the
+    // mean of the vertices this nearly reimplemented.
+    const centre = f.geometry ? centroidOf(f.geometry) : null;
+    const values = keys.map((k) => csvEscape(f.properties?.[k] ?? ""));
+    values.push(centre ? centre[0] : "", centre ? centre[1] : "");
+    values.push(csvEscape(JSON.stringify(f.geometry)));
+    return values.join(",");
+  });
+
+  const csv = [columns.map(csvEscape).join(",")].concat(rows).join("\n");
+  try {
+    await duckDb.registerFileText(`${table}.csv`, csv);
+    await conn.query(`CREATE OR REPLACE TABLE ghana.${table} AS
+                      SELECT * FROM read_csv_auto('${table}.csv', header = true);`);
+    return `ghana.${table}`;
+  } catch (err) {
+    window.ghLog?.("error", `Could not make a table from ${label}`, String(err.message ?? err));
+    return null;
+  }
+}
+
+/* ── The way in ────────────────────────────────────────────────────────── */
+
+async function ingestFiles(files) {
+  const list = [...files];
+  if (!list.length) return;
+
+  const done = [];
+  for (const file of list) {
+    try {
+      addDataStatus(`Reading ${escapeHtml(file.name)}…`);
+      const isBinary = file.name.toLowerCase().endsWith(".zip");
+      const buffer = isBinary ? await file.arrayBuffer() : null;
+      const text = isBinary ? null : await file.text();
+
+      const { collection, note } = await toCollection(file.name, buffer, text);
+      const label = file.name.replace(/\.[^.]+$/, "");
+      drawCollection(label, collection, note);
+      const table = await registerCollectionTable(label, collection);
+      done.push({ label, note, table });
+      window.ghLog?.("ok", `Added ${file.name}`, note);
+    } catch (err) {
+      console.error("Add data:", err);
+      addDataStatus(`<strong>${escapeHtml(file.name)}</strong> — ${escapeHtml(err.message || String(err))}`, "error");
+      return;
+    }
+  }
+
+  addDataStatus(done.map((d) =>
+    `<strong>${escapeHtml(d.label)}</strong> — ${escapeHtml(d.note)}`
+    + (d.table ? `, queryable as <code>${escapeHtml(d.table)}</code>` : "")).join("<br>"), "ok");
+  renderUserLayers();
+  renderStylePane();
+}
+
+async function ingestUrl(url) {
+  const address = String(url || "").trim();
+  if (!address) return;
+  try {
+    addDataStatus("Fetching…");
+    const response = await fetch(address);
+    if (!response.ok) throw new Error(`The server answered ${response.status}.`);
+    const name = address.split("/").pop().split("?")[0] || "remote.geojson";
+    const isBinary = name.toLowerCase().endsWith(".zip");
+    const { collection, note } = await toCollection(
+      name, isBinary ? await response.arrayBuffer() : null,
+      isBinary ? null : await response.text());
+
+    const label = name.replace(/\.[^.]+$/, "");
+    drawCollection(label, collection, note);
+    const table = await registerCollectionTable(label, collection);
+    addDataStatus(`<strong>${escapeHtml(label)}</strong> — ${escapeHtml(note)}`
+      + (table ? `, queryable as <code>${escapeHtml(table)}</code>` : ""), "ok");
+    renderUserLayers();
+  } catch (err) {
+    // A refused request never leaves the browser, so the error is empty and
+    // the cause is the policy rather than the server. Said plainly.
+    const message = /Failed to fetch|NetworkError/i.test(String(err.message))
+      ? `The browser would not fetch that address. This site's content security
+         policy names the hosts it may reach, so a URL somewhere else is
+         refused before it leaves the page. Download the file and drop it on
+         the map instead, or add the host to connect-src in vercel.json.`
+      : err.message || String(err);
+    addDataStatus(escapeHtml(message).replace(/\n\s+/g, " "), "error");
+  }
+}
+
+/* Drop a file anywhere on the map. The first thing anyone tries. */
+function wireDropTarget() {
+  const target = document.getElementById("map-wrap");
+  const veil = document.getElementById("drop-veil");
+  if (!target || !veil) return;
+
+  let depth = 0;
+  const show = (on) => { veil.hidden = !on; };
+
+  target.addEventListener("dragenter", (e) => {
+    if (![...(e.dataTransfer?.types || [])].includes("Files")) return;
+    e.preventDefault(); depth += 1; show(true);
+  });
+  target.addEventListener("dragover", (e) => {
+    if (![...(e.dataTransfer?.types || [])].includes("Files")) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "copy";
+  });
+  target.addEventListener("dragleave", () => { depth = Math.max(0, depth - 1); if (!depth) show(false); });
+  target.addEventListener("drop", (e) => {
+    if (!e.dataTransfer?.files?.length) return;
+    e.preventDefault(); depth = 0; show(false);
+    openAddData();
+    ingestFiles(e.dataTransfer.files);
+  });
+}
+
+function wireAddData() {
+  const input = document.getElementById("adddata-file");
+  input?.addEventListener("change", () => {
+    if (input.files?.length) ingestFiles(input.files);
+    input.value = "";
+  });
+  document.getElementById("adddata-pick")?.addEventListener("click", () => input?.click());
+  document.getElementById("adddata-url-go")?.addEventListener("click", () =>
+    ingestUrl(document.getElementById("adddata-url").value));
+  document.getElementById("adddata-url")?.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") ingestUrl(e.target.value);
+  });
+
+  const zone = document.getElementById("adddata-drop");
+  zone?.addEventListener("dragover", (e) => { e.preventDefault(); zone.dataset.over = "true"; });
+  zone?.addEventListener("dragleave", () => { zone.dataset.over = "false"; });
+  zone?.addEventListener("drop", (e) => {
+    e.preventDefault(); zone.dataset.over = "false";
+    if (e.dataTransfer?.files?.length) ingestFiles(e.dataTransfer.files);
+  });
+  zone?.addEventListener("click", () => input?.click());
+}
+
+
+/* ── The basemap gallery ───────────────────────────────────────────────────
+
+   Every source here works without an account, a key or a sign-up, which is
+   the only kind worth building a public platform on: a key is a thing to
+   lose, to leak, to run out of, and to stop a district office from using this
+   at all. Satellite imagery is in the list because half of what anyone wants
+   a basemap for is "show me what is actually on the ground".
+
+   Each one names what it is for and who must be credited. The attribution is
+   not decoration — Esri and OpenStreetMap both require it, and the map export
+   carries it into the image for the same reason.                           */
+
+const BASEMAP_GALLERY = [
+  { id: "esri_light", group: "Reference",
+    name: "Light Gray", for: "A quiet backdrop. The default, because data should be the loud thing." },
+  { id: "esri_dark", group: "Reference",
+    name: "Dark Gray", for: "The same, for the dark theme." },
+  { id: "esri_imagery", group: "Imagery",
+    name: "Satellite", for: "Esri World Imagery. What is actually on the ground.",
+    tiles: ["https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"],
+    maxzoom: 19, attribution: "Esri, Maxar, Earthstar Geographics, and the GIS User Community" },
+  { id: "esri_imagery_labels", group: "Imagery",
+    name: "Satellite + Labels", for: "Imagery with place names and boundaries over it.",
+    tiles: ["https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"],
+    overlay: ["https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}"],
+    maxzoom: 19, attribution: "Esri, Maxar, Earthstar Geographics" },
+  { id: "osm", group: "Street",
+    name: "OpenStreetMap", for: "Full detail: streets, names, buildings." },
+  { id: "osm_hot", group: "Street",
+    name: "Humanitarian", for: "The HOT style — clinics, water points and tracks drawn prominently. Built for exactly this kind of work.",
+    tiles: ["https://a.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png",
+            "https://b.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png"],
+    maxzoom: 19, attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, tiles by HOT' },
+  { id: "carto_positron", group: "Reference",
+    name: "Positron", for: "CARTO's pale cartography. Very quiet under a choropleth.",
+    tiles: ["https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png",
+            "https://b.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png"],
+    maxzoom: 19, attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors © <a href="https://carto.com/attributions">CARTO</a>' },
+  { id: "carto_dark", group: "Reference",
+    name: "Dark Matter", for: "CARTO's dark cartography.",
+    tiles: ["https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png",
+            "https://b.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png"],
+    maxzoom: 19, attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors © <a href="https://carto.com/attributions">CARTO</a>' },
+  { id: "carto_voyager", group: "Street",
+    name: "Voyager", for: "Readable street cartography with gentle colour.",
+    tiles: ["https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png",
+            "https://b.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png"],
+    maxzoom: 19, attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors © <a href="https://carto.com/attributions">CARTO</a>' },
+  { id: "opentopomap", group: "Terrain",
+    name: "OpenTopoMap", for: "Contours and relief. For anything that follows the land.",
+    tiles: ["https://a.tile.opentopomap.org/{z}/{x}/{y}.png",
+            "https://b.tile.opentopomap.org/{z}/{x}/{y}.png"],
+    maxzoom: 17, attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, SRTM — © <a href="https://opentopomap.org">OpenTopoMap</a> (CC-BY-SA)' },
+  { id: "esri_topo", group: "Terrain",
+    name: "Topographic", for: "Esri's topographic map: relief, roads and place names together.",
+    tiles: ["https://services.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}"],
+    maxzoom: 19, attribution: "Esri, HERE, Garmin, FAO, NOAA, USGS, © OpenStreetMap contributors" },
+  { id: "esri_ocean", group: "Terrain",
+    name: "Ocean", for: "Bathymetry and the coast, for anything along the Gulf of Guinea.",
+    tiles: ["https://services.arcgisonline.com/ArcGIS/rest/services/Ocean/World_Ocean_Base/MapServer/tile/{z}/{y}/{x}"],
+    maxzoom: 13, attribution: "Esri, GEBCO, NOAA, National Geographic, Garmin, HERE" },
+  { id: "none", group: "Reference",
+    name: "No basemap", for: "Nothing underneath. For printing, and for seeing a layer honestly." }
+];
+
+/* The gallery's own entries become basemaps the moment they are needed, so
+   BASEMAPS keeps one shape and everything that reads it — the style builder,
+   the settings select, the export — needs no special case. */
+function ensureGalleryBasemap(id) {
+  if (BASEMAPS[id]) return BASEMAPS[id];
+  const entry = BASEMAP_GALLERY.find((b) => b.id === id);
+  if (!entry?.tiles) return null;
+
+  const sources = {
+    base: { type: "raster", tiles: entry.tiles, tileSize: 256,
+            maxzoom: entry.maxzoom || 19, attribution: entry.attribution }
+  };
+  const layers = [{ id: "basemap", type: "raster", source: "base" }];
+  if (entry.overlay) {
+    sources.baselabels = { type: "raster", tiles: entry.overlay, tileSize: 256,
+                           maxzoom: entry.maxzoom || 19, attribution: entry.attribution };
+    layers.push({ id: "basemap-labels", type: "raster", source: "baselabels" });
+  }
+  BASEMAPS[id] = { label: entry.name, note: entry.for, sources, layers };
+  return BASEMAPS[id];
+}
+
+function setBasemap(id) {
+  if (!ensureGalleryBasemap(id)) {
+    setStatus(`No basemap called "${id}".`, true);
+    return;
+  }
+  state.basemap = id;
+  store.set("basemap", id);
+  const select = document.getElementById("basemap-select");
+  if (select) select.value = id;
+  rebuildStyle();
+  renderBasemapGallery();
+  window.ghLog?.("info", `Basemap: ${BASEMAPS[id].label}`);
+}
+
+/* A custom XYZ source, the way every desktop GIS lets you paste one. This is
+   what makes the gallery a floor rather than a ceiling: a district with its
+   own tile server is one paste away from using it. */
+function addCustomBasemap() {
+  const input = document.getElementById("basemap-xyz");
+  const url = (input?.value || "").trim();
+  if (!url) return;
+  if (!/\{z\}/.test(url) || !/\{x\}/.test(url) || !/\{y\}/.test(url)) {
+    setStatus("An XYZ address needs {z}, {x} and {y} in it.", true);
+    return;
+  }
+  const id = `custom_${Object.keys(BASEMAPS).length}`;
+  BASEMAPS[id] = {
+    label: "Custom tiles",
+    note: url,
+    sources: { base: { type: "raster", tiles: [url], tileSize: 256, maxzoom: 22,
+                       attribution: "Custom tile source" } },
+    layers: [{ id: "basemap", type: "raster", source: "base" }]
+  };
+  BASEMAP_GALLERY.push({ id, group: "Custom", name: "Custom tiles", for: url });
+  setBasemap(id);
+  if (input) input.value = "";
+}
+
+function renderBasemapGallery() {
+  const host = document.getElementById("pane-basemap");
+  if (!host) return;
+  const groups = [...new Set(BASEMAP_GALLERY.map((b) => b.group))];
+
+  host.innerHTML = `<h3>Basemap</h3>
+    <p class="legend-note">Every one of these works without a key or an account.
+      Whoever made the tiles must be credited, and the map export carries that
+      into the image.</p>
+    ${groups.map((group) => `
+      <h4 class="dock-group">${escapeHtml(group)}</h4>
+      <div class="basemap-grid">
+        ${BASEMAP_GALLERY.filter((b) => b.group === group).map((b) => `
+          <button type="button" class="basemap-card" data-basemap="${escapeHtml(b.id)}"
+                  aria-pressed="${state.basemap === b.id}">
+            <span class="bm-name">${escapeHtml(b.name)}</span>
+            <span class="bm-for">${escapeHtml(b.for)}</span>
+          </button>`).join("")}
+      </div>`).join("")}
+    <h4 class="dock-group">Your own tiles</h4>
+    <div class="field">
+      <input id="basemap-xyz" type="text" spellcheck="false"
+             placeholder="https://your-server/tiles/{z}/{x}/{y}.png">
+      <p class="legend-note">An XYZ template. A tile server you run, or any
+        public one — it is added to the gallery for this session.</p>
+    </div>
+    <div class="actions"><button class="btn btn-quiet" id="basemap-xyz-add">Add these tiles</button></div>`;
+
+  for (const button of host.querySelectorAll("[data-basemap]")) {
+    button.addEventListener("click", () => setBasemap(button.dataset.basemap));
+  }
+  host.querySelector("#basemap-xyz-add")?.addEventListener("click", addCustomBasemap);
+  host.querySelector("#basemap-xyz")?.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") addCustomBasemap();
+  });
+}
+
+function openBasemapGallery() {
+  renderBasemapGallery();
+  showPanel("basemap");
+}
+
 /* ── Driving the shell ─────────────────────────────────────────────────── */
 
 const PANEL_TITLES = {
   style: "Style", data: "Data", query: "SQL workspace", ask: "AI Assistant",
   log: "Log", sources: "About the data", settings: "Map", layers: "Layers",
-  planned: "Not built yet", bookmarks: "Bookmarks", identify: "Identify"
+  planned: "Not built yet", bookmarks: "Bookmarks", identify: "Identify",
+  basemap: "Basemap", adddata: "Add data"
 };
 
 /* One pane shows in the right-hand panel at a time. Asking for the pane that
@@ -11534,6 +12342,9 @@ function turfLikeDistanceKm(lon1, lat1, lon2, lat2) {
     renderRibbon();
     wireCommandSearch();
     renderBookmarks();
+    wireAddData();
+    wireDropTarget();
+    renderBasemapGallery();
     document.getElementById("ribbon-search")?.addEventListener("click", openCommandSearch);
     document.getElementById("ribbon-body")?.addEventListener("wheel", (e) => {
       const band = e.currentTarget;

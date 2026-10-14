@@ -17,7 +17,9 @@ knows where to look, and a layout people already know needs no explaining.
 
 ```
 ┌────────────────────────────────────────────────────────────────┐
-│ Ghana GeoStack   Project  View  Add Data  Processing  Help     │  menu bar
+│ Home  Data  Style  Edit  Analyze  View  Publish  …   🔍 Ctrl K │  tab strip
+│ ┌─ Navigate ──┐┌─ Add Data ───┐┌─ Selection ─┐┌─ Inspect ──┐  │  ribbon
+│ │ ▣ ▣ ▣ ▣ ▣ ▣ ││ ▣ ▣ ▣ ▣ ▣ ▣  ││ ▣ ▣ ▣       ││ ▣ ▣ ▣ ▣    │  │
 ├────────────────────────────────────────────────────────────────┤
 │ ┌──────────────┐                        ▣ ▣ ▣ ▣ ▣ ▣  ← toolbar │
 │ │ Layers     ×│                       ┌──────────────┐         │
@@ -32,9 +34,11 @@ knows where to look, and a layout people already know needs no explaining.
 └────────────────────────────────────────────────────────────────┘
 ```
 
-**The menu bar** holds everything the viewer can do, grouped by what it is for.
-*Project* is data and exports, *View* is the map itself, *Add Data* brings
-something new in, *Processing* opens the toolbox, *Help* explains the place.
+**The ribbon** holds everything the viewer can do: ten tabs, groups within
+them, and every control running one named command. It has
+[its own page](ribbon.md). **Ctrl K** searches all 390 commands by name, which
+is how to find a tool when you know what it is called and not which tab it is
+on.
 
 **The toolbar** sits on the map at the top right. The left half is the map
 itself — zoom in, zoom out, a compass whose needle turns with the map and puts
@@ -45,9 +49,17 @@ moves is a control to hunt for.
 
 **The panels float on the map** rather than taking columns out of it. Layers on
 the left, everything else on the right — Style, Data, the SQL workspace, Ask,
-the Log, one at a time. Both can be closed, from the toolbar or from the × in
-their own header, and with both closed the map has the whole window. The map
-underneath is continuous, so a drag does not stop at a panel's edge.
+the Log, Basemap, Add data, Bookmarks, Identify, one at a time. Both can be
+closed, from the toolbar or from the × in their own header, and with both
+closed the map has the whole window. The map underneath is continuous, so a
+drag does not stop at a panel's edge.
+
+A ribbon button that names a panel opens it. It does not toggle it shut, which
+it used to: pressing **AI Assistant** from the Analyze tab, with Ask already
+the open pane, closed the pane you were asking for — and from a tab where the
+dock is not necessarily in view, that reads as a button that does nothing.
+Toggling is right for the dock's own tab strip, where the button is the tab,
+and wrong from anywhere else.
 
 **The status bar** reports where the map is. It is read, not operated, apart
 from the clip.
@@ -108,6 +120,99 @@ same way: *show me that*.
 
 Which of the three it is can be told from what was typed, so there is no mode
 to set first.
+
+---
+
+## Adding your own data
+
+**Home → Add Data → Add a File**, or drop the file anywhere on the map. The
+pane holds a drop zone, a file picker, an address box for anything served over
+HTTP, and a line of status that says what happened to each file.
+
+Dropping works over the whole map, not only over the pane — the map dims and
+says *Drop to add it to the map* while a file is over it — because the obvious thing to do
+with a file is drag it onto the map, and a drop target the size of a panel
+means finding the panel first.
+
+Six formats, read in the browser with no server involved:
+
+| | |
+| --- | --- |
+| **GeoJSON** | `.geojson`, or `.json` that parses as one. A FeatureCollection, a single Feature, or a bare geometry |
+| **CSV / TSV** | Delimiter detected from the file. Quoted fields with commas in them are handled |
+| **GPX** | Waypoints, routes and tracks |
+| **KML** | Placemarks, including polygons and lines |
+| **WKT in a CSV** | A geometry column written as `POINT(...)`, `POLYGON(...)` and so on |
+| **Shapefile** | A `.zip` holding `.shp`, `.dbf` and friends. The reader is fetched on first use and not before, because most sessions never open one |
+
+A CSV's coordinate columns are found by name — `lon`/`lat`, `x`/`y`,
+`longitude`/`latitude`, `easting`/`northing`, or a WKT column. If none of them
+are there, the error says so and lists the columns the file actually has,
+which is more use than *could not read file*.
+
+A row with an empty coordinate cell is dropped and counted, not placed.
+`Number("")` is `0`, so the obvious code puts such a row at 0°N 0°E — which is
+in the Gulf of Guinea, about 600 km south of Accra, close enough to Ghana to
+look like data rather than a bug. The status line reports it: *towns.csv — 2 of
+3 rows · 1 without a coordinate*.
+
+What arrives becomes a layer card like any other, with fill, line and circle
+styling for whichever geometries are in it, and the map fits to its extent. It
+is also registered in the browser database as `ghana.add_<name>`, with the
+file's own columns plus `lon`, `lat` and the geometry as GeoJSON text, so what
+you dropped can be queried in the SQL workspace rather than only looked at:
+
+```sql
+select district, count(*) as towns, sum(people) as people
+from ghana.add_towns
+group by district
+order by people desc;
+```
+
+That is the difference between a picture of your data and your data.
+
+A file that cannot be read adds nothing and says why. It does not add an empty
+layer, which looks like success.
+
+---
+
+## Basemaps
+
+**View → Map → Basemap** opens a gallery of thirteen, grouped by what they are
+for. None needs an API key or an account, which is the point: a key is a thing
+to obtain, store and eventually have expire, and a platform meant to be
+deployed by anyone cannot start with one.
+
+| Group | |
+| --- | --- |
+| Reference | Esri Light Gray, Esri Dark Gray, CARTO Positron, CARTO Dark Matter, no basemap |
+| Imagery | Esri World Imagery, and the same with labels over it |
+| Street | OpenStreetMap, OSM Humanitarian, CARTO Voyager |
+| Terrain | OpenTopoMap, Esri Topographic, Esri Ocean |
+
+A grey reference basemap is the default and the right default: a choropleth
+drawn over satellite imagery is unreadable, and the thing being mapped should
+be the loudest thing on the screen. The imagery styles are there for when the
+imagery *is* the subject — checking a building footprint, siting a borehole.
+OSM Humanitarian is included because it draws the things humanitarian mapping
+cares about, which is also much of what district planning cares about.
+
+**Add your own** takes an XYZ template — `https://…/{z}/{x}/{y}.png` — and
+checks it has the three placeholders before trying it. Any tile server that
+serves plain XYZ works, including one on a laptop. Each entry carries its
+provider's attribution, which is drawn on the map and written into an exported
+map image, because every one of these services requires it.
+
+Changing the basemap keeps everything you have added. This needs saying
+because it did not: swapping the basemap replaces the whole MapLibre style,
+which removes every source and layer on the map at once, and the catalogue
+layers were rebuilt afterwards while the session's own were not. Picking a
+different background threw away your dropped CSV, your buffer and your Earth
+Engine raster, and the map came back looking perfectly fine — which is the
+worst version of that, because what is missing is only noticed later. Each
+added layer is now lifted out of the live style before the swap and put back on
+top of the new basemap, in the order it had, and `tests/adddata.cjs` counts
+what is drawn before and after to keep it that way.
 
 ---
 

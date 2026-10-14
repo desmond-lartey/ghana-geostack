@@ -29,23 +29,47 @@ const PORT = Number(process.env.SMOKE_PORT || 8123);
 const STUB = `
 const handlers = {};
 class FakeMap {
-  constructor() { this.style = { layers: [] }; }
+  // Sources and layers are really held, because what a style swap does to
+  // them is the thing worth testing: setStyle empties both, and anything this
+  // session added has to be put back by the page or it is gone.
+  constructor() { this.style = { layers: [] }; this._src = new Map(); this._lyr = new Map(); }
   on(name, fn) { (handlers[name] ??= []).push(fn); return this; }
-  once(name, fn) { return this.on(name, fn); }
-  fire(name) { for (const fn of handlers[name] ?? []) fn({}); return this; }
-  off() { return this; }
+  once(name, fn) {
+    const wrapped = (e) => { this.off(name, wrapped); fn(e); };
+    return this.on(name, wrapped);
+  }
+  fire(name) { for (const fn of (handlers[name] ?? []).slice()) fn({}); return this; }
+  off(name, fn) {
+    const list = handlers[name];
+    if (list && fn) { const i = list.indexOf(fn); if (i >= 0) list.splice(i, 1); }
+    return this;
+  }
   addControl() { return this; }
   removeControl() { return this; }
-  addSource() {} removeSource() {} addLayer() {} removeLayer() {}
-  getSource() { return null; } getLayer() { return null; }
-  getStyle() { return { layers: [] }; }
+  addSource(id, spec) { this._src.set(id, spec || {}); }
+  removeSource(id) { this._src.delete(id); }
+  addLayer(spec) { if (spec && spec.id) this._lyr.set(spec.id, spec); }
+  removeLayer(id) { this._lyr.delete(id); }
+  getSource(id) { return this._src.has(id) ? { setData() {}, setTiles() {} } : null; }
+  getLayer(id) { return this._lyr.get(id) || null; }
+  getStyle() {
+    return { sources: Object.fromEntries(this._src), layers: [...this._lyr.values()] };
+  }
   setProjection() {} setTerrain() {} setPaintProperty() {}
   getPaintProperty() { return 1; } setLayoutProperty() {}
   getCenter() { return { lng: -1.09, lat: 7.95 }; }
   getZoom() { return 6.2; }
   getBearing() { return 0; }
   isStyleLoaded() { return true; }
-  setStyle() {} loaded() { return true; }
+  // A real style swap empties the map and then announces it, and the page
+  // waits for that announcement before putting anything back. A stub that
+  // never announces it leaves the page waiting forever, which made the layers
+  // lost by a basemap change look like layers that were never restored.
+  setStyle() {
+    this._src.clear(); this._lyr.clear();
+    setTimeout(() => this.fire("styledata"), 0);
+  }
+  loaded() { return true; }
   getPitch() { return 0; }
   getCanvas() { return { width: 1200, height: 800, clientWidth: 1200, clientHeight: 800 }; }
   getBounds() { return { getSouth: () => 4.7, getWest: () => -3.3,

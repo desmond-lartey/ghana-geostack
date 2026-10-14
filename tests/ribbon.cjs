@@ -100,6 +100,28 @@ function serve() {
     return out;
   });
 
+  // The widest tab must not widen the window. A grid item's min-width is
+  // auto, so a ribbon wider than the screen once stretched the whole shell and
+  // pushed the right-hand dock thousands of pixels off the side of it.
+  const fits = await page.evaluate(() => {
+    const out = [];
+    for (const tab of window.__ghRibbon.spec()) {
+      document.querySelector(`.ribbon-tab[data-tab="${tab.tab}"]`)?.click();
+      const panel = document.getElementById("panel");
+      panel.hidden = false;
+      const box = panel.getBoundingClientRect();
+      if (box.right > window.innerWidth + 1) {
+        out.push(`${tab.tab}: the right dock ends at ${Math.round(box.right)}px `
+               + `in a ${window.innerWidth}px window`);
+      }
+      if (document.documentElement.scrollWidth > window.innerWidth + 1) {
+        out.push(`${tab.tab}: the page scrolls sideways `
+               + `(${document.documentElement.scrollWidth}px)`);
+      }
+    }
+    return out;
+  });
+
   // A slot must explain itself rather than do nothing.
   const slot = await page.evaluate(() => {
     const planned = window.__ghRibbon.commands().find((c) => !c.built);
@@ -117,6 +139,7 @@ function serve() {
   if (shape.tabs.length !== 10) bad.push(`expected ten tabs, got ${shape.tabs.join(", ")}`);
   if (shape.orphans.length) bad.push("controls naming no command: " + shape.orphans.join(", "));
   if (ran.threw.length) bad.push("commands that threw:\n    " + ran.threw.join("\n    "));
+  if (fits.length) bad.push("the ribbon pushes the shell off screen:\n    " + fits.join("\n    "));
   if (!slot.shown) bad.push("a slot did not open its explainer");
   if (!slot.mentionsId) bad.push("the explainer does not give the command id");
   // Uncaught page errors during the sweep mean a command broke something else.

@@ -120,7 +120,8 @@ test:  ## Run the test suite
 	@command -v node >/dev/null && { $(MAKE) -s web >/dev/null && \
 	  node tests/smoke_viewer.cjs && node tests/ee_clip.cjs && \
 	  node tests/ee_rainfall.cjs && node tests/legend.cjs && \
-	  node tests/export.cjs && node tests/ribbon.cjs; } || \
+	  node tests/export.cjs && node tests/ribbon.cjs && \
+	  node tests/adddata.cjs; } || \
 	 echo "node not installed, skipping the browser tests"
 
 # ── Housekeeping ──────────────────────────────────────────────────────────

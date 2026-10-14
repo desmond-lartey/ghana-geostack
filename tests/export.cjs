@@ -17,23 +17,26 @@ const PORT = Number(process.env.SMOKE_PORT || 8127);
 const VALUES = [1499.06, 1378.39, 1204.5, 1102.2, 998.7, 950.1, 902.4, 880.0];
 
 // A stub that can be photographed: getCanvas hands back a real canvas with
-// something drawn on it, because the export copies pixels from it.
-const STUB = fs.readFileSync(path.join(__dirname, "smoke_viewer.cjs"), "utf8")
-  .split("const STUB = `")[1].split("`;")[0]
-  .replace("queryRenderedFeatures() { return []; }",
-    `queryRenderedFeatures() { return ${JSON.stringify(
-      VALUES.map((v) => ({ properties: { rainfall_mm: v } })))}; }`)
-  .replace("getLayer() { return null; }", 'getLayer(id) { return { id, type: "fill" }; }')
-  .replace("getCanvas() { return { width: 1200, height: 800, clientWidth: 1200, clientHeight: 800 }; }",
-    `getCanvas() {
-       if (!this._c) {
-         this._c = document.createElement("canvas");
-         this._c.width = 1200; this._c.height = 800;
-         const g = this._c.getContext("2d");
-         g.fillStyle = "#6f8f5e"; g.fillRect(0, 0, 1200, 800);
-       }
-       return this._c;
-     }`);
+// something drawn on it, because the export copies pixels from it. A patch
+// that matches nothing throws rather than leaving the stub as it was.
+const { baseStub, patch } = require("./stub.cjs");
+const STUB = patch(baseStub(), [
+  ["queryRenderedFeatures() { return []; }",
+   `queryRenderedFeatures() { return ${JSON.stringify(
+     VALUES.map((v) => ({ properties: { rainfall_mm: v } })))}; }`],
+  ["getLayer(id) { return this._lyr.get(id) || null; }",
+   'getLayer(id) { return this._lyr.get(id) || { id, type: "fill" }; }'],
+  ["getCanvas() { return { width: 1200, height: 800, clientWidth: 1200, clientHeight: 800 }; }",
+   `getCanvas() {
+      if (!this._c) {
+        this._c = document.createElement("canvas");
+        this._c.width = 1200; this._c.height = 800;
+        const g = this._c.getContext("2d");
+        g.fillStyle = "#6f8f5e"; g.fillRect(0, 0, 1200, 800);
+      }
+      return this._c;
+    }`]
+]);
 
 function serve() {
   return new Promise((resolve) => {

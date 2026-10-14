@@ -150,3 +150,8 @@ jobs:
       # are not say so.
       - name: Every ribbon command does what it says
         run: node tests/ribbon.cjs
+
+      # A GIS that cannot open your file is not a GIS. One of each format the
+      # Add Data dialog claims to read.
+      - name: It opens your own data
+        run: node tests/adddata.cjs

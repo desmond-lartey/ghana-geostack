@@ -200,14 +200,39 @@ themes are both defined, and the choice persists.
 
 ### Basemaps
 
-The default is **no basemap**. The boundaries are served from the same origin,
-so the map works with no third-party request at all — faster, private, and it
-cannot break when a tile provider changes its terms.
+**View → Map → Basemap** opens a gallery of thirteen, grouped Reference,
+Imagery, Street and Terrain: Esri light and dark grey canvas, Esri World
+Imagery with and without labels, Esri Topographic and Ocean, OpenStreetMap
+standard and Humanitarian, CARTO Positron, Dark Matter and Voyager,
+OpenTopoMap — and **no basemap**, which is a real option rather than a missing
+one. The boundaries are served from the same origin, so with no basemap the
+map makes no third-party request at all. A grey reference canvas is the
+default, because a choropleth drawn over satellite imagery cannot be read.
 
-Three key-free alternatives are selectable under **Map** in the panel: Esri
-dark and light grey canvas, and OpenStreetMap standard. Confirm the terms of
-whichever you deploy, and run your own tile server for anything with real
-traffic.
+Not one of the thirteen needs an API key or an account. That is the selection
+criterion rather than a coincidence: a key is a thing to obtain, store and
+eventually have expire, and a platform meant to be deployed by a district
+assembly cannot begin with one. **Add your own** takes an XYZ template,
+including one pointing at a tile server on your own machine.
+
+Each entry carries its provider's attribution, which is drawn on the map and
+written into an exported map image. Confirm the terms of whichever you deploy,
+and run your own tile server for anything with real traffic.
+
+### Adding your own data
+
+Drop a file anywhere on the map, or **Home → Add Data → Add a File**. GeoJSON,
+CSV and TSV, GPX, KML, WKT in a CSV column, and a zipped Shapefile, all read in
+the browser with nothing uploaded anywhere. A CSV's coordinate columns are
+found by name — `lon`/`lat`, `x`/`y`, `longitude`/`latitude`,
+`easting`/`northing` — and when none of them are there the error lists the
+columns the file actually has.
+
+What arrives becomes a layer card like any other and is registered in the
+browser database as `ghana.add_<name>`, so it can be queried and joined rather
+than only looked at. A row with an empty coordinate cell is dropped and
+counted, never placed: `Number("")` is `0`, and 0°N 0°E is in the Gulf of
+Guinea, close enough to Ghana to look like data instead of a bug.
 
 Anyone can run SQL in the browser. DuckDB compiled to WebAssembly reads the
 published data in the page, and because the WebAssembly build has no spatial

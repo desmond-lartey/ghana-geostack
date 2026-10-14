@@ -5,7 +5,7 @@ It is generated from the registry in `web/index.html` by
 `python scripts/commands_doc.py`, so it cannot drift from what the
 interface actually does.
 
-**390 commands. 68 are built. 322 are open.**
+**390 commands. 72 are built. 318 are open.**
 
 An open slot is not a bug. The ribbon, the registry and the place each
 command plugs into are finished; the function behind it is the work, and
@@ -48,20 +48,26 @@ by name.
 | `data.liveMarket` | Markets and shops, live from OpenStreetMap. | Built |
 | `data.liveRoad` | The road network, live from OpenStreetMap. | Built |
 | `data.liveBuilding` | Building footprints, live from OpenStreetMap. | Built |
-| `data.addFile` | Open a GeoJSON, CSV, GeoPackage or Shapefile from this computer. | **Open** |
-| `data.addUrl` | A GeoJSON, PMTiles or vector tile service by address. | **Open** |
-| `data.addWms` | An OGC web map service. | **Open** |
+| `data.addFile` | Open a GeoJSON, CSV, GPX, KML or zipped Shapefile from this computer, or drop one on the map. | Built |
+| `data.addUrl` | Fetch a GeoJSON or CSV from an address. | Built |
+| `data.addWms` | Add a tile service. OGC WMS is not read yet; an XYZ template works today, under Basemap. | Built |
+| `layer.addSample` | Add one of the bundled sample layers to the map. | Built |
+| `ui.addDelimited` | Delimited Text…. | **Open** |
+| `graphics.newLayer` | Graphics Layer. | **Open** |
 
 ### Selection
 
 | Command | Does | Status |
 | --- | --- | --- |
+| `select.clip` | Confine every tool, fetch and summary to one boundary. | Built |
 | `select.byRectangle` | Drag a rectangle to select features. | **Open** |
 | `select.byAttributes` | Select with an expression. | **Open** |
 | `select.byLocation` | Select features by where they are relative to another layer. | **Open** |
 | `select.clear` | Drop the selection. | **Open** |
 | `select.zoomTo` | Fit the map to what is selected. | **Open** |
-| `select.clip` | Confine every tool, fetch and summary to one boundary. | Built |
+| `select.selectByAttributes` | Select features with a SQL expression. | **Open** |
+| `select.selectByLocation` | Select features that intersect another layer. | **Open** |
+| `table.attributes` | Open the attribute table of the selected layer. | **Open** |
 
 ### Inspect
 
@@ -71,27 +77,6 @@ by name.
 | `map.measure` | Distance and area on the map. | Built |
 | `layer.table` | The selected layer's rows. | Built |
 | `ui.query` | Query the data directly. | Built |
-
-### Add
-
-| Command | Does | Status |
-| --- | --- | --- |
-| `ui.addDelimited` | Delimited Text…. | **Open** |
-| `graphics.newLayer` | Graphics Layer. | **Open** |
-| `layer.addSample` | Add one of the bundled sample layers to the map. | **Open** |
-
-### Selection
-
-| Command | Does | Status |
-| --- | --- | --- |
-| `select.selectByAttributes` | Select features with a SQL expression. | **Open** |
-| `select.selectByLocation` | Select features that intersect another layer. | **Open** |
-| `table.attributes` | Open the attribute table of the selected layer. | **Open** |
-
-### Inspect
-
-| Command | Does | Status |
-| --- | --- | --- |
 | `tool.zoomBox` | Drag a box to zoom into. | **Open** |
 | `ui.pane.infographics` | Counts, totals and top categories of what's in view. | **Open** |
 
@@ -105,6 +90,7 @@ by name.
 | `data.catalogue` | The curated datasets this platform publishes. | **Open** |
 | `data.refresh` | Re-read the catalogue index. | **Open** |
 | `data.sources` | Where each layer came from and what you may do with it. | **Open** |
+| `data.rasterInformation` | Size, bands, statistics and coordinate system. | **Open** |
 
 ### Connect
 
@@ -141,6 +127,9 @@ by name.
 | `data.exportGpkg` | Export as OGC GeoPackage. | **Open** |
 | `data.exportParquet` | Export as GeoParquet. | **Open** |
 | `data.exportShapefile` | Export as an ESRI Shapefile. | **Open** |
+| `ui.exportRaster` | Save the raster as a GeoTIFF. | **Open** |
+| `data.exportFeatures` | Export Features…. | **Open** |
+| `data.exportFeaturesTool` | Export Features (tool). | **Open** |
 
 ### Offline
 
@@ -176,27 +165,8 @@ by name.
 | `task.task` | Tasks: guided steps that each run a command. | **Open** |
 | `task.newTaskFromHistory` | New Task From History. | **Open** |
 | `data.importTask` | Import Task…. | **Open** |
-
-### Layer Templates
-
-| Command | Does | Status |
-| --- | --- | --- |
 | `layer.layerTemplates` | Add an empty layer with a ready-made schema, to draw into. | **Open** |
 | `layer.layerTemplate` | Start a layer from a saved template. | **Open** |
-
-### Information
-
-| Command | Does | Status |
-| --- | --- | --- |
-| `data.rasterInformation` | Size, bands, statistics and coordinate system. | **Open** |
-
-### Export
-
-| Command | Does | Status |
-| --- | --- | --- |
-| `ui.exportRaster` | Save the raster as a GeoTIFF. | **Open** |
-| `data.exportFeatures` | Export Features…. | **Open** |
-| `data.exportFeaturesTool` | Export Features (tool). | **Open** |
 
 ### Selection
 
@@ -239,9 +209,13 @@ by name.
 | --- | --- | --- |
 | `style.symbology` | Single colour, graduated classes, or categories. | Built |
 | `style.graduated` | Classes across a numeric column. | Built |
-| `style.categorised` | A colour per distinct value. | **Open** |
 | `style.single` | One colour for the whole layer. | Built |
 | `style.opacity` | How much of what is underneath shows through. | Built |
+| `style.categorised` | A colour per distinct value. | **Open** |
+| `layer.zoomTo` | Zoom to the layer's extent. | **Open** |
+| `layer.visibility` | Show or hide the layer. | **Open** |
+| `layer.remove` | Remove the layer from the map. | **Open** |
+| `layer.symbology` | Choose how the layer is drawn. | **Open** |
 
 ### Classification
 
@@ -249,9 +223,9 @@ by name.
 | --- | --- | --- |
 | `style.quantile` | The same number of features in each class. | Built |
 | `style.equalInterval` | The range cut into equal widths. | Built |
+| `style.palette` | Which colours the classes use. | Built |
 | `style.naturalBreaks` | Jenks: breaks where the data has gaps. | **Open** |
 | `style.classCount` | How many classes to cut the data into. | **Open** |
-| `style.palette` | Which colours the classes use. | Built |
 
 ### Labels
 
@@ -262,6 +236,11 @@ by name.
 | `labels.placement` | Where the text sits relative to the feature. | **Open** |
 | `labels.halo` | An outline so text reads over any basemap. | **Open** |
 | `labels.scaleRange` | The zoom levels the labels appear at. | **Open** |
+| `labels.lock` | Keep the labelled features fixed as the map moves. | **Open** |
+| `labels.pause` | Stop drawing labels, for faster navigation. | **Open** |
+| `labels.viewUnplaced` | Show the labels that don't fit, in red. | **Open** |
+| `labels.convert` | Convert the selected layer's labels into an annotation layer. | **Open** |
+| `labels.bold` | Bold label text. | **Open** |
 
 ### Effects
 
@@ -271,6 +250,9 @@ by name.
 | `style.visibilityRange` | The zoom levels this layer draws at. | **Open** |
 | `style.blend` | How this layer mixes with the ones below. | **Open** |
 | `style.swipe` | Drag a line across the map to compare two layers. | **Open** |
+| `layer.displayFilters` | Show different features at different scales. | **Open** |
+| `layer.aggregation` | Draw points as bins coloured by how many fall in each. | **Open** |
+| `layer.scaleRange` | Draw the layer at every scale. | **Open** |
 
 ### Raster
 
@@ -280,15 +262,10 @@ by name.
 | `raster.bands` | Which bands go to red, green and blue. | **Open** |
 | `raster.resampling` | Nearest, bilinear or cubic. | **Open** |
 | `raster.hillshade` | Shade the terrain by a light angle. | **Open** |
-
-### Labeling
-
-| Command | Does | Status |
-| --- | --- | --- |
-| `labels.lock` | Keep the labelled features fixed as the map moves. | **Open** |
-| `labels.pause` | Stop drawing labels, for faster navigation. | **Open** |
-| `labels.viewUnplaced` | Show the labels that don't fit, in red. | **Open** |
-| `labels.convert` | Convert the selected layer's labels into an annotation layer. | **Open** |
+| `raster.symbology` | Choose how the raster is drawn. | **Open** |
+| `raster.dra` | Dynamic range adjustment: stretch using the pixels in view. | **Open** |
+| `layer.blend` | How the layer's colours combine with what's beneath. | **Open** |
+| `raster.enhance` | Reset brightness, contrast and gamma. | **Open** |
 
 ### Styles
 
@@ -298,21 +275,6 @@ by name.
 | `style.new` | New Style From Layer. | **Open** |
 | `style.addStyleFile` | Add Style File…. | **Open** |
 | `style.importStylesFrom` | Import Styles From…. | **Open** |
-
-### Layer
-
-| Command | Does | Status |
-| --- | --- | --- |
-| `layer.zoomTo` | Zoom to the layer's extent. | **Open** |
-| `layer.visibility` | Show or hide the layer. | **Open** |
-| `layer.remove` | Remove the layer from the map. | **Open** |
-
-### Drawing Effects
-
-| Command | Does | Status |
-| --- | --- | --- |
-| `layer.displayFilters` | Show different features at different scales. | **Open** |
-| `layer.aggregation` | Draw points as bins coloured by how many fall in each. | **Open** |
 
 ### Extrusion
 
@@ -334,43 +296,6 @@ by name.
 | `layer.enableLighting` | Light the extruded shapes from the north-west. | **Open** |
 | `layer.castShadow` | Extruded shapes cast shadows on the map. | **Open** |
 
-### Visibility Range
-
-| Command | Does | Status |
-| --- | --- | --- |
-| `layer.scaleRange` | Draw the layer at every scale. | **Open** |
-
-### Drawing
-
-| Command | Does | Status |
-| --- | --- | --- |
-| `layer.symbology` | Choose how the layer is drawn. | **Open** |
-
-### Rendering
-
-| Command | Does | Status |
-| --- | --- | --- |
-| `raster.symbology` | Choose how the raster is drawn. | **Open** |
-| `raster.dra` | Dynamic range adjustment: stretch using the pixels in view. | **Open** |
-
-### Raster Effects
-
-| Command | Does | Status |
-| --- | --- | --- |
-| `layer.blend` | How the layer's colours combine with what's beneath. | **Open** |
-
-### Enhancement
-
-| Command | Does | Status |
-| --- | --- | --- |
-| `raster.enhance` | Reset brightness, contrast and gamma. | **Open** |
-
-### Text Symbol
-
-| Command | Does | Status |
-| --- | --- | --- |
-| `labels.bold` | Bold label text. | **Open** |
-
 ## Edit
 
 ### Manage Edits
@@ -382,6 +307,11 @@ by name.
 | `edit.discard` | Throw away what has changed. | **Open** |
 | `edit.undo` | Step back. | **Open** |
 | `edit.redo` | Step forward again. | **Open** |
+| `ui.save` | Save the project with your edits. | **Open** |
+| `edit.status` | Edits since the project was saved. | **Open** |
+| `edit.settings` | Editing settings. | **Open** |
+| `edit.topology` | Topology rules and the errors they find. | **Open** |
+| `edit.topologyOptions` | Topology Options…. | **Open** |
 
 ### Features
 
@@ -392,6 +322,8 @@ by name.
 | `edit.delete` | Remove the selected features. | **Open** |
 | `edit.split` | Cut a feature in two. | **Open** |
 | `edit.merge` | Join the selected features into one. | **Open** |
+| `edit.createFeatures` | Draw new features in the selected layer. Double-click to finish lines and polygons. | **Open** |
+| `edit.groundToGrid` | Scale and rotate entered distances and directions to the grid. | **Open** |
 
 ### Draw
 
@@ -417,29 +349,8 @@ by name.
 | `edit.copy` | Copy the selected features. | **Open** |
 | `edit.paste` | Paste features into the selected layer. | **Open** |
 | `edit.cut` | Copy the selection and delete it. | **Open** |
-
-### Clipboard
-
-| Command | Does | Status |
-| --- | --- | --- |
 | `edit.pasteSpecial` | Paste Special (as a new layer). | **Open** |
 | `ui.copyPath` | Copy the selected layer's data source path. | **Open** |
-
-### Manage Edits
-
-| Command | Does | Status |
-| --- | --- | --- |
-| `ui.save` | Save the project with your edits. | **Open** |
-| `edit.status` | Edits since the project was saved. | **Open** |
-| `edit.settings` | Editing settings. | **Open** |
-| `edit.topology` | Topology rules and the errors they find. | **Open** |
-| `edit.topologyOptions` | Topology Options…. | **Open** |
-
-### Features
-
-| Command | Does | Status |
-| --- | --- | --- |
-| `edit.createFeatures` | Draw new features in the selected layer. Double-click to finish lines and polygons. | **Open** |
 
 ### Tools
 
@@ -454,12 +365,6 @@ by name.
 | `edit.elevation` | Where new features get their elevation — the z field. | **Open** |
 | `edit.constant` | Constant…. | **Open** |
 
-### Corrections
-
-| Command | Does | Status |
-| --- | --- | --- |
-| `edit.groundToGrid` | Scale and rotate entered distances and directions to the grid. | **Open** |
-
 ## Analyze
 
 ### Geoprocessing
@@ -472,6 +377,11 @@ by name.
 | `gp.dissolve` | Merge every feature into one. | Built |
 | `gp.overlay` | Clip, dissolve and the rest. | Built |
 | `gp.history` | What has been run in this session. | **Open** |
+| `gp.tools` | Find and run geoprocessing tools. | **Open** |
+| `gp.modelBuilder` | Chain tools into a model; build one from your history. | **Open** |
+| `ui.pane.script` | Run commands from text, one per line. | **Open** |
+| `gp.environments` | Limit where tools work, and the cell size of new rasters. | **Open** |
+| `gp.readyToUse` | Everyday tools. | **Open** |
 
 ### Vector
 
@@ -493,6 +403,8 @@ by name.
 | `gp.elevation` | The height at a point. | Built |
 | `raster.calculator` | An expression across bands. | **Open** |
 | `raster.reclassify` | Map pixel values onto new ones. | **Open** |
+| `gp.rasterFunctions` | Slope, aspect, hillshade, NDVI, band math, thresholds. | **Open** |
+| `gp.functionEditor` | Chain raster functions. | **Open** |
 
 ### Statistics
 
@@ -519,16 +431,6 @@ by name.
 | `notebook.addAndOpen` | Open a RustGIS or Jupyter notebook. | **Open** |
 | `ui.pane.notebook` | Edit and run the notebook. | **Open** |
 
-### Geoprocessing
-
-| Command | Does | Status |
-| --- | --- | --- |
-| `gp.tools` | Find and run geoprocessing tools. | **Open** |
-| `gp.modelBuilder` | Chain tools into a model; build one from your history. | **Open** |
-| `ui.pane.script` | Run commands from text, one per line. | **Open** |
-| `gp.environments` | Limit where tools work, and the cell size of new rasters. | **Open** |
-| `gp.readyToUse` | Everyday tools. | **Open** |
-
 ### Portal
 
 | Command | Does | Status |
@@ -541,13 +443,6 @@ by name.
 | --- | --- | --- |
 | `task.workflows` | Guided analysis: suitability, visibility, networks, interpolation and more. | **Open** |
 | `task.uiPaneWorkflows` | Step through a saved workflow. | **Open** |
-
-### Raster
-
-| Command | Does | Status |
-| --- | --- | --- |
-| `gp.rasterFunctions` | Slope, aspect, hillshade, NDVI, band math, thresholds. | **Open** |
-| `gp.functionEditor` | Chain raster functions. | **Open** |
 
 ### Ortho Mapping
 
@@ -568,6 +463,9 @@ by name.
 | --- | --- | --- |
 | `gp.changeDetection` | Difference, ratio or percent change between two rasters. | **Open** |
 | `gp.spectralAnalysis` | Every band's value at a pixel. | **Open** |
+| `gp.process` | Clip a raster to the view, or resample it. | **Open** |
+| `gp.indices` | NDVI, NDWI, SAVI, NBR, NDBI, EVI. | **Open** |
+| `gp.pixelEditor` | Set the pixels inside a polygon. | **Open** |
 
 ### Image Classification
 
@@ -589,14 +487,6 @@ by name.
 | --- | --- | --- |
 | `gp.mensuration` | Distances along the surface, heights, areas and volumes. | **Open** |
 | `gp.results` | Measurements so far. | **Open** |
-
-### Imagery Tools
-
-| Command | Does | Status |
-| --- | --- | --- |
-| `gp.process` | Clip a raster to the view, or resample it. | **Open** |
-| `gp.indices` | NDVI, NDWI, SAVI, NBR, NDBI, EVI. | **Open** |
-| `gp.pixelEditor` | Set the pixels inside a polygon. | **Open** |
 
 ## View
 
@@ -630,6 +520,11 @@ by name.
 | `view.scalebar` | Show or hide the scale. | **Open** |
 | `view.northArrow` | Show or hide the compass on the map. | **Open** |
 | `view.legend` | Show or hide the legend card. | **Open** |
+| `ui.theme` | Switch between light and dark themes. | **Open** |
+| `map.globe` | Show the map as a 3D globe, or as a flat map again. | **Open** |
+| `map.global` | A globe scene. | **Open** |
+| `map.local` | A flat scene centred on the view (azimuthal equidistant). | **Open** |
+| `ui.pane.profile` | Elevation profiles along lines, cross sections and more. | **Open** |
 
 ### Windows
 
@@ -638,20 +533,9 @@ by name.
 | `ui.commands` | Find any command by name. | Built |
 | `ui.splitView` | Two map frames side by side. | **Open** |
 | `ui.sync` | Pan and zoom the frames together. | **Open** |
-
-### Display
-
-| Command | Does | Status |
-| --- | --- | --- |
-| `ui.theme` | Switch between light and dark themes. | **Open** |
-
-### View
-
-| Command | Does | Status |
-| --- | --- | --- |
-| `map.globe` | Show the map as a 3D globe, or as a flat map again. | **Open** |
-| `map.global` | A globe scene. | **Open** |
-| `map.local` | A flat scene centred on the view (azimuthal equidistant). | **Open** |
+| `view.browserPane` | Show or hide the Browser pane. | **Open** |
+| `view.toolsPane` | Show or hide the Tools pane. | **Open** |
+| `view.details` | Details of the selected layer. | **Open** |
 
 ### Effects
 
@@ -673,14 +557,6 @@ by name.
 | `layer.lowerPriority` | Draw the selected layer below others. | **Open** |
 | `map.clipping` | Hide features far from the view's centre. | **Open** |
 | `map.displayType` | Faster drawing: no antialiasing. | **Open** |
-
-### Windows
-
-| Command | Does | Status |
-| --- | --- | --- |
-| `view.browserPane` | Show or hide the Browser pane. | **Open** |
-| `view.toolsPane` | Show or hide the Tools pane. | **Open** |
-| `view.details` | Details of the selected layer. | **Open** |
 
 ### Navigation
 
@@ -716,12 +592,6 @@ by name.
 | `ui.animationPlay` | Play the animation. | **Open** |
 | `ui.exportAnimation` | Export the animation as PNG frames (zip). | **Open** |
 
-### Profile
-
-| Command | Does | Status |
-| --- | --- | --- |
-| `ui.pane.profile` | Elevation profiles along lines, cross sections and more. | **Open** |
-
 ## Publish
 
 ### Map Image
@@ -741,6 +611,22 @@ by name.
 | `data.downloadCSV` | Download the query result. | Built |
 | `publish.pdf` | The layout as a PDF. | **Open** |
 | `publish.geotiff` | The current view as a georeferenced raster. | **Open** |
+| `ui.exportMap` | Export the map view as a PNG image (with labels and a scale bar). | **Open** |
+| `publish.exportFeatures` | Export the selected layer to GeoJSON or CSV. | **Open** |
+| `ui.printMap` | Print the map view (through the system's PDF viewer). | **Open** |
+| `ui.captureMap` | Copy an image of the map to the clipboard. | **Open** |
+| `publish.report` | Export the report, or save it as a report file or template. | **Open** |
+| `publish.exportReport` | Export Report…. | **Open** |
+| `publish.saveAsReportFile` | Save As Report File…. | **Open** |
+| `publish.saveAsReportTemplate` | Save As Report Template…. | **Open** |
+| `publish.presentation` | Export the presentation as a slideshow or PDF, or save it as a file. | **Open** |
+| `publish.exportPresentation` | Export Presentation…. | **Open** |
+| `publish.saveAsPresentationFile` | Save As Presentation File…. | **Open** |
+| `publish.exportTo3d` | Export the selected layer as a 3D model (OBJ), polygons extruded. | **Open** |
+| `publish.export` | Export the layout as PDF or PNG. | **Open** |
+| `publish.print` | Print the layout. | **Open** |
+| `publish.saveLayoutFile` | Save the layout as a layout file. | **Open** |
+| `layout.close` | Close the layout and show the map. | **Open** |
 
 ### Share
 
@@ -749,6 +635,16 @@ by name.
 | `publish.link` | A URL that opens this exact view and these layers. | **Open** |
 | `publish.embed` | An iframe snippet for a website. | **Open** |
 | `publish.webmap` | Push this map to the project's public site. | **Open** |
+| `publish.webMap` | Share the map as a web page that needs no server. | **Open** |
+| `publish.webLayer` | Share the selected layer as an OGC API Features collection with its style. | **Open** |
+| `publish.webStyle` | Share the selected layer's symbology as a MapLibre style. | **Open** |
+| `publish.locator` | Share the selected layer's names as a place-search locator. | **Open** |
+| `publish.geodataService` | Share every layer and table as OGC API Features collections. | **Open** |
+| `publish.webTool` | Share the last model as a tool file. | **Open** |
+| `publish.webScene` | Share the map in 3D (glTF), polygons extruded. | **Open** |
+| `publish.webLinkChart` | Share the map's relationships as a link chart page. | **Open** |
+| `ui.pane.shares` | Shares made, with Manage tools to update them. | **Open** |
+| `publish.deepLearning` | Package a trained deep learning model. | **Open** |
 
 ### Report
 
@@ -756,11 +652,6 @@ by name.
 | --- | --- | --- |
 | `report.new` | A document built from the current map and tables. | **Open** |
 | `report.template` | Start from a layout someone has already made. | **Open** |
-
-### Report
-
-| Command | Does | Status |
-| --- | --- | --- |
 | `report.reportSection` | Add pages, layouts, related reports and related records to the report. | **Open** |
 | `report.supplementalPage` | Supplemental Page. | **Open** |
 | `report.supplementalPageAfter` | Supplemental Page After. | **Open** |
@@ -796,23 +687,6 @@ by name.
 | `map.thumbnail` | This map's thumbnail, from the view. | **Open** |
 | `publish.import` | This map's thumbnail, from an image. | **Open** |
 
-### Output
-
-| Command | Does | Status |
-| --- | --- | --- |
-| `ui.exportMap` | Export the map view as a PNG image (with labels and a scale bar). | **Open** |
-| `publish.exportFeatures` | Export the selected layer to GeoJSON or CSV. | **Open** |
-| `ui.printMap` | Print the map view (through the system's PDF viewer). | **Open** |
-| `ui.captureMap` | Copy an image of the map to the clipboard. | **Open** |
-| `publish.report` | Export the report, or save it as a report file or template. | **Open** |
-| `publish.exportReport` | Export Report…. | **Open** |
-| `publish.saveAsReportFile` | Save As Report File…. | **Open** |
-| `publish.saveAsReportTemplate` | Save As Report Template…. | **Open** |
-| `publish.presentation` | Export the presentation as a slideshow or PDF, or save it as a file. | **Open** |
-| `publish.exportPresentation` | Export Presentation…. | **Open** |
-| `publish.saveAsPresentationFile` | Save As Presentation File…. | **Open** |
-| `publish.exportTo3d` | Export the selected layer as a 3D model (OBJ), polygons extruded. | **Open** |
-
 ### Package
 
 | Command | Does | Status |
@@ -821,21 +695,6 @@ by name.
 | `publish.map` | Bundle the active map and its data. | **Open** |
 | `publish.mobileMap` | Bundle the visible layers, with simplified geometry for phones and tablets. | **Open** |
 | `publish.results` | Bundle the geoprocessing history with the layers it made. | **Open** |
-
-### Share As
-
-| Command | Does | Status |
-| --- | --- | --- |
-| `publish.webMap` | Share the map as a web page that needs no server. | **Open** |
-| `publish.webLayer` | Share the selected layer as an OGC API Features collection with its style. | **Open** |
-| `publish.webStyle` | Share the selected layer's symbology as a MapLibre style. | **Open** |
-| `publish.locator` | Share the selected layer's names as a place-search locator. | **Open** |
-| `publish.geodataService` | Share every layer and table as OGC API Features collections. | **Open** |
-| `publish.webTool` | Share the last model as a tool file. | **Open** |
-| `publish.webScene` | Share the map in 3D (glTF), polygons extruded. | **Open** |
-| `publish.webLinkChart` | Share the map's relationships as a link chart page. | **Open** |
-| `ui.pane.shares` | Shares made, with Manage tools to update them. | **Open** |
-| `publish.deepLearning` | Package a trained deep learning model. | **Open** |
 
 ### Layout
 
@@ -882,15 +741,6 @@ by name.
 | `layout.dynamicText` | Add text that updates: page, date, scale, map and more. | **Open** |
 | `ui.layoutPicture` | Add a PNG or JPEG picture to the page. | **Open** |
 
-### Export
-
-| Command | Does | Status |
-| --- | --- | --- |
-| `publish.export` | Export the layout as PDF or PNG. | **Open** |
-| `publish.print` | Print the layout. | **Open** |
-| `publish.saveLayoutFile` | Save the layout as a layout file. | **Open** |
-| `layout.close` | Close the layout and show the map. | **Open** |
-
 ## Plugins
 
 ### Plugins
@@ -901,6 +751,8 @@ by name.
 | `plugins.browse` | Plugins published by the Ghana GIS community. | **Open** |
 | `plugins.install` | Load a plugin from a file. | **Open** |
 | `plugins.develop` | How to add a tab, a tool or a data source. | **Open** |
+| `plugins.pluginManager` | Browse, install, update and remove plugins. | **Open** |
+| `plugins.browsePlugins` | Find plugins in the RustGIS plugin registry. | **Open** |
 
 ### Automation
 
@@ -909,13 +761,6 @@ by name.
 | `task.record` | Capture a sequence of commands to replay. | **Open** |
 | `task.run` | Replay a saved sequence. | **Open** |
 | `task.schedule` | Run a task on a timetable. | **Open** |
-
-### Plugins
-
-| Command | Does | Status |
-| --- | --- | --- |
-| `plugins.pluginManager` | Browse, install, update and remove plugins. | **Open** |
-| `plugins.browsePlugins` | Find plugins in the RustGIS plugin registry. | **Open** |
 
 ## Settings
 
@@ -946,6 +791,7 @@ by name.
 | `ui.docs` | The full guide. | Built |
 | `ui.commands` | Find any command by name. | Built |
 | `ui.shortcuts` | What the keys do. | **Open** |
+| `ui.learn` | Open the RustGIS user guide. | **Open** |
 
 ### Community
 
@@ -954,6 +800,7 @@ by name.
 | `ui.contribute` | How to add a command, a tool or a dataset. | Built |
 | `ui.issues` | Tell us what broke. | Built |
 | `ui.about` | Sources, licences and attribution. | Built |
+| `ui.checkUpdate` | See whether a newer RustGIS has been released. | **Open** |
 
 ### Customize
 
@@ -967,18 +814,6 @@ by name.
 | Command | Does | Status |
 | --- | --- | --- |
 | `ui.pane.diagnostics` | Frame rate, draw time, data size and memory. | **Open** |
-
-### Learn
-
-| Command | Does | Status |
-| --- | --- | --- |
-| `ui.learn` | Open the RustGIS user guide. | **Open** |
-
-### Help
-
-| Command | Does | Status |
-| --- | --- | --- |
-| `ui.checkUpdate` | See whether a newer RustGIS has been released. | **Open** |
 
 ## Not on a tab
 

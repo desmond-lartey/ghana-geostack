@@ -16,13 +16,16 @@ const PORT = Number(process.env.SMOKE_PORT || 8126);
 const VALUES = [1499.06, 1378.39, 1204.5, 1102.2, 998.7, 950.1, 902.4, 880.0];
 
 // The map stub, with two methods taught to answer: the style needs values to
-// classify and a layer to paint.
-const STUB = fs.readFileSync(path.join(__dirname, "smoke_viewer.cjs"), "utf8")
-  .split("const STUB = `")[1].split("`;")[0]
-  .replace("queryRenderedFeatures() { return []; }",
-    `queryRenderedFeatures() { return ${JSON.stringify(
-      VALUES.map((v) => ({ properties: { rainfall_mm: v } })))}; }`)
-  .replace("getLayer() { return null; }", 'getLayer(id) { return { id, type: "fill" }; }');
+// classify and a layer to paint. A patch that matches nothing throws rather
+// than leaving the stub as it was.
+const { baseStub, patch } = require("./stub.cjs");
+const STUB = patch(baseStub(), [
+  ["queryRenderedFeatures() { return []; }",
+   `queryRenderedFeatures() { return ${JSON.stringify(
+     VALUES.map((v) => ({ properties: { rainfall_mm: v } })))}; }`],
+  ["getLayer(id) { return this._lyr.get(id) || null; }",
+   'getLayer(id) { return this._lyr.get(id) || { id, type: "fill" }; }']
+]);
 
 function serve() {
   return new Promise((resolve) => {
