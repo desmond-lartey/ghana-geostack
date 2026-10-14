@@ -3,7 +3,7 @@
 The ribbon's commands live in one place in `web/index.html`; this reads them
 and writes `docs/commands.md`. A hand-kept list of 168 commands is a list that
 is wrong within a month, and the whole point of the page is to tell a
-contributor which slots are open — so it has to be true.
+contributor which slots are open - so it has to be true.
 
 Usage:
     python scripts/commands_doc.py
@@ -119,7 +119,7 @@ def main() -> None:
         lines.append("")
 
     OUT.write_text("\n".join(lines), encoding="utf-8")
-    print(f"  {OUT.relative_to(ROOT)} — {len(commands)} commands, "
+    print(f"  {OUT.relative_to(ROOT)} - {len(commands)} commands, "
           f"{built} built, {open_slots} open")
 
 

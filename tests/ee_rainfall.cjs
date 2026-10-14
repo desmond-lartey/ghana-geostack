@@ -2,7 +2,7 @@
  *
  * This is the run a person asks for in one sentence: find a rainfall dataset,
  * draw it, reduce it onto regions, and query the result. Every link in it has
- * broken at least once, and always in the same way — a step that failed, or
+ * broken at least once, and always in the same way - a step that failed, or
  * produced something whose name the next step could not know, while reporting
  * success. So the assertions are about what each tool hands to the next.
  *
@@ -232,6 +232,6 @@ function serve() {
     if (errors.length) console.error("  page errors: " + errors.slice(0, 3).join(" | "));
     process.exit(1);
   }
-  console.log(`the rainfall chain runs — drew ${s.draw.drawn}, summarised `
+  console.log(`the rainfall chain runs - drew ${s.draw.drawn}, summarised `
     + `${s.summary.zones} regions into ${s.summary.table}`);
 })();

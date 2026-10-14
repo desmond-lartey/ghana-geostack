@@ -111,8 +111,8 @@ CREATE INDEX population_region_geom_idx ON analysis.population_region USING GIST
 -- Buildings are used as the weight inside a district, because that is the
 -- finest thing available: a district's population is apportioned across its
 -- buildings, and each building carries its share. That assumes people are
--- spread evenly across buildings, which is wrong in detail — a compound
--- housing twelve holds more than a shop housing none — and right enough at
+-- spread evenly across buildings, which is wrong in detail - a compound
+-- housing twelve holds more than a shop housing none - and right enough at
 -- district scale to be worth doing.
 
 DO $$
@@ -286,7 +286,7 @@ SELECT 'sparsest district (per km2)',
 --
 --   The national total should land near 30.8 million, the 2021 census figure.
 --   Materially above 34 million or below 28 million means the raster was
---   summed wrong — usually a scale factor, or a raster fetched for one city
+--   summed wrong - usually a scale factor, or a raster fetched for one city
 --   and summed as though it were national.
 --
 --   Ghana's densest districts are Accra sub-metros, well past 10,000 people

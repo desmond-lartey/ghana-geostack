@@ -1,4 +1,4 @@
-"""Step 30 — run the analysis SQL.
+"""Step 30 - run the analysis SQL.
 
 Each file in db/analysis/ is self-contained, ends with its own validation
 block, and drops and rebuilds its own tables. Running them in order is

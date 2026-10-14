@@ -28,13 +28,13 @@ present and what may be republished.
 
 ### Included analyses
 
-- **Health and education accessibility** — distance from every building to the
+- **Health and education accessibility** - distance from every building to the
   nearest facility, summarised by district against the 5 km CHPS catchment
-- **Flood exposure** — buildings on low ground near watercourses, derived from
+- **Flood exposure** - buildings on low ground near watercourses, derived from
   observed historical surface water and terrain
-- **Building density** — H3 hex rollups at national, regional and urban
+- **Building density** - H3 hex rollups at national, regional and urban
   resolutions
-- **Siting suitability** — weighted multi-criteria scoring with the weights
+- **Siting suitability** - weighted multi-criteria scoring with the weights
   held in a visible table and component scores retained alongside the total
 
 ---
@@ -186,15 +186,15 @@ the interface stays out of the way until asked for.
 | --- | --- |
 | Legend, top left | Describes the active layer; collapses to its title |
 | Menu, top right | Opens layers, the SQL console, map settings and sources |
-| Buttons, bottom left | About, reset view, locate, query — panels open on request |
+| Buttons, bottom left | About, reset view, locate, query - panels open on request |
 | Tour, bottom right | Six-step guided walkthrough of the data |
 
 The panel is a dock rather than a modal: the map keeps its own space and stays
-pannable while the panel is open. The **Style** tab restyles anything drawn —
+pannable while the panel is open. The **Style** tab restyles anything drawn -
 colour, graduated ramps over any numeric column, opacity, line width, 3D
-height — and removes it again.
+height - and removes it again.
 
-Typography is the Source superfamily — Source Serif 4 for headings, Source
+Typography is the Source superfamily - Source Serif 4 for headings, Source
 Sans 3 for interface text, JetBrains Mono for figures and SQL. Light and dark
 themes are both defined, and the choice persists.
 
@@ -204,7 +204,7 @@ themes are both defined, and the choice persists.
 Imagery, Street and Terrain: Esri light and dark grey canvas, Esri World
 Imagery with and without labels, Esri Topographic and Ocean, OpenStreetMap
 standard and Humanitarian, CARTO Positron, Dark Matter and Voyager,
-OpenTopoMap — and **no basemap**, which is a real option rather than a missing
+OpenTopoMap - and **no basemap**, which is a real option rather than a missing
 one. The boundaries are served from the same origin, so with no basemap the
 map makes no third-party request at all. A grey reference canvas is the
 default, because a choropleth drawn over satellite imagery cannot be read.
@@ -219,13 +219,38 @@ Each entry carries its provider's attribution, which is drawn on the map and
 written into an exported map image. Confirm the terms of whichever you deploy,
 and run your own tile server for anything with real traffic.
 
+### The Ghana data library
+
+**Home → Ghana Data → Ghana Data Library** opens a wall of cards: thirty-five
+layers for Ghana, each with a generated thumbnail, a sentence on what it is
+and what it is not, its source, its licence, and a plain statement of whether
+it can be drawn right now. Filter by theme, filter by region - the region
+filter is the clip, so what you add is cut to it - search, select several,
+add them together.
+
+Four states, none of them hidden. **Ready** draws now, fourteen of them.
+**Needs Earth Engine** draws once an account is connected, eight. **Needs the
+database** comes with the PostGIS deployment, four. **Analysis, not yet
+built** is the product this platform exists for, with its method named and the
+pipeline unwritten - nine, including *15-minute access to health care*
+(cost-distance over the walking friction surface from every facility) and
+*Population exposed to flooding* (the observed surface-water record crossed
+with the 100 m population grid, by district).
+
+Listing only what works today would make a catalogue of fourteen cards that
+says nothing about where this is going. Pretending everything works would
+waste an afternoon per attempt. Adding a mixed selection reports each one:
+*4 added · 2 not yet available*, with the reason for each in the Log.
+
+Full catalogue in [`docs/library.md`](docs/library.md).
+
 ### Adding your own data
 
 Drop a file anywhere on the map, or **Home → Add Data → Add a File**. GeoJSON,
 CSV and TSV, GPX, KML, WKT in a CSV column, and a zipped Shapefile, all read in
 the browser with nothing uploaded anywhere. A CSV's coordinate columns are
-found by name — `lon`/`lat`, `x`/`y`, `longitude`/`latitude`,
-`easting`/`northing` — and when none of them are there the error lists the
+found by name - `lon`/`lat`, `x`/`y`, `longitude`/`latitude`,
+`easting`/`northing` - and when none of them are there the error lists the
 columns the file actually has.
 
 What arrives becomes a layer card like any other and is registered in the
@@ -237,7 +262,7 @@ Guinea, close enough to Ghana to look like data instead of a bug.
 Anyone can run SQL in the browser. DuckDB compiled to WebAssembly reads the
 published data in the page, and because the WebAssembly build has no spatial
 extension, spatial attributes are precomputed at load time and distance,
-proximity and bounding-box operations are provided as plain SQL macros —
+proximity and bounding-box operations are provided as plain SQL macros -
 `gh_distance_km`, `gh_within_km`, `gh_in_bbox` and others. No install, no
 account.
 
@@ -249,13 +274,13 @@ with no key at all. The query always runs in the browser, so only the question
 ever travels.
 
 The **Layers** tab can fetch health facilities, schools, markets, water points,
-roads and buildings straight from OpenStreetMap for the current view — no
-account, no key — and registers each result as a queryable table. So the whole
+roads and buildings straight from OpenStreetMap for the current view - no
+account, no key - and registers each result as a queryable table. So the whole
 chain works before any database exists: fetch clinics for a district, buffer
 them by 5 km, download the catchments.
 
-The **Tools** tab runs vector geoprocessing in the page — buffer, dissolve,
-centroids, convex hull, simplify, Voronoi catchments and measurement — on the
+The **Tools** tab runs vector geoprocessing in the page - buffer, dissolve,
+centroids, convex hull, simplify, Voronoi catchments and measurement - on the
 current query result or a whole layer. Results draw on the map and download as
 GeoJSON. Approximations, suitable for exploring; PostGIS remains the authority
 for anything that has to be defensible.
@@ -276,7 +301,7 @@ projection as the camera comes in.
 ## A worked example
 
 [`docs/population.md`](docs/population.md) runs population end to end: fetch
-WorldPop, summarise it onto districts, and answer the questions that follow —
+WorldPop, summarise it onto districts, and answer the questions that follow -
 who is far from a clinic, who lives on ground that has flooded, which
 districts run hot and how many people are in them.
 
@@ -306,7 +331,7 @@ make web-preview    # build it and serve on :8080
 make docs-serve     # documentation on :8000
 ```
 
-Import the repository into Vercel and deploy — `vercel.json` supplies the build
+Import the repository into Vercel and deploy - `vercel.json` supplies the build
 command and output directory, and the build uses only the Python standard
 library. Set `TILES_URL` to a public pg_tileserv endpoint to enable buildings,
 roads and the analysis layers; without it the deployment serves boundaries
@@ -340,7 +365,7 @@ Six schemas, each with a single responsibility:
 | --- | --- | --- |
 | PostGIS | 5432 | Authoritative database |
 | pg_tileserv | 7800 | Vector tiles from SQL |
-| pg_featureserv | 9000 | OGC API — Features |
+| pg_featureserv | 9000 | OGC API - Features |
 | TiTiler | 8001 | Dynamic raster tiles from COGs |
 | MinIO | 9001 | S3-compatible object store |
 
@@ -373,7 +398,7 @@ make qc
 **Store in EPSG:4326, measure in EPSG:32630.** Ghana straddles the prime
 meridian, so no UTM zone fits perfectly; zone 30N keeps scale error under
 roughly 0.1% in the eastern strip, which is suitable for analysis but not for
-cadastral survey. Use `core.gh_area_m2()` and the related helpers —
+cadastral survey. Use `core.gh_area_m2()` and the related helpers -
 `ST_Area` on a 4326 geometry returns square degrees.
 See [`docs/crs.md`](skills/ghana-geosql/references/crs.md).
 
@@ -425,7 +450,7 @@ Behavioural tests are in [`evals/evals.json`](evals/evals.json).
 - **No hydraulic flood model.** Flood exposure derives from observed
   historical surface water and terrain, without return periods or depths.
 - **No cadastral or land-tenure data.**
-- **Facility attributes are thin** — no bed counts, staffing or opening hours.
+- **Facility attributes are thin** - no bed counts, staffing or opening hours.
 - **Population is modelled**, disaggregated from census totals rather than
   counted.
 
@@ -457,10 +482,11 @@ The agent workflow, and the practice of validating every result in SQL before
 rendering, is adapted from
 [dekart-xyz/geosql](https://github.com/dekart-xyz/geosql) (MIT).
 
-The interface owes two debts. The floating panels, the layer cards and the
-geoprocessing toolbox follow [GeoLibre](https://github.com/opengeos/GeoLibre).
-The ribbon — ten tabs, groups within them, and one command registry
-underneath — follows [RustGIS](https://github.com/rustgis/rustgis), whose own
+The interface owes two debts. The layer cards and the geoprocessing toolbox
+follow [GeoLibre](https://github.com/opengeos/GeoLibre), though the panels
+they sat in are docked columns now rather than floating cards.
+The ribbon - ten tabs, groups within them, and one command registry
+underneath - follows [RustGIS](https://github.com/rustgis/rustgis), whose own
 arrangement is ArcGIS Pro's. RustGIS is Rust compiled to WebAssembly and this
 is a single HTML page, so no code crossed between them; what was taken is the
 architecture, which was the part worth taking. See

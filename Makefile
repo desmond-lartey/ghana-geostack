@@ -105,8 +105,8 @@ docs-build: docs  ## Build the documentation site into site/
 # ── Development ───────────────────────────────────────────────────────────
 
 # `ruff format` is offered as `make format` but is not enforced. Several files
-# align columns deliberately — the zonal statistics tables, the catalogue field
-# list — and a blanket reformat destroys that alignment for no gain.
+# align columns deliberately - the zonal statistics tables, the catalogue field
+# list - and a blanket reformat destroys that alignment for no gain.
 lint:  ## Check Python style and SQL formatting
 	ruff check pipelines/ scripts/
 	@command -v sqlfluff >/dev/null && sqlfluff lint db/ --dialect postgres || \
@@ -121,7 +121,7 @@ test:  ## Run the test suite
 	  node tests/smoke_viewer.cjs && node tests/ee_clip.cjs && \
 	  node tests/ee_rainfall.cjs && node tests/legend.cjs && \
 	  node tests/export.cjs && node tests/ribbon.cjs && \
-	  node tests/adddata.cjs; } || \
+	  node tests/adddata.cjs && node tests/library.cjs; } || \
 	 echo "node not installed, skipping the browser tests"
 
 # ── Housekeeping ──────────────────────────────────────────────────────────

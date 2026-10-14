@@ -2,7 +2,7 @@
  *
  * The composition is canvas drawing, so the only honest check is to run it and
  * look at what comes out: the PNG is decoded and checked for the things a
- * printed map must have — a frame the map is drawn inside, a title, a legend
+ * printed map must have - a frame the map is drawn inside, a title, a legend
  * with the classes the map is using, a scale bar and a north arrow.
  *
  * The map itself is stubbed, so the "map" is a flat colour. That is the point:
@@ -141,5 +141,5 @@ function serve() {
     if (errors.length) console.error("  page errors: " + errors.slice(0, 3).join(" | "));
     process.exit(1);
   }
-  console.log("the map export produces a laid-out PNG — frame, title, legend, scale and north");
+  console.log("the map export produces a laid-out PNG - frame, title, legend, scale and north");
 })();

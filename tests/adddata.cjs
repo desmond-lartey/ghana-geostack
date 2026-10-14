@@ -2,7 +2,7 @@
  *
  * The complaint that prompted this was "I go to Data, try to add a CSV, and
  * nothing pops". So this opens one of each format the dialog claims to read
- * and checks a layer came out of it — and that a file it cannot read says why
+ * and checks a layer came out of it - and that a file it cannot read says why
  * rather than failing silently, which is the failure mode being fixed.
  */
 const fs = require("fs");
@@ -145,7 +145,7 @@ const WKT_CSV = 'id,wkt\n1,"POLYGON((-1.7 6.6, -1.5 6.6, -1.5 6.8, -1.7 6.6))"\n
   const expect = ["places.geojson", "towns.csv", "survey.gpx", "wards.kml", "shapes.csv"];
   for (const name of expect) {
     const got = out.added.find((a) => a.file === name);
-    if (!got) bad.push(`${name} added no layer — ${out.errors[name] || "no reason given"}`);
+    if (!got) bad.push(`${name} added no layer - ${out.errors[name] || "no reason given"}`);
     else if (!got.bbox) bad.push(`${name} produced a layer with no extent`);
   }
   // The CSV has three rows, one without a coordinate.
@@ -162,7 +162,7 @@ const WKT_CSV = 'id,wkt\n1,"POLYGON((-1.7 6.6, -1.5 6.6, -1.5 6.8, -1.7 6.6))"\n
   if (bm.id !== "osm") bad.push(`the basemap did not change, it is "${bm.id}"`);
   else if (!bm.before) bad.push("nothing was drawn before the basemap changed, so this proves nothing");
   else if (bm.after < bm.before) {
-    bad.push(`changing the basemap lost layers — ${bm.before} drawn before, ${bm.after} after`);
+    bad.push(`changing the basemap lost layers - ${bm.before} drawn before, ${bm.after} after`);
   }
   const real = errors.filter((e) => !/Failed to fetch|NetworkError|net::/i.test(e));
   if (real.length) bad.push("page errors: " + real.slice(0, 3).join(" | "));
@@ -172,7 +172,7 @@ const WKT_CSV = 'id,wkt\n1,"POLYGON((-1.7 6.6, -1.5 6.6, -1.5 6.8, -1.7 6.6))"\n
     for (const line of bad) console.error("  " + line);
     process.exit(1);
   }
-  console.log("add data works — " + out.added.map((a) => `${a.file} (${a.note})`).join(", "));
-  console.log(`changing the basemap keeps them — ${out.basemap.before} drawn, `
+  console.log("add data works - " + out.added.map((a) => `${a.file} (${a.note})`).join(", "));
+  console.log(`changing the basemap keeps them - ${out.basemap.before} drawn, `
     + `${out.basemap.after} after switching to ${out.basemap.id}`);
 })();

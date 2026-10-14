@@ -17,7 +17,7 @@ repo_name: desmond-lartey/ghana-geostack
 
 copyright: >-
   Code released under the MIT licence. Data remains under the licence of its
-  producer — see <a href="project/licensing/">Data licensing</a>.
+  producer - see <a href="project/licensing/">Data licensing</a>.
 
 docs_dir: docs
 site_dir: site
@@ -122,6 +122,7 @@ nav:
   - Querying the data: querying.md
   - The map interface: interface.md
   - The ribbon: ribbon.md
+  - The Ghana data library: library.md
   - Command reference: commands.md
   - Layers and clipping: layers-and-clipping.md
   - Earth observation catalogue: catalog.md

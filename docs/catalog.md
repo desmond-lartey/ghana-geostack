@@ -5,8 +5,8 @@ things read it and neither keeps its own copy, so they cannot disagree:
 
 | Consumer | Uses |
 | --- | --- |
-| The viewer's **Data** tab | `browser` blocks — layers that load with no account |
-| `pipelines/04_fetch_gee.py` | `gee` blocks — Earth Engine exports clipped to Ghana |
+| The viewer's **Data** tab | `browser` blocks - layers that load with no account |
+| `pipelines/04_fetch_gee.py` | `gee` blocks - Earth Engine exports clipped to Ghana |
 
 Eighteen datasets: seven load in the browser, eleven come through the pipeline.
 
@@ -92,7 +92,7 @@ the viewer; a `gee` block makes it fetchable by the pipeline; both is fine.
 nothing else needs touching.
 
 Every entry must carry a licence, an attribution string and a `notes` field.
-The notes are not decoration — they say what the dataset does not tell you,
+The notes are not decoration - they say what the dataset does not tell you,
 and they are shown to the reader beside the layer. A tree cover layer that
 counts cocoa shade and oil palm as forest needs to say so in Ghana, where the
 difference between forest and farm is the entire question.

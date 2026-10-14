@@ -1,4 +1,4 @@
-"""Step 02 — OpenStreetMap, from the Geofabrik Ghana extract.
+"""Step 02 - OpenStreetMap, from the Geofabrik Ghana extract.
 
 The whole country is one 60-odd MB PBF file, so there is no reason to hit the
 Overpass API layer by layer. Download once, read layers out of it locally,

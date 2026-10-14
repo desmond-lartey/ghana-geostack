@@ -5,7 +5,7 @@ It is generated from the registry in `web/index.html` by
 `python scripts/commands_doc.py`, so it cannot drift from what the
 interface actually does.
 
-**390 commands. 72 are built. 318 are open.**
+**401 commands. 83 are built. 318 are open.**
 
 An open slot is not a bug. The ribbon, the registry and the place each
 command plugs into are finished; the function behind it is the work, and
@@ -21,6 +21,22 @@ by name.
 ---
 
 ## Home
+
+### Ghana Data
+
+| Command | Does | Status |
+| --- | --- | --- |
+| `data.ghanaLibrary` | Every layer there is for Ghana, as cards: what it is, where it came  | Built |
+| `data.ghanaAdmin` | Regions, districts, capitals and census geography. | Built |
+| `data.ghanaPopulation` | The 100 m population grid, built-up surface, and the 2021 census. | Built |
+| `data.ghanaHealth` | Facilities, and how long it takes to reach one. | Built |
+| `data.ghanaEducation` | Schools, and the children beyond reach of one. | Built |
+| `data.ghanaWater` | Water points, the Volta system, and 37 years of observed surface water. | Built |
+| `data.ghanaTransport` | Roads, buildings, markets, and travel time to each. | Built |
+| `data.ghanaAgriculture` | Land cover, tree cover and the cocoa belt, vegetation through the season. | Built |
+| `data.ghanaClimate` | CHIRPS rainfall, land surface temperature, departure from the normal. | Built |
+| `data.ghanaHazard` | Observed flooding, population exposed to it, fire detections and burned area. | Built |
+| `data.ghanaEnergy` | Night lights, and electrification read from them. | Built |
 
 ### Navigate
 
@@ -329,7 +345,7 @@ by name.
 
 | Command | Does | Status |
 | --- | --- | --- |
-| `edit.drawPolygon` | Draw an area — also usable as a clip boundary. | **Open** |
+| `edit.drawPolygon` | Draw an area - also usable as a clip boundary. | **Open** |
 | `edit.drawLine` | Draw a line. | **Open** |
 | `edit.drawPoint` | Place a point. | **Open** |
 | `edit.drawText` | Place a label on the map. | **Open** |
@@ -362,7 +378,7 @@ by name.
 
 | Command | Does | Status |
 | --- | --- | --- |
-| `edit.elevation` | Where new features get their elevation — the z field. | **Open** |
+| `edit.elevation` | Where new features get their elevation - the z field. | **Open** |
 | `edit.constant` | Constant…. | **Open** |
 
 ## Analyze

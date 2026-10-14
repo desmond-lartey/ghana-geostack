@@ -1,4 +1,4 @@
-# DuckDB Reference — Ghana GeoStack
+# DuckDB Reference - Ghana GeoStack
 
 DuckDB is the portable path: no server, no credentials, reads GeoParquet
 directly, runs on a laptop and in the browser. Use it for remote Overture
@@ -16,7 +16,7 @@ extension, and creates views over the exports in `data/exports/`.
 
 ## Macros mirroring the PostGIS helpers
 
-`gh_bbox()`, `gh_area_m2(g)`, `gh_length_m(g)`, `gh_distance_m(a, b)` — same
+`gh_bbox()`, `gh_area_m2(g)`, `gh_length_m(g)`, `gh_distance_m(a, b)` - same
 names, same meaning, so a query can usually be moved between engines by
 changing only the table references.
 
@@ -28,7 +28,7 @@ changing only the table references.
 | Spatial index | GIST, automatic | R-tree, or bbox columns in Parquet |
 | `&&` operator | yes | use `ST_Intersects_Extent(a, b)` |
 | Geometry from WKB | implicit | `ST_GeomFromWKB(col)` on raw Parquet |
-| Rasters | `postgis_raster` | none — use GDAL or the Python path |
+| Rasters | `postgis_raster` | none - use GDAL or the Python path |
 
 DuckDB's transform expects explicit source and target CRS strings. Omitting the
 source is the most common porting error and produces coordinates in the wrong
@@ -36,7 +36,7 @@ hemisphere.
 
 ## Querying Overture for Ghana
 
-Read remotely. Gate on the bbox struct **before** any spatial predicate —
+Read remotely. Gate on the bbox struct **before** any spatial predicate -
 that is a partition prune, not a filter, and it is the difference between
 seconds and hours.
 
@@ -56,7 +56,7 @@ CORRECT     bbox.xmax >= west   AND bbox.xmin <= east
 WRONG       bbox.xmin >= west   AND bbox.xmax <= east
 ```
 
-Containment silently drops every feature crossing the boundary — every road
+Containment silently drops every feature crossing the boundary - every road
 leaving the country, every coastal polygon.
 
 Always count before you extract. Always pin the release string; `latest` is
@@ -96,5 +96,5 @@ COPY (SELECT ...) TO 'out.geojson' (FORMAT GDAL, DRIVER 'GeoJSON');
 COPY (SELECT ...) TO 'out.fgb'     (FORMAT GDAL, DRIVER 'FlatGeobuf');
 ```
 
-FlatGeobuf is the better choice for large vector data going into QGIS —
+FlatGeobuf is the better choice for large vector data going into QGIS -
 streamable and indexed, where GeoJSON is neither.

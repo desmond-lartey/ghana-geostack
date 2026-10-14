@@ -1,4 +1,4 @@
-"""Step 03 — Overture Maps, queried in place over S3 with DuckDB.
+"""Step 03 - Overture Maps, queried in place over S3 with DuckDB.
 
 Nothing is downloaded in bulk. DuckDB reads the remote GeoParquet, prunes on
 the bbox struct columns, and writes only Ghana to a local GeoParquet file.
@@ -48,8 +48,8 @@ def build_query(theme: str, bbox, release: str, limit: int | None) -> str:
     """Compose the extraction SQL.
 
     Two filters, both required:
-      1. bbox struct comparison — the cheap partition prune
-      2. ST_Intersects against the envelope — the exact test
+      1. bbox struct comparison - the cheap partition prune
+      2. ST_Intersects against the envelope - the exact test
 
     The bbox comparison uses the OVERLAP pattern. Containment would drop every
     feature that crosses the boundary, which for a national extract means
@@ -183,7 +183,7 @@ def main() -> None:
             and stats[3] >= s - 0.5 and stats[5] <= n + 0.5):
         raise SystemExit(
             "Extracted extent falls outside the requested bbox. The filter did "
-            "not apply — do not load this file."
+            "not apply - do not load this file."
         )
     if stats[1]:
         raise SystemExit(f"{stats[1]} rows have null geometry. Investigate before loading.")

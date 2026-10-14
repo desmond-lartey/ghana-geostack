@@ -21,7 +21,7 @@ Allow about forty minutes, most of it waiting for downloads.
 
 ---
 
-## Step 1 — the population raster
+## Step 1 - the population raster
 
 ```bash
 python pipelines/04_fetch_gee.py --show worldpop_population
@@ -38,7 +38,7 @@ earthengine authenticate
 echo "GEE_PROJECT=your-project-id" >> .env
 ```
 
-## Step 2 — summarise it onto districts
+## Step 2 - summarise it onto districts
 
 ```bash
 python pipelines/05_zonal_stats.py data/raw/worldpop_population_ghana.tif \
@@ -56,10 +56,10 @@ total   30,832,019
 ```
 
 Ghana's 2021 census counted about 30.8 million. Landing near that means the
-sum worked. An order of magnitude out means it did not — usually a raster
+sum worked. An order of magnitude out means it did not - usually a raster
 fetched for one city and summed as though it were national.
 
-## Step 3 — run the analyses
+## Step 3 - run the analyses
 
 ```bash
 python pipelines/30_run_analysis.py --only 05_population
@@ -111,7 +111,7 @@ ORDER BY people_beyond_10km DESC;
 
 `01_accessibility.sql` counts buildings within 5 km of a clinic. This converts
 that to people, by apportioning each district's population across its
-buildings. The assumption — that people are spread evenly across buildings —
+buildings. The assumption - that people are spread evenly across buildings -
 is wrong in detail and close enough at district scale. It is stated in the SQL
 rather than buried.
 
@@ -181,7 +181,7 @@ what it is summarising:
 | Rainfall per catchment | `--zones data/raw/hydrosheds_basins_ghana.geojson --stat mean` |
 
 That last one is worth noticing. `--zones` takes any vector file, so rainfall
-can be summarised onto catchments rather than districts — which is the right
+can be summarised onto catchments rather than districts - which is the right
 unit for water, since rivers do not respect administrative boundaries and a
 flood reported per district hides where the water came from.
 

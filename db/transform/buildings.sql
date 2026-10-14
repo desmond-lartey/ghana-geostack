@@ -1,4 +1,4 @@
--- transform/buildings.sql — raw.building into the partitioned core.building
+-- transform/buildings.sql - raw.building into the partitioned core.building
 --
 -- Two jobs: attach every footprint to a region and a district (which decides
 -- its partition), and parse the height field, which arrives as free text in

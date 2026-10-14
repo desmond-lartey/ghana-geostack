@@ -2,7 +2,7 @@
  *
  * The stub lives in tests/smoke_viewer.cjs, as a template string, because that
  * is the test it was written for. The other browser tests lift it out of that
- * file as text and some of them need a method taught to answer differently —
+ * file as text and some of them need a method taught to answer differently -
  * a canvas of a particular size, features for a classification to work on.
  *
  * They did that with `String.replace`, which fails by doing nothing. When the
@@ -28,7 +28,7 @@ function baseStub() {
   return parts[1].split("`;")[0];
 }
 
-/* patch(stub, [[needle, replacement], …]) — every needle must be present. */
+/* patch(stub, [[needle, replacement], …]) - every needle must be present. */
 function patch(stub, pairs) {
   let out = stub;
   for (const [needle, replacement] of pairs) {

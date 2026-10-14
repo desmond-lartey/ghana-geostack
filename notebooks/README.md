@@ -1,7 +1,7 @@
 # Notebooks
 
 Exploratory work lives here. Anything that becomes a repeatable step should
-move into `pipelines/` or `db/analysis/` — a notebook is a place to figure
+move into `pipelines/` or `db/analysis/` - a notebook is a place to figure
 something out, not a place to keep it.
 
 Register the kernel after creating the environment:

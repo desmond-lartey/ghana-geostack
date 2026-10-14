@@ -22,9 +22,9 @@ boundaries and disables the layers that require one.
 3. Deploy.
 
 The build runs `python3 scripts/build_web.py`, which assembles `public/` from
-`web/index.html` and `data/reference/`. No dependencies are installed —
+`web/index.html` and `data/reference/`. No dependencies are installed -
 the script uses the Python standard library only, and `installCommand` is a
-no-op — so a deployment takes a few seconds.
+no-op - so a deployment takes a few seconds.
 
 ### Environment variables
 
@@ -32,7 +32,7 @@ Set these under **Settings → Environment Variables**. All are optional.
 
 | Variable | Effect |
 | --- | --- |
-| `EE_CLIENT_ID` | The site's Google OAuth client id. Set it and visitors sign in to Earth Engine with one button; unset and the panel asks each of them for a client id. Public by design, not a secret — see [Earth Engine in the browser](earth-engine.md) |
+| `EE_CLIENT_ID` | The site's Google OAuth client id. Set it and visitors sign in to Earth Engine with one button; unset and the panel asks each of them for a client id. Public by design, not a secret - see [Earth Engine in the browser](earth-engine.md) |
 | `TILES_URL` | Public pg_tileserv endpoint. Unset means a boundaries-only deployment |
 | `SITE_URL` | Canonical URL, used to write `sitemap.xml` |
 | `INCLUDE_EXPORTS` | Set to `0` to leave GeoParquet out of the deployment |
@@ -52,7 +52,7 @@ leaving your control.
 
 Without `ANTHROPIC_API_KEY` the endpoint reports that it is not configured and
 the viewer falls back to a set of built-in question patterns, which cover the
-common shapes — counts, rankings, districts within a named region — offline.
+common shapes - counts, rankings, districts within a named region - offline.
 
 `scripts/build_web.py` rewrites the `gh:data-root` and `gh:tiles-url` meta tags
 in the built page, so the same `web/index.html` works from the repository, from
@@ -101,15 +101,15 @@ A boundaries-only deployment needs no backend. To enable buildings, roads and
 the analysis layers, run pg_tileserv somewhere reachable over HTTPS and set
 `TILES_URL`.
 
-Vercel cannot host pg_tileserv itself — it needs a persistent connection to
+Vercel cannot host pg_tileserv itself - it needs a persistent connection to
 PostGIS. Run it on a VM, Fly.io, Railway or Cloud Run, alongside a managed
 PostGIS instance such as Neon, Supabase or Crunchy Bridge.
 
 Two things to configure on that host:
 
-- **CORS** — allow the Vercel origin. The compose file sets
+- **CORS** - allow the Vercel origin. The compose file sets
   `TS_CORSORIGINS` to `*` for development; narrow it in production.
-- **Exposure** — pg_tileserv should connect as `ghana_read`, the read-only
+- **Exposure** - pg_tileserv should connect as `ghana_read`, the read-only
   role created in `db/migrations/001_schemas.sql`, and should see only the
   `serve` schema.
 
@@ -186,7 +186,7 @@ make docs-serve          # syncs, then serves on http://localhost:8000
 ```
 
 `make docs-serve` runs `sync_docs.py` first. MkDocs is configured to watch
-`skills/` as well as `docs/`, so editing a skill reference reloads the browser —
+`skills/` as well as `docs/`, so editing a skill reference reloads the browser -
 though the sync must be rerun to pick up a newly added file.
 
 ### Custom domain

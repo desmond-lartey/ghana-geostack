@@ -141,5 +141,5 @@ function serve() {
     if (errors.length) console.error("  page errors: " + errors.slice(0, 3).join(" | "));
     process.exit(1);
   }
-  console.log("the legend explains the map — ramp, column and range for the styled layer");
+  console.log("the legend explains the map - ramp, column and range for the styled layer");
 })();

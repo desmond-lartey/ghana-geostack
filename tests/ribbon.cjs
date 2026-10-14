@@ -3,7 +3,7 @@
  * A ribbon is a promise: every control says it does something. Three hundred
  * controls is three hundred chances for a label to outlive its function, so
  * this runs every command that claims to be built and fails on the first one
- * that throws. The slots — commands with no implementation — are checked too,
+ * that throws. The slots - commands with no implementation - are checked too,
  * but for the opposite thing: that they say so rather than failing silently.
  */
 const fs = require("fs");
@@ -151,7 +151,7 @@ function serve() {
     for (const line of bad) console.error("  " + line);
     process.exit(1);
   }
-  console.log(`ribbon holds — ${shape.tabs.length} tabs, ${shape.groups} groups, `
+  console.log(`ribbon holds - ${shape.tabs.length} tabs, ${shape.groups} groups, `
     + `${shape.controls} controls, ${shape.commands} commands, `
     + `${shape.built} built and all of them ran, ${shape.commands - shape.built} slots`);
 })();
