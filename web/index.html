@@ -701,7 +701,7 @@ td { font-family: var(--font-mono); font-size: 12.5px; font-variant-numeric: tab
 #shell {
   position: absolute; inset: 0;
   display: grid;
-  grid-template-rows: 44px 1fr 26px;
+  grid-template-rows: auto 1fr 26px;
   grid-template-columns: 1fr;
   background: var(--ground);
 }
@@ -1080,6 +1080,215 @@ td { font-family: var(--font-mono); font-size: 12.5px; font-variant-numeric: tab
 }
 
 
+
+/* --- The ribbon ----------------------------------------------------------
+   ArcGIS Pro's shape: a tab strip, then a band of groups, each group a row of
+   controls above its name. One big control leads a group; the rest stack
+   three to a column. */
+
+#ribbon {
+  display: flex; flex-direction: column;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  position: relative; z-index: 60;
+}
+
+#ribbon-head {
+  display: flex; align-items: stretch; gap: 0;
+  height: 30px;
+  border-bottom: 1px solid var(--border);
+}
+#ribbon-head .brand {
+  display: flex; align-items: center;
+  font-family: var(--font-display); font-weight: 700;
+  font-size: 14px; color: var(--accent);
+  padding: 0 14px 0 12px; white-space: nowrap;
+}
+#ribbon-tabs { display: flex; align-items: stretch; gap: 0; overflow-x: auto; }
+#ribbon-tabs::-webkit-scrollbar { height: 0; }
+
+.ribbon-tab {
+  border: 0; background: none; cursor: pointer;
+  padding: 0 13px; height: 100%;
+  font: inherit; font-size: 12.5px; color: var(--text-2);
+  border-bottom: 2px solid transparent;
+  white-space: nowrap;
+}
+.ribbon-tab:hover { color: var(--text); background: var(--surface-2); }
+.ribbon-tab[aria-selected="true"] {
+  color: var(--accent); font-weight: 600;
+  border-bottom-color: var(--accent);
+}
+
+#ribbon-head .ribbon-right { margin-left: auto; display: flex; align-items: center; gap: 4px; padding-right: 8px; }
+#ribbon-head .ribbon-right button {
+  border: 0; background: none; cursor: pointer; color: var(--text-3);
+  display: grid; place-items: center; width: 26px; height: 22px; border-radius: 5px;
+}
+#ribbon-head .ribbon-right button svg { width: 15px; height: 15px; }
+#ribbon-head .ribbon-right button:hover { background: var(--surface-2); color: var(--text); }
+
+#ribbon-body {
+  display: flex; align-items: stretch; gap: 0;
+  padding: 0 4px; min-height: 86px;
+  overflow-x: auto; overflow-y: hidden;
+}
+#ribbon-body::-webkit-scrollbar { height: 6px; }
+#ribbon-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+#ribbon[data-collapsed="true"] #ribbon-body { display: none; }
+
+.rib-group {
+  display: flex; flex-direction: column; justify-content: space-between;
+  padding: 5px 9px 3px;
+  border-right: 1px solid var(--border);
+  flex: none;
+}
+.rib-group:last-child { border-right: 0; }
+.rib-group h3 {
+  margin: 2px 0 0; text-align: center;
+  font-size: 10px; font-weight: 500; letter-spacing: .02em;
+  color: var(--text-3); white-space: nowrap;
+}
+.rib-controls { display: flex; align-items: flex-start; gap: 2px; }
+.rib-col { display: flex; flex-direction: column; gap: 1px; }
+
+.rib-btn {
+  display: flex; align-items: center; gap: 6px;
+  border: 1px solid transparent; border-radius: 5px;
+  background: none; color: var(--text); cursor: pointer;
+  font: inherit; text-align: left;
+}
+.rib-btn svg { flex: none; }
+.rib-btn:hover { background: var(--surface-2); border-color: var(--border); }
+.rib-btn:active { background: var(--border); }
+.rib-btn[aria-pressed="true"] {
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+  border-color: var(--accent); color: var(--accent);
+}
+
+.rib-btn.big {
+  flex-direction: column; justify-content: flex-start; gap: 3px;
+  width: 62px; min-height: 58px; padding: 5px 2px 4px;
+  text-align: center;
+}
+.rib-btn.big svg { width: 24px; height: 24px; }
+.rib-btn.big span {
+  font-size: 10.5px; line-height: 1.15; white-space: normal;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.rib-btn.small { height: 19px; padding: 0 7px 0 4px; max-width: 168px; }
+.rib-btn.small svg { width: 14px; height: 14px; }
+.rib-btn.small span {
+  font-size: 11.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+/* A slot: the frame is built, the function is not. Marked rather than hidden,
+   because a job with a name is an invitation and a hidden one is nothing. */
+.rib-btn[data-planned="true"] { color: var(--text-3); }
+.rib-btn[data-planned="true"] svg { opacity: .6; }
+.rib-btn[data-planned="true"]::after {
+  content: ""; width: 4px; height: 4px; border-radius: 50%;
+  background: var(--gold, #B58A3B); flex: none; margin-left: auto;
+}
+.rib-btn.big[data-planned="true"]::after {
+  position: absolute; margin: 0; top: 5px; right: 5px;
+}
+.rib-btn.big { position: relative; }
+
+/* --- Command search ------------------------------------------------------ */
+
+#command-search {
+  position: fixed; top: 86px; left: 50%; transform: translateX(-50%);
+  width: 560px; max-width: calc(100vw - 32px); z-index: 80;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 12px; box-shadow: 0 22px 60px rgba(0, 0, 0, .42);
+  overflow: hidden;
+}
+#command-search[hidden] { display: none; }
+#command-search .cs-head {
+  display: flex; align-items: center; gap: 9px;
+  padding: 11px 13px; border-bottom: 1px solid var(--border);
+}
+#command-search .cs-head svg { width: 16px; height: 16px; color: var(--text-3); flex: none; }
+#command-search input {
+  flex: 1; border: 0; background: none; color: var(--text);
+  font: inherit; font-size: 14px; outline: none;
+}
+#command-search-results { max-height: 50vh; overflow-y: auto; padding: 6px; }
+#command-search-results button {
+  display: flex; align-items: center; gap: 10px; width: 100%;
+  padding: 7px 10px; border: 0; border-radius: var(--radius);
+  background: none; color: var(--text); font: inherit; cursor: pointer; text-align: left;
+}
+#command-search-results button:hover { background: var(--surface-2); }
+#command-search-results button svg { width: 16px; height: 16px; flex: none; color: var(--text-2); }
+#command-search-results button[data-planned="true"] { color: var(--text-3); }
+#command-search-results .cs-label { flex: 1; font-size: 13px; }
+#command-search-results .cs-where {
+  display: block; font-size: 11px; color: var(--text-3); margin-top: 1px;
+}
+#command-search-results code {
+  font-family: var(--font-mono); font-size: 10.5px; color: var(--text-3);
+}
+#command-search .cs-foot {
+  padding: 7px 13px; border-top: 1px solid var(--border);
+  font-size: 11px; color: var(--text-3);
+}
+
+/* --- The slot explainer, and bookmarks ----------------------------------- */
+
+.planned-desc { color: var(--text-2); }
+.planned-card {
+  border: 1px solid var(--gold, #B58A3B); border-radius: var(--radius);
+  background: var(--surface-2); padding: 12px 13px; margin: 12px 0;
+  font-size: 13px;
+}
+.planned-card dl { margin: 10px 0 0; }
+.planned-card dt {
+  font-size: 10.5px; text-transform: uppercase; letter-spacing: .05em;
+  color: var(--text-3); margin-top: 9px;
+}
+.planned-card dd { margin: 3px 0 0; font-size: 12.5px; line-height: 1.45; }
+.planned-card code { font-family: var(--font-mono); font-size: 11.5px; color: var(--accent); }
+.planned-actions { display: flex; gap: 8px; margin-top: 12px; }
+.planned-actions .btn { text-decoration: none; display: inline-flex; align-items: center; }
+
+.identify-layer { margin-bottom: 14px; }
+.identify-layer h4 {
+  margin: 0 0 5px; font-size: 11px; letter-spacing: .05em;
+  text-transform: uppercase; color: var(--text-3); font-weight: 600;
+}
+.identify-props {
+  display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr);
+  gap: 1px 10px; margin: 0 0 8px;
+  border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 7px 9px; background: var(--surface-2);
+}
+.identify-props dt { font-size: 11.5px; color: var(--text-3); font-family: var(--font-mono); }
+.identify-props dd { margin: 0; font-size: 12.5px; overflow-wrap: anywhere; }
+
+.bookmark-row { display: flex; align-items: center; gap: 4px; margin-bottom: 4px; }
+.bookmark-go {
+  flex: 1; text-align: left; padding: 7px 9px;
+  border: 1px solid var(--border); border-radius: var(--radius);
+  background: var(--surface-2); color: var(--text); font: inherit; font-size: 13px; cursor: pointer;
+}
+.bookmark-go span { display: block; font-size: 11px; color: var(--text-3); font-family: var(--font-mono); }
+.bookmark-del {
+  width: 28px; height: 28px; display: grid; place-items: center; flex: none;
+  border: 1px solid transparent; border-radius: var(--radius);
+  background: none; color: var(--text-3); cursor: pointer;
+}
+.bookmark-del:hover { color: var(--clay); background: var(--surface-2); }
+.bookmark-del svg { width: 14px; height: 14px; }
+
+@media (max-width: 900px) {
+  .rib-btn.small { max-width: 120px; }
+  #ribbon-body { min-height: 78px; }
+}
+
 /* The tab strip is how panels used to be chosen; the menus choose them now.
    The buttons stay in the document because selectTab still drives which panel
    shows, but nobody should see them. A bare [hidden] loses to the display
@@ -1090,6 +1299,7 @@ td { font-family: var(--font-mono); font-size: 12.5px; font-variant-numeric: tab
    selector saying `display: flex` outranks the browser's own rule for
    [hidden], so each one has to be overruled by name. */
 #tabs[hidden],
+#menubar[hidden],
 #header[hidden],
 #controls[hidden] { display: none !important; }
 
@@ -1162,7 +1372,27 @@ td { font-family: var(--font-mono); font-size: 12.5px; font-variant-numeric: tab
 
 <div id="shell">
 
-<div id="menubar">
+<div id="ribbon" data-collapsed="false">
+  <div id="ribbon-head">
+    <div class="brand">Ghana GeoStack</div>
+    <div id="ribbon-tabs" role="tablist" aria-label="Ribbon"></div>
+    <div class="ribbon-right">
+      <button type="button" id="ribbon-search" title="Find a command (Ctrl K)">
+        <svg viewBox="0 0 20 20" fill="none"><path d="M9 3.6a5.4 5.4 0 1 0 0 10.8A5.4 5.4 0 0 0 9 3.6zM12.9 12.9l4 4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+      </button>
+      <button type="button" id="ribbon-collapse" title="Collapse the ribbon">
+        <svg viewBox="0 0 20 20" fill="none"><path d="M5 12.5 10 7.5l5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+    </div>
+  </div>
+  <div id="ribbon-body"></div>
+</div>
+
+<!-- The old menu bar. Hidden, and kept only because the layer dock, the
+     dialogs and the tour still fire its data-act strings; those now route
+     through the command registry like everything else. -->
+<div id="menubar" hidden>
+
   <div class="brand">Ghana GeoStack</div>
 
   <div class="menu" data-menu="project">
@@ -1513,6 +1743,10 @@ td { font-family: var(--font-mono); font-size: 12.5px; font-variant-numeric: tab
 
   <div class="tabpanel" id="pane-style" role="tabpanel" aria-labelledby="tab-style"></div>
 
+  <div class="tabpanel" id="pane-planned" role="tabpanel"></div>
+  <div class="tabpanel" id="pane-bookmarks" role="tabpanel"></div>
+  <div class="tabpanel" id="pane-identify" role="tabpanel"></div>
+
   <div class="tabpanel" id="pane-data" role="tabpanel" aria-labelledby="tab-data">
     <div data-clip-badge></div>
 
@@ -1817,6 +2051,18 @@ ORDER BY km2 DESC;</textarea>
 <!-- The print layout. A screenshot of a web map is a picture of a browser;
      what a report needs is a map with a frame, a title, a north arrow, a scale
      bar, a legend and its attributions. -->
+<div id="command-search" hidden role="dialog" aria-modal="false" aria-label="Find a command">
+  <div class="cs-head">
+    <svg viewBox="0 0 20 20" fill="none"><path d="M9 3.6a5.4 5.4 0 1 0 0 10.8A5.4 5.4 0 0 0 9 3.6zM12.9 12.9l4 4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+    <input id="command-search-input" type="search" autocomplete="off"
+           placeholder="Find a command — buffer, rainfall, export, clip…">
+    <button type="button" class="btn btn-quiet" id="command-search-close">Close</button>
+  </div>
+  <div id="command-search-results"></div>
+  <div class="cs-foot">Every command the ribbon can run. A dot means the slot
+    exists and the function is still open.</div>
+</div>
+
 <div id="export-dialog" hidden role="dialog" aria-modal="false" aria-labelledby="export-dialog-title">
   <h2 id="export-dialog-title">Export a map image</h2>
 
@@ -3238,11 +3484,16 @@ function closePanel() {
 hamburger.addEventListener("click", () =>
   panel.dataset.open === "true" ? closePanel() : openPanel("layers"));
 
+/* Which pane the right dock shows. Driven from the panes rather than from the
+   tab buttons: the tab strip is hidden now, and panes the ribbon added —
+   Identify, Bookmarks, the slot explainer — have no button to be driven from.
+   Reading the panes means adding one is adding one thing. */
 function selectTab(name) {
+  for (const pane of document.querySelectorAll(".tabpanel")) {
+    pane.dataset.active = String(pane.id === `pane-${name}`);
+  }
   for (const t of document.querySelectorAll(".tab")) {
-    const on = t.id === `tab-${name}`;
-    t.setAttribute("aria-selected", String(on));
-    document.getElementById(t.getAttribute("aria-controls")).dataset.active = String(on);
+    t.setAttribute("aria-selected", String(t.id === `tab-${name}`));
   }
 }
 
@@ -6382,6 +6633,16 @@ window.__ghExport = {
   lastDataUrl: () => lastExportDataUrl
 };
 
+/* A way in for the ribbon test: the registry is the public surface of the
+   interface, so the test drives commands the way a button does. */
+window.__ghRibbon = {
+  run: (id) => runCommand(id),
+  search: () => openCommandSearch(),
+  commands: () => Object.values(COMMANDS).map((c) => ({ id: c.id, label: c.label,
+                    built: typeof c.run === "function" })),
+  spec: () => RIBBON
+};
+
 window.__ghLayers = {
   list: () => [...userLayers.values()],
   add: (entry) => registerUserLayer(entry),
@@ -7726,11 +7987,3170 @@ function drawLegend(ctx, frame, W, ink, faint, paper, rule) {
   ctx.restore();
 }
 
+
+/* ── Ribbon icons ──────────────────────────────────────────────────────────
+
+   Fifty-odd line icons on a 20x20 grid, drawn in currentColor so one set
+   serves the light theme, the dark theme and the ribbon's own pressed state.
+   Every command names an icon; names with no drawing of their own are aliased
+   onto the nearest one that has, which keeps the set small enough to stay
+   consistent and the spec free to name things properly.                     */
+
+const RIB_ICON = {
+  hand:      'M7 11V4.6a1.1 1.1 0 0 1 2.2 0V10m0-.6V3.4a1.1 1.1 0 0 1 2.2 0V10m0-.4V4.6a1.1 1.1 0 0 1 2.2 0v6m0-2.6a1.1 1.1 0 0 1 2.2 0V13a4.4 4.4 0 0 1-4.4 4.4h-1.6c-1.4 0-2.3-.5-3.2-1.6L4 12.4a1.2 1.2 0 0 1 1.8-1.6z',
+  plus:      'M10 4.6v10.8M4.6 10h10.8',
+  minus:     'M4.6 10h10.8',
+  globe:     'M10 2.6a7.4 7.4 0 1 0 0 14.8 7.4 7.4 0 0 0 0-14.8zM2.6 10h14.8M10 2.6c2 2.2 3.1 4.7 3.1 7.4s-1.1 5.2-3.1 7.4c-2-2.2-3.1-4.7-3.1-7.4S8 4.8 10 2.6z',
+  back:      'M15.4 10H4.6m4.2-4.2L4.6 10l4.2 4.2',
+  forward:   'M4.6 10h10.8m-4.2-4.2L15.4 10l-4.2 4.2',
+  compass:   'M10 2.8a7.2 7.2 0 1 0 0 14.4 7.2 7.2 0 0 0 0-14.4zM12.9 7.1l-1.6 4.2-4.2 1.6 1.6-4.2z',
+  target:    'M10 3.4v2.2m0 8.8v2.2M3.4 10h2.2m8.8 0h2.2M10 6.2a3.8 3.8 0 1 0 0 7.6 3.8 3.8 0 0 0 0-7.6z',
+  locate:    'M10 6.4a3.6 3.6 0 1 0 0 7.2 3.6 3.6 0 0 0 0-7.2zM10 2.4v2.4m0 10.4v2.4M2.4 10h2.4m10.4 0h2.4',
+  fullscreen:'M7.4 3.2H3.2v4.2M12.6 3.2h4.2v4.2M16.8 12.6v4.2h-4.2M3.2 12.6v4.2h4.2',
+  zoom:      'M9 3.6a5.4 5.4 0 1 0 0 10.8A5.4 5.4 0 0 0 9 3.6zM12.9 12.9l4 4M6.6 9h4.8M9 6.6v4.8',
+
+  satellite: 'M6.6 6.6 3.4 9.8l3.2 3.2 3.2-3.2zM13.4 13.4l3.2-3.2-3.2-3.2-3.2 3.2zM9.8 3.4 13 6.6M7 13l3.2 3.2',
+  database:  'M10 3.2c3.3 0 6 .9 6 2.1s-2.7 2.1-6 2.1-6-.9-6-2.1S6.7 3.2 10 3.2zM4 5.3v9.4c0 1.2 2.7 2.1 6 2.1s6-.9 6-2.1V5.3M4 10c0 1.2 2.7 2.1 6 2.1s6-.9 6-2.1',
+  file:      'M11.4 2.8H5.8a1.4 1.4 0 0 0-1.4 1.4v11.6a1.4 1.4 0 0 0 1.4 1.4h8.4a1.4 1.4 0 0 0 1.4-1.4V6.8zM11.4 2.8v4h4.2',
+  link:      'M8.4 11.6a3 3 0 0 0 4.3 0l2.4-2.4a3 3 0 1 0-4.3-4.3L9.6 6.1M11.6 8.4a3 3 0 0 0-4.3 0l-2.4 2.4a3 3 0 1 0 4.3 4.3l1.2-1.2',
+  server:    'M3.8 4.4h12.4v4.2H3.8zM3.8 11.4h12.4v4.2H3.8zM6.4 6.5h.01M6.4 13.5h.01',
+  cloud:     'M6.4 15.2a3.6 3.6 0 0 1-.4-7.2 4.8 4.8 0 0 1 9.2 1.3 3 3 0 0 1-.6 5.9z',
+  download:  'M10 3.4v8.8m-3.4-3.4L10 12.2l3.4-3.4M4 15.4h12',
+  package:   'M10 2.8 3.6 6v8L10 17.2 16.4 14V6zM3.6 6 10 9.2 16.4 6M10 9.2v8',
+  table:     'M3.6 4.4h12.8v11.2H3.6zM3.6 8.2h12.8M8 8.2v7.4M3.6 11.9h12.8',
+  column:    'M3.6 4.4h12.8v11.2H3.6zM8 4.4v11.2M12 4.4v11.2',
+  sql:       'M3.6 5h12.8M3.6 10h8.4M3.6 15h5.6',
+  calculator:'M5 2.8h10v14.4H5zM7.2 6h5.6M7.2 9.6h.01M10 9.6h.01M12.8 9.6h.01M7.2 12.6h.01M10 12.6h.01M12.8 12.6h.01',
+  stats:     'M4 16V9m4 7V4m4 12v-5m4 5V7',
+
+  health:    'M10 3.6v12.8M3.6 10h12.8',
+  school:    'M10 3.2 2.8 6.8 10 10.4l7.2-3.6zM5.6 8.6v4.6c0 1.2 2 2.2 4.4 2.2s4.4-1 4.4-2.2V8.6',
+  water:     'M10 3 6.2 8.6a4.6 4.6 0 1 0 7.6 0z',
+  market:    'M3.6 7.4h12.8l-1 8.2H4.6zM7 7.4V5.6a3 3 0 0 1 6 0v1.8',
+  road:      'M7 3.4 4.6 16.6M13 3.4l2.4 13.2M10 4.4v2.2m0 3.2v2.2m0 3.2v2.2',
+  building:  'M4.6 16.6V4.4h7.2v12.2M11.8 8.4h3.6v8.2M7 7.2h2M7 10.2h2M7 13.2h2',
+
+  select:    'M4 4h4M12 4h4M16 8v4M4 8v4M4 16h4M12 16h4',
+  filter:    'M3.4 4.4h13.2l-5.2 6v5.4l-2.8 1.4V10.4z',
+  location:  'M10 2.8c-2.7 0-4.8 2.1-4.8 4.8 0 3.6 4.8 9.6 4.8 9.6s4.8-6 4.8-9.6c0-2.7-2.1-4.8-4.8-4.8zM10 5.8a1.8 1.8 0 1 0 0 3.6 1.8 1.8 0 0 0 0-3.6z',
+  clear:     'M5 5l10 10M15 5 5 15',
+  info:      'M10 2.8a7.2 7.2 0 1 0 0 14.4 7.2 7.2 0 0 0 0-14.4zM10 9v4.6M10 6.4h.01',
+  ruler:     'M13.6 2.6 17.4 6.4 6.4 17.4 2.6 13.6zM6.6 9.6l1.6 1.6M9.6 6.6l1.6 1.6M11.2 11.2l1.2 1.2',
+
+  point:     'M10 6.6a3.4 3.4 0 1 0 0 6.8 3.4 3.4 0 0 0 0-6.8z',
+  line:      'M3.6 15.4 8 8l4 4 4.4-7.4',
+  polygon:   'M10 3 17 8.2l-2.6 8.2H5.6L3 8.2z',
+  box:       'M4 4.8h12v10.4H4z',
+  hull:      'M8 3.4 16.4 8l-2.2 8-8.6-1.4L3.4 7z',
+  buffer:    'M10 7.2a2.8 2.8 0 1 0 0 5.6 2.8 2.8 0 0 0 0-5.6zM10 3.2a6.8 6.8 0 1 0 0 13.6 6.8 6.8 0 0 0 0-13.6z',
+  scissors:  'M5.4 4 14 14.6M14.6 4 6 14.6M4.8 14.4a2 2 0 1 0 2.8 2.8 2 2 0 0 0-2.8-2.8zM12.4 14.4a2 2 0 1 0 2.8 2.8 2 2 0 0 0-2.8-2.8z',
+  dissolve:  'M7.4 4.6h8v8h-8zM4.6 7.4h8v8h-8z',
+  voronoi:   'M10 2.8 3.4 7v6l6.6 4.2L16.6 13V7zM10 2.8v6M3.4 7l6.6 1.8M16.6 7 10 8.8M10 8.8v8.4',
+  simplify:  'M3.4 14.6 7 7l3.4 4.2L13 5.4l3.6 9.2',
+  overlay:   'M4.4 4.4h8v8h-8zM7.6 7.6h8v8h-8z',
+
+  palette:   'M10 2.8a7.2 7.2 0 1 0 0 14.4c1.1 0 1.6-.7 1.6-1.5 0-.8-.7-1.4-.7-2.1 0-.6.5-1.2 1.2-1.2h1.5a3.6 3.6 0 0 0 3.6-3.6C17.2 5.2 14 2.8 10 2.8zM6.2 9.2h.01M9 6.4h.01M12.6 7.2h.01',
+  classes:   'M3.6 4.6h4v4h-4zM3.6 11.4h4v4h-4zM10.4 4.6h6M10.4 6.8h6M10.4 11.4h6M10.4 13.6h6',
+  swatch:    'M4.4 4.4h11.2v11.2H4.4z',
+  opacity:   'M10 3 6 8.6a4.8 4.8 0 1 0 8 0zM10 3v13.6',
+  label:     'M3.4 8.4 8.4 3.4h7.2v7.2l-5 5z M13 6.4h.01',
+  extrude:   'M10 3 3.6 6.6v6.8L10 17l6.4-3.6V6.6zM3.6 6.6 10 10.2l6.4-3.6M10 10.2V17',
+  range:     'M4 10h12M4 7v6M16 7v6',
+  blend:     'M7.4 6.4a4.4 4.4 0 1 0 0 8.8 4.4 4.4 0 0 0 0-8.8zM12.6 6.4a4.4 4.4 0 1 0 0 8.8 4.4 4.4 0 0 0 0-8.8z',
+  stretch:   'M3.4 10h13.2M3.4 10l3-3M3.4 10l3 3M16.6 10l-3-3M16.6 10l-3 3',
+
+  edit:      'M13.6 3.4 16.6 6.4 7 16H4v-3zM11.8 5.2l3 3',
+  save:      'M4 4h9.4L16 6.6V16H4zM7 4v4.4h6V4M7 16v-4.4h6V16',
+  discard:   'M5 5l10 10M15 5 5 15',
+  undo:      'M6 7.4H3.4V4.8M3.6 7.6a6.4 6.4 0 1 1-1 4',
+  redo:      'M14 7.4h2.6V4.8M16.4 7.6a6.4 6.4 0 1 0 1 4',
+  draw:      'M3 17l1-3.6L13.4 4a1.8 1.8 0 0 1 2.6 2.6L6.6 16z',
+  modify:    'M10 3.4 16.6 10 10 16.6 3.4 10zM10 7.6a2.4 2.4 0 1 0 0 4.8 2.4 2.4 0 0 0 0-4.8z',
+  trash:     'M3.8 5.4h12.4M7.6 5.4V3.8h4.8v1.6M5.4 5.4l.8 11h7.6l.8-11',
+  split:     'M10 2.8v14.4M5.4 7.4 2.8 10l2.6 2.6M14.6 7.4 17.2 10l-2.6 2.6',
+  merge:     'M3.4 6h5.2l2.8 4 2.8-4h2.4M3.4 14h5.2l2.8-4',
+  snap:      'M10 3.4v13.2M3.4 10h13.2M10 7.8a2.2 2.2 0 1 0 0 4.4 2.2 2.2 0 0 0 0-4.4z',
+  copy:      'M7 7h9v9H7zM13 7V4H4v9h3',
+  paste:     'M7.4 4H5.6a1.2 1.2 0 0 0-1.2 1.2v10.4a1.2 1.2 0 0 0 1.2 1.2h8.8a1.2 1.2 0 0 0 1.2-1.2V5.2A1.2 1.2 0 0 0 14.4 4h-1.8M7.4 4V2.8h5.2V4z',
+  cut:       'M5.4 4 14 14.6M14.6 4 6 14.6M4.8 14.4a2 2 0 1 0 2.8 2.8 2 2 0 0 0-2.8-2.8z',
+
+  toolbox:   'M3.4 7.4h13.2v8.4H3.4zM7 7.4V5.2a1.4 1.4 0 0 1 1.4-1.4h3.2a1.4 1.4 0 0 1 1.4 1.4v2.2M3.4 11h13.2',
+  history:   'M10 5.6v4.6l3 1.8M10 3.2a6.8 6.8 0 1 0 6.8 6.8M10 3.2 12.6 5M10 3.2 12.6 1.4',
+  zonal:     'M3.4 4.4h5.4v5.4H3.4zM11.2 4.4h5.4v5.4h-5.4zM3.4 11.2h5.4v5.4H3.4zM11.2 11.2h5.4v5.4h-5.4z',
+  landcover: 'M3 15.4c2-2.6 3.4-1 5-2.6s2.2-4.4 4-4.4 2.6 2.6 5 1.4M3 10.6c2-2.6 3.4-1 5-2.6S10.2 3.6 12 3.6',
+  terrain:   'M2.6 15.4 7.4 7l3.4 5 2-3 4.6 6.4z',
+  hotspot:   'M10 2.8c1.6 2.6 3.8 3.8 3.8 6.6a3.8 3.8 0 1 1-7.6 0c0-2.8 2.2-4 3.8-6.6zM6 16.8h8',
+  assistant: 'M16.6 9.6c0 3.3-2.9 6-6.6 6-.8 0-1.6-.1-2.3-.4l-4.3 1.4 1.3-3.2a5.4 5.4 0 0 1-1.3-3.8c0-3.3 3-6 6.6-6s6.6 2.7 6.6 6z',
+  bulb:      'M10 2.8a4.8 4.8 0 0 0-2.8 8.7v1.9h5.6v-1.9A4.8 4.8 0 0 0 10 2.8zM8 16h4',
+
+  layers:    'M10 2.8 3 6.6l7 3.8 7-3.8zM3 10.2l7 3.8 7-3.8M3 13.6l7 3.8 7-3.8',
+  basemap:   'M3.4 5.4 7.6 3.6l4.8 1.8 4.2-1.8v11l-4.2 1.8-4.8-1.8L3.4 16.4zM7.6 3.6v11M12.4 5.4v11',
+  theme:     'M15.4 11.2A6.2 6.2 0 0 1 8 3.8a6.4 6.4 0 1 0 7.4 7.4z',
+  grid:      'M3.4 7.4h13.2M3.4 12.6h13.2M7.4 3.4v13.2M12.6 3.4v13.2',
+  scalebar:  'M3 9h14v3H3zM6.5 9v3M10 9v3M13.5 9v3',
+  legend:    'M3.6 5.4h3.2v3.2H3.6zM3.6 11.4h3.2v3.2H3.6zM9.4 7h7M9.4 13h7',
+  search:    'M9 3.6a5.4 5.4 0 1 0 0 10.8A5.4 5.4 0 0 0 9 3.6zM12.9 12.9l4 4',
+  image:     'M3.4 4.4h13.2v11.2H3.4zM3.4 12.4 7.4 8.6l3.2 2.8 2.4-2 3.6 3.2M7 7.4h.01',
+  page:      'M4.6 2.8h10.8v14.4H4.6zM7 6h6M7 9h6M7 12h4',
+  pdf:       'M11.4 2.8H5.8a1.4 1.4 0 0 0-1.4 1.4v11.6a1.4 1.4 0 0 0 1.4 1.4h8.4a1.4 1.4 0 0 0 1.4-1.4V6.8zM11.4 2.8v4h4.2M7 11.6h6M7 14h4',
+  report:    'M4.6 2.8h10.8v14.4H4.6zM7.4 6.6h5.2M7.4 9.6h5.2M7.4 12.6h3',
+  embed:     'M7 6.6 3.4 10 7 13.4M13 6.6 16.6 10 13 13.4M11.4 4.4 8.6 15.6',
+
+  plugin:    'M7.4 3.4h5.2v2.4a1.8 1.8 0 1 0 0 3.6v2.4h2.4a1.8 1.8 0 1 1 0 3.6H7.4z',
+  browse:    'M3.4 5.4h5.2l1.4 1.8h6.6v9.4H3.4zM3.4 5.4V3.6',
+  install:   'M10 3.4v8.8m-3.4-3.4L10 12.2l3.4-3.4M4 15.4h12',
+  code:      'M7 6.6 3.4 10 7 13.4M13 6.6 16.6 10 13 13.4',
+  record:    'M10 5.6a4.4 4.4 0 1 0 0 8.8 4.4 4.4 0 0 0 0-8.8z',
+  play:      'M6.4 3.8 16 10l-9.6 6.2z',
+  clock:     'M10 2.8a7.2 7.2 0 1 0 0 14.4 7.2 7.2 0 0 0 0-14.4zM10 5.8V10l2.8 1.8',
+  settings:  'M10 7.4a2.6 2.6 0 1 0 0 5.2 2.6 2.6 0 0 0 0-5.2zM16 10c0-.5 0-1-.1-1.4l1.6-1.2-1.6-2.8-1.9.8a6 6 0 0 0-2.4-1.4L11.3 2H8.7l-.3 2a6 6 0 0 0-2.4 1.4l-1.9-.8L2.5 7.4 4.1 8.6a6.3 6.3 0 0 0 0 2.8l-1.6 1.2 1.6 2.8 1.9-.8a6 6 0 0 0 2.4 1.4l.3 2h2.6l.3-2a6 6 0 0 0 2.4-1.4l1.9.8 1.6-2.8-1.6-1.2c.1-.4.1-.9.1-1.4z',
+  language:  'M3.4 5.6h7.2M6.8 3.6v2M8.8 5.6c0 3.6-2.4 6.4-5.4 7.6M5 8.8c0 2 1.8 3.6 4.2 4.4M10.6 16.4l3.2-8 3.2 8M11.8 13.8h4',
+  book:      'M3.6 4.4c2.4-.8 4.4-.8 6.4.6 2-1.4 4-1.4 6.4-.6v10c-2.4-.8-4.4-.8-6.4.6-2-1.4-4-1.4-6.4-.6zM10 5v10',
+  licence:   'M10 2.8 3.6 5.4v4.8c0 4 2.7 6.4 6.4 7 3.7-.6 6.4-3 6.4-7V5.4zM7.6 9.8l1.8 1.8 3.4-3.4',
+  tour:      'M4 4.4h12M4 10h12M4 15.6h8M14.4 13.6l2.6 2-2.6 2z',
+  keyboard:  'M3 5.6h14v8.8H3zM5.6 8.4h.01M8.4 8.4h.01M11.2 8.4h.01M14 8.4h.01M6.6 11.6h6.8',
+  heart:     'M10 16.6S3.4 12.6 3.4 7.8A3.6 3.6 0 0 1 10 5.8a3.6 3.6 0 0 1 6.6 2c0 4.8-6.6 8.8-6.6 8.8z',
+  bug:       'M7 7a3 3 0 0 1 6 0M6.4 7h7.2v4.4a3.6 3.6 0 0 1-7.2 0zM3.4 9h3M13.6 9h3M3.8 13.8l2.8-1.4M16.2 13.8l-2.8-1.4M3.8 5.2l2.8 1.2M16.2 5.2l-2.8 1.2',
+  log:       'M6.4 5h9M6.4 10h9M6.4 15h6M3.4 5h.01M3.4 10h.01M3.4 15h.01',
+  refresh:   'M16.4 10a6.4 6.4 0 1 1-1.9-4.5M16.6 3.2v4h-4',
+  sync:      'M15.4 7.4A6 6 0 0 0 4.8 6.4M4.6 12.6a6 6 0 0 0 10.6 1M4.2 3.6v3.8H8M15.8 16.4v-3.8H12',
+  offline:   'M6.4 15.2a3.6 3.6 0 0 1-.4-7.2 4.8 4.8 0 0 1 9.2 1.3 3 3 0 0 1-.6 5.9zM3.4 3.4l13.2 13.2',
+  privacy:   'M10 2.8 3.6 5.4v4.8c0 4 2.7 6.4 6.4 7 3.7-.6 6.4-3 6.4-7V5.4zM10 8.4v3.2',
+  cache:     'M10 3.2c3.3 0 6 .9 6 2.1s-2.7 2.1-6 2.1-6-.9-6-2.1S6.7 3.2 10 3.2zM4 5.3v9.4c0 1.2 2.7 2.1 6 2.1s6-.9 6-2.1V5.3',
+  bookmark:  'M5.4 3.4h9.2v13.2L10 13.2l-4.6 3.4z',
+  text:      'M4.4 5.4V3.6h11.2v1.8M10 3.6v12.8M7.4 16.4h5.2',
+  hash:      'M7 3.6 5.6 16.4M14.4 3.6 13 16.4M3.6 7.4h13M3.4 12.6h13',
+  join:      'M3.4 6h5.2l2.8 4 2.8-4h2.4M3.4 14h5.2l2.8-4',
+  crs:       'M10 2.6a7.4 7.4 0 1 0 0 14.8 7.4 7.4 0 0 0 0-14.8zM2.6 10h14.8M10 2.6v14.8',
+  units:     'M13.6 2.6 17.4 6.4 6.4 17.4 2.6 13.6zM6.6 9.6l1.6 1.6M9.6 6.6l1.6 1.6',
+  dot:       'M10 7.6a2.4 2.4 0 1 0 0 4.8 2.4 2.4 0 0 0 0-4.8z'
+};
+
+/* Names the spec uses that share a drawing with one above. An alias is a
+   deliberate choice to keep the set consistent, not a gap. */
+const RIB_ALIAS = {
+  graduated: "classes", categories: "classes", reclass: "classes",
+  placement: "label", halo: "label",
+  bands: "stats", hillshade: "terrain", resample: "stretch", raster: "image",
+  vertex: "point", edge: "line", surrounds: "legend",
+  duck: "database", stac: "satellite", correlation: "stats",
+  template: "page", swipe: "blend", split: "split",
+  clearQuery: "clear", browse: "browse", market: "market",
+  "zoom": "zoom", "licence": "licence"
+};
+
+function ribIcon(name) {
+  const key = RIB_ALIAS[name] || name;
+  const d = RIB_ICON[key] || RIB_ICON.dot;
+  return `<svg viewBox="0 0 20 20" fill="none" aria-hidden="true">`
+       + `<path d="${d}" stroke="currentColor" stroke-width="1.3"`
+       + ` stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+}
+
+const COMMANDS = {
+  "map.pan": {
+    id: "map.pan",
+    label: "Pan",
+    desc: "Pan with the mouse, zoom with the wheel, click a feature for its attributes.",
+    icon: "hand",
+    run: () => setMapTool("pan")
+  },
+  "map.bookmarkList": {
+    id: "map.bookmarkList",
+    label: "Bookmarks",
+    desc: "Go to a saved extent.",
+    icon: "bookmark",
+    run: () => showPanel("bookmarks")
+  },
+  "map.zoomIn": {
+    id: "map.zoomIn",
+    label: "Zoom In",
+    desc: "Move one zoom level closer.",
+    icon: "plus",
+    run: () => map.zoomIn()
+  },
+  "map.zoomOut": {
+    id: "map.zoomOut",
+    label: "Zoom Out",
+    desc: "Move one zoom level further out.",
+    icon: "minus",
+    run: () => map.zoomOut()
+  },
+  "map.fullExtent": {
+    id: "map.fullExtent",
+    label: "Full Extent",
+    desc: "Back to the whole of Ghana.",
+    icon: "globe",
+    run: () => map.flyTo({ ...HOME, duration: 900 })
+  },
+  "map.previous": {
+    id: "map.previous",
+    label: "Previous Extent",
+    desc: "The view before this one.",
+    icon: "back",
+    run: () => mapHistoryGo(-1)
+  },
+  "map.next": {
+    id: "map.next",
+    label: "Next Extent",
+    desc: "Forward again.",
+    icon: "forward",
+    run: () => mapHistoryGo(1)
+  },
+  "map.north": {
+    id: "map.north",
+    label: "North Up",
+    desc: "Put north back at the top.",
+    icon: "compass",
+    run: () => map.easeTo({ bearing: 0, pitch: 0, duration: 600 })
+  },
+  "map.goToXY": {
+    id: "map.goToXY",
+    label: "Go To XY",
+    desc: "Jump to a coordinate.",
+    icon: "target",
+    run: () => showPanel("settings")
+  },
+  "map.bookmarkNew": {
+    id: "map.bookmarkNew",
+    label: "New Bookmark",
+    desc: "Save this extent under a name.",
+    icon: "bookmark",
+    run: () => bookmarkAdd()
+  },
+  "data.eeSearch": {
+    id: "data.eeSearch",
+    label: "Earth Observation",
+    desc: "Search the Earth Engine catalogue and draw any of it over Ghana.",
+    icon: "satellite",
+    run: () => showPanel("data")
+  },
+  "data.liveHealth": {
+    id: "data.liveHealth",
+    label: "Health Facilities",
+    desc: "Hospitals, clinics and pharmacies, live from OpenStreetMap.",
+    icon: "health",
+    run: () => fetchLive("health")
+  },
+  "data.liveEducation": {
+    id: "data.liveEducation",
+    label: "Schools",
+    desc: "Schools and colleges, live from OpenStreetMap.",
+    icon: "school",
+    run: () => fetchLive("education")
+  },
+  "data.liveWater": {
+    id: "data.liveWater",
+    label: "Water Points",
+    desc: "Boreholes, wells and taps, live from OpenStreetMap.",
+    icon: "water",
+    run: () => fetchLive("water")
+  },
+  "data.liveMarket": {
+    id: "data.liveMarket",
+    label: "Markets",
+    desc: "Markets and shops, live from OpenStreetMap.",
+    icon: "market",
+    run: () => fetchLive("market")
+  },
+  "data.liveRoad": {
+    id: "data.liveRoad",
+    label: "Roads",
+    desc: "The road network, live from OpenStreetMap.",
+    icon: "road",
+    run: () => fetchLive("road")
+  },
+  "data.liveBuilding": {
+    id: "data.liveBuilding",
+    label: "Buildings",
+    desc: "Building footprints, live from OpenStreetMap.",
+    icon: "building",
+    run: () => fetchLive("building")
+  },
+  "data.addFile": {
+    id: "data.addFile",
+    label: "Add a File",
+    desc: "Open a GeoJSON, CSV, GeoPackage or Shapefile from this computer.",
+    icon: "file"
+  },
+  "data.addUrl": {
+    id: "data.addUrl",
+    label: "Add from URL",
+    desc: "A GeoJSON, PMTiles or vector tile service by address.",
+    icon: "link"
+  },
+  "data.addWms": {
+    id: "data.addWms",
+    label: "Add WMS / WMTS",
+    desc: "An OGC web map service.",
+    icon: "server"
+  },
+  "select.byRectangle": {
+    id: "select.byRectangle",
+    label: "Select",
+    desc: "Drag a rectangle to select features.",
+    icon: "select"
+  },
+  "select.byAttributes": {
+    id: "select.byAttributes",
+    label: "By Attributes",
+    desc: "Select with an expression.",
+    icon: "filter"
+  },
+  "select.byLocation": {
+    id: "select.byLocation",
+    label: "By Location",
+    desc: "Select features by where they are relative to another layer.",
+    icon: "location"
+  },
+  "select.clear": {
+    id: "select.clear",
+    label: "Clear",
+    desc: "Drop the selection.",
+    icon: "clear"
+  },
+  "select.zoomTo": {
+    id: "select.zoomTo",
+    label: "Zoom to Selection",
+    desc: "Fit the map to what is selected.",
+    icon: "zoom"
+  },
+  "select.clip": {
+    id: "select.clip",
+    label: "Clip Results To\u2026",
+    desc: "Confine every tool, fetch and summary to one boundary.",
+    icon: "scissors",
+    run: () => openClipPicker()
+  },
+  "map.identify": {
+    id: "map.identify",
+    label: "Identify",
+    desc: "Click a feature to read its attributes.",
+    icon: "info",
+    run: () => setMapTool("identify")
+  },
+  "map.measure": {
+    id: "map.measure",
+    label: "Measure",
+    desc: "Distance and area on the map.",
+    icon: "ruler",
+    run: () => openToolbox("measure")
+  },
+  "layer.table": {
+    id: "layer.table",
+    label: "Attribute Table",
+    desc: "The selected layer's rows.",
+    icon: "table",
+    run: () => openSelectedLayerTable()
+  },
+  "ui.query": {
+    id: "ui.query",
+    label: "SQL Workspace",
+    desc: "Query the data directly.",
+    icon: "sql",
+    run: () => showPanel("query", { toggle: true })
+  },
+  "data.catalogue": {
+    id: "data.catalogue",
+    label: "Ghana Catalogue",
+    desc: "The curated datasets this platform publishes.",
+    icon: "book"
+  },
+  "data.refresh": {
+    id: "data.refresh",
+    label: "Refresh",
+    desc: "Re-read the catalogue index.",
+    icon: "refresh"
+  },
+  "data.sources": {
+    id: "data.sources",
+    label: "Sources and Licensing",
+    desc: "Where each layer came from and what you may do with it.",
+    icon: "licence"
+  },
+  "data.connectPostgis": {
+    id: "data.connectPostgis",
+    label: "PostGIS",
+    desc: "Connect to a PostGIS database.",
+    icon: "database"
+  },
+  "data.connectDuckdb": {
+    id: "data.connectDuckdb",
+    label: "DuckDB",
+    desc: "Open a DuckDB file or a remote Parquet.",
+    icon: "duck"
+  },
+  "data.connectS3": {
+    id: "data.connectS3",
+    label: "Source Cooperative",
+    desc: "Open a cloud-native dataset by its address.",
+    icon: "cloud"
+  },
+  "data.connectStac": {
+    id: "data.connectStac",
+    label: "STAC",
+    desc: "Search a SpatioTemporal Asset Catalog.",
+    icon: "stac"
+  },
+  "table.open": {
+    id: "table.open",
+    label: "Open Table",
+    desc: "The selected layer's attributes.",
+    icon: "table"
+  },
+  "table.addField": {
+    id: "table.addField",
+    label: "Add Field",
+    desc: "A new column.",
+    icon: "column"
+  },
+  "table.calculate": {
+    id: "table.calculate",
+    label: "Calculate Field",
+    desc: "Fill a column from an expression.",
+    icon: "calculator"
+  },
+  "table.statistics": {
+    id: "table.statistics",
+    label: "Statistics",
+    desc: "Count, sum, mean and range for a column.",
+    icon: "stats"
+  },
+  "table.join": {
+    id: "table.join",
+    label: "Join",
+    desc: "Attach another table by a shared key.",
+    icon: "join"
+  },
+  "data.definitionQuery": {
+    id: "data.definitionQuery",
+    label: "Definition Query",
+    desc: "Show only the rows that match an expression.",
+    icon: "filter"
+  },
+  "data.clearQuery": {
+    id: "data.clearQuery",
+    label: "Clear Query",
+    desc: "Show everything again.",
+    icon: "clear"
+  },
+  "data.downloadGeoJSON": {
+    id: "data.downloadGeoJSON",
+    label: "GeoJSON",
+    desc: "Download the drawn layer.",
+    icon: "download",
+    run: () => runShellAction("download:geojson")
+  },
+  "data.downloadCSV": {
+    id: "data.downloadCSV",
+    label: "CSV",
+    desc: "Download the query result.",
+    icon: "download",
+    run: () => runShellAction("download:csv")
+  },
+  "data.exportGpkg": {
+    id: "data.exportGpkg",
+    label: "GeoPackage",
+    desc: "Export as OGC GeoPackage.",
+    icon: "package"
+  },
+  "data.exportParquet": {
+    id: "data.exportParquet",
+    label: "GeoParquet",
+    desc: "Export as GeoParquet.",
+    icon: "package"
+  },
+  "data.exportShapefile": {
+    id: "data.exportShapefile",
+    label: "Shapefile",
+    desc: "Export as an ESRI Shapefile.",
+    icon: "package"
+  },
+  "offline.download": {
+    id: "offline.download",
+    label: "Take Offline",
+    desc: "Cache the current extent for use without a network.",
+    icon: "offline"
+  },
+  "offline.sync": {
+    id: "offline.sync",
+    label: "Sync",
+    desc: "Send local edits back and pull changes down.",
+    icon: "sync"
+  },
+  "offline.clear": {
+    id: "offline.clear",
+    label: "Clear Cache",
+    desc: "Free what has been cached.",
+    icon: "clear"
+  },
+  "style.symbology": {
+    id: "style.symbology",
+    label: "Symbology",
+    desc: "Single colour, graduated classes, or categories.",
+    icon: "palette",
+    run: () => showPanel("style")
+  },
+  "style.graduated": {
+    id: "style.graduated",
+    label: "Graduated",
+    desc: "Classes across a numeric column.",
+    icon: "graduated",
+    run: () => showPanel("style")
+  },
+  "style.categorised": {
+    id: "style.categorised",
+    label: "Categories",
+    desc: "A colour per distinct value.",
+    icon: "categories"
+  },
+  "style.single": {
+    id: "style.single",
+    label: "Single Symbol",
+    desc: "One colour for the whole layer.",
+    icon: "swatch",
+    run: () => showPanel("style")
+  },
+  "style.opacity": {
+    id: "style.opacity",
+    label: "Transparency",
+    desc: "How much of what is underneath shows through.",
+    icon: "opacity",
+    run: () => showPanel("style")
+  },
+  "style.quantile": {
+    id: "style.quantile",
+    label: "Equal Count",
+    desc: "The same number of features in each class.",
+    icon: "classes",
+    run: () => setClassificationMode("quantile")
+  },
+  "style.equalInterval": {
+    id: "style.equalInterval",
+    label: "Equal Interval",
+    desc: "The range cut into equal widths.",
+    icon: "classes",
+    run: () => setClassificationMode("equal")
+  },
+  "style.naturalBreaks": {
+    id: "style.naturalBreaks",
+    label: "Natural Breaks",
+    desc: "Jenks: breaks where the data has gaps.",
+    icon: "classes"
+  },
+  "style.classCount": {
+    id: "style.classCount",
+    label: "Class Count",
+    desc: "How many classes to cut the data into.",
+    icon: "hash"
+  },
+  "style.palette": {
+    id: "style.palette",
+    label: "Colour Ramp",
+    desc: "Which colours the classes use.",
+    icon: "palette",
+    run: () => showPanel("style")
+  },
+  "labels.enable": {
+    id: "labels.enable",
+    label: "Label",
+    desc: "Draw a column as text on the map.",
+    icon: "label"
+  },
+  "labels.field": {
+    id: "labels.field",
+    label: "Label Field",
+    desc: "Which column to draw.",
+    icon: "column"
+  },
+  "labels.placement": {
+    id: "labels.placement",
+    label: "Placement",
+    desc: "Where the text sits relative to the feature.",
+    icon: "placement"
+  },
+  "labels.halo": {
+    id: "labels.halo",
+    label: "Halo",
+    desc: "An outline so text reads over any basemap.",
+    icon: "halo"
+  },
+  "labels.scaleRange": {
+    id: "labels.scaleRange",
+    label: "Visible Range",
+    desc: "The zoom levels the labels appear at.",
+    icon: "range"
+  },
+  "style.extrude": {
+    id: "style.extrude",
+    label: "Extrude",
+    desc: "Raise the shapes by a column, in 3D.",
+    icon: "extrude",
+    run: () => setDimension(!state.threeD)
+  },
+  "style.visibilityRange": {
+    id: "style.visibilityRange",
+    label: "Visible Range",
+    desc: "The zoom levels this layer draws at.",
+    icon: "range"
+  },
+  "style.blend": {
+    id: "style.blend",
+    label: "Blend Mode",
+    desc: "How this layer mixes with the ones below.",
+    icon: "blend"
+  },
+  "style.swipe": {
+    id: "style.swipe",
+    label: "Swipe",
+    desc: "Drag a line across the map to compare two layers.",
+    icon: "swipe"
+  },
+  "raster.stretch": {
+    id: "raster.stretch",
+    label: "Stretch",
+    desc: "How pixel values map to the colour ramp.",
+    icon: "stretch"
+  },
+  "raster.bands": {
+    id: "raster.bands",
+    label: "Band Combination",
+    desc: "Which bands go to red, green and blue.",
+    icon: "bands"
+  },
+  "raster.resampling": {
+    id: "raster.resampling",
+    label: "Resampling",
+    desc: "Nearest, bilinear or cubic.",
+    icon: "resample"
+  },
+  "raster.hillshade": {
+    id: "raster.hillshade",
+    label: "Hillshade",
+    desc: "Shade the terrain by a light angle.",
+    icon: "hillshade"
+  },
+  "edit.enable": {
+    id: "edit.enable",
+    label: "Edit",
+    desc: "Turn editing on for the map.",
+    icon: "edit"
+  },
+  "edit.save": {
+    id: "edit.save",
+    label: "Save Edits",
+    desc: "Commit what has changed.",
+    icon: "save"
+  },
+  "edit.discard": {
+    id: "edit.discard",
+    label: "Discard Edits",
+    desc: "Throw away what has changed.",
+    icon: "discard"
+  },
+  "edit.undo": {
+    id: "edit.undo",
+    label: "Undo",
+    desc: "Step back.",
+    icon: "undo"
+  },
+  "edit.redo": {
+    id: "edit.redo",
+    label: "Redo",
+    desc: "Step forward again.",
+    icon: "redo"
+  },
+  "edit.create": {
+    id: "edit.create",
+    label: "Create",
+    desc: "Draw a new feature.",
+    icon: "draw"
+  },
+  "edit.modify": {
+    id: "edit.modify",
+    label: "Modify",
+    desc: "Move a vertex or a whole feature.",
+    icon: "modify"
+  },
+  "edit.delete": {
+    id: "edit.delete",
+    label: "Delete",
+    desc: "Remove the selected features.",
+    icon: "trash"
+  },
+  "edit.split": {
+    id: "edit.split",
+    label: "Split",
+    desc: "Cut a feature in two.",
+    icon: "split"
+  },
+  "edit.merge": {
+    id: "edit.merge",
+    label: "Merge",
+    desc: "Join the selected features into one.",
+    icon: "merge"
+  },
+  "edit.drawPolygon": {
+    id: "edit.drawPolygon",
+    label: "Polygon",
+    desc: "Draw an area \u2014 also usable as a clip boundary.",
+    icon: "polygon"
+  },
+  "edit.drawLine": {
+    id: "edit.drawLine",
+    label: "Line",
+    desc: "Draw a line.",
+    icon: "line"
+  },
+  "edit.drawPoint": {
+    id: "edit.drawPoint",
+    label: "Point",
+    desc: "Place a point.",
+    icon: "point"
+  },
+  "edit.drawText": {
+    id: "edit.drawText",
+    label: "Text",
+    desc: "Place a label on the map.",
+    icon: "text"
+  },
+  "edit.snapping": {
+    id: "edit.snapping",
+    label: "Snapping",
+    desc: "Snap new geometry to what is already there.",
+    icon: "snap"
+  },
+  "edit.snapVertex": {
+    id: "edit.snapVertex",
+    label: "To Vertex",
+    desc: "Snap to existing vertices.",
+    icon: "vertex"
+  },
+  "edit.snapEdge": {
+    id: "edit.snapEdge",
+    label: "To Edge",
+    desc: "Snap to existing edges.",
+    icon: "edge"
+  },
+  "edit.copy": {
+    id: "edit.copy",
+    label: "Copy",
+    desc: "Copy the selected features.",
+    icon: "copy"
+  },
+  "edit.paste": {
+    id: "edit.paste",
+    label: "Paste",
+    desc: "Paste features into the selected layer.",
+    icon: "paste"
+  },
+  "edit.cut": {
+    id: "edit.cut",
+    label: "Cut",
+    desc: "Copy the selection and delete it.",
+    icon: "cut"
+  },
+  "gp.toolbox": {
+    id: "gp.toolbox",
+    label: "Ghana Toolbox",
+    desc: "Every tool, searchable, with its parameters.",
+    icon: "toolbox",
+    run: () => openToolbox("")
+  },
+  "gp.clip": {
+    id: "gp.clip",
+    label: "Clip",
+    desc: "Keep only what falls inside a boundary.",
+    icon: "scissors",
+    run: () => openToolbox("", "clip")
+  },
+  "gp.buffer": {
+    id: "gp.buffer",
+    label: "Buffer",
+    desc: "A zone of the given radius around each feature.",
+    icon: "buffer",
+    run: () => openToolbox("", "buffer")
+  },
+  "gp.dissolve": {
+    id: "gp.dissolve",
+    label: "Dissolve",
+    desc: "Merge every feature into one.",
+    icon: "dissolve",
+    run: () => openToolbox("", "dissolve")
+  },
+  "gp.overlay": {
+    id: "gp.overlay",
+    label: "Overlay Analysis",
+    desc: "Clip, dissolve and the rest.",
+    icon: "overlay",
+    run: () => openToolbox("overlay")
+  },
+  "gp.history": {
+    id: "gp.history",
+    label: "History",
+    desc: "What has been run in this session.",
+    icon: "history"
+  },
+  "gp.centroid": {
+    id: "gp.centroid",
+    label: "Centroids",
+    desc: "One point per feature, at its centre of mass.",
+    icon: "point",
+    run: () => openToolbox("", "centroid")
+  },
+  "gp.convex": {
+    id: "gp.convex",
+    label: "Convex Hull",
+    desc: "The tightest convex polygon around the input.",
+    icon: "hull",
+    run: () => openToolbox("", "convex")
+  },
+  "gp.envelope": {
+    id: "gp.envelope",
+    label: "Bounding Box",
+    desc: "One rectangle around the whole input.",
+    icon: "box",
+    run: () => openToolbox("", "envelope")
+  },
+  "gp.simplify": {
+    id: "gp.simplify",
+    label: "Simplify",
+    desc: "Remove vertices while keeping the shape.",
+    icon: "simplify",
+    run: () => openToolbox("", "simplify")
+  },
+  "gp.voronoi": {
+    id: "gp.voronoi",
+    label: "Voronoi Catchments",
+    desc: "The area closest to each input point.",
+    icon: "voronoi",
+    run: () => openToolbox("", "voronoi")
+  },
+  "gp.nearest": {
+    id: "gp.nearest",
+    label: "Distance to Nearest",
+    desc: "How far each feature is from the closest of another layer.",
+    icon: "ruler",
+    run: () => openToolbox("", "nearest")
+  },
+  "ee.summarise": {
+    id: "ee.summarise",
+    label: "Summarise by Zone",
+    desc: "Reduce a raster onto regions or districts, as a queryable table.",
+    icon: "zonal",
+    run: () => eeZonalFromRibbon("summarise")
+  },
+  "ee.classAreas": {
+    id: "ee.classAreas",
+    label: "Land Cover Areas",
+    desc: "Square kilometres of each class per zone.",
+    icon: "landcover",
+    run: () => eeZonalFromRibbon("classAreas")
+  },
+  "gp.elevation": {
+    id: "gp.elevation",
+    label: "Sample Elevation",
+    desc: "The height at a point.",
+    icon: "terrain",
+    run: () => openToolbox("", "elevation")
+  },
+  "raster.calculator": {
+    id: "raster.calculator",
+    label: "Raster Calculator",
+    desc: "An expression across bands.",
+    icon: "calculator"
+  },
+  "raster.reclassify": {
+    id: "raster.reclassify",
+    label: "Reclassify",
+    desc: "Map pixel values onto new ones.",
+    icon: "reclass"
+  },
+  "gp.sql": {
+    id: "gp.sql",
+    label: "SQL Workspace",
+    desc: "Run SQL against everything loaded, in the browser.",
+    icon: "sql",
+    run: () => showPanel("query")
+  },
+  "stats.summary": {
+    id: "stats.summary",
+    label: "Summary Statistics",
+    desc: "Count, sum, mean and range by group.",
+    icon: "stats"
+  },
+  "stats.hotspot": {
+    id: "stats.hotspot",
+    label: "Hot Spots",
+    desc: "Clusters, after the hotspots notebook: DBSCAN and Shannon entropy.",
+    icon: "hotspot"
+  },
+  "stats.correlation": {
+    id: "stats.correlation",
+    label: "Correlation",
+    desc: "How two columns move together.",
+    icon: "correlation"
+  },
+  "ui.assistant": {
+    id: "ui.assistant",
+    label: "AI Assistant",
+    desc: "Ask in plain English; it drives the map and the data.",
+    icon: "assistant",
+    run: () => showPanel("ask", { toggle: true })
+  },
+  "ai.explainLayer": {
+    id: "ai.explainLayer",
+    label: "Explain This Layer",
+    desc: "What the selected layer holds and where it came from.",
+    icon: "info"
+  },
+  "ai.suggest": {
+    id: "ai.suggest",
+    label: "Suggest an Analysis",
+    desc: "What this data could answer.",
+    icon: "bulb"
+  },
+  "ui.layers": {
+    id: "ui.layers",
+    label: "Layers",
+    desc: "The layer stack.",
+    icon: "layers",
+    run: () => toggleDock("left")
+  },
+  "ui.style": {
+    id: "ui.style",
+    label: "Style",
+    desc: "Symbology for the selected layer.",
+    icon: "palette",
+    run: () => showPanel("style", { toggle: true })
+  },
+  "ui.catalogue": {
+    id: "ui.catalogue",
+    label: "Data",
+    desc: "The Earth observation catalogue.",
+    icon: "satellite",
+    run: () => showPanel("data", { toggle: true })
+  },
+  "ui.log": {
+    id: "ui.log",
+    label: "Log",
+    desc: "Everything this session has done.",
+    icon: "log",
+    run: () => showPanel("log", { toggle: true })
+  },
+  "map.basemap": {
+    id: "map.basemap",
+    label: "Basemap",
+    desc: "Which backdrop the data sits on.",
+    icon: "basemap",
+    run: () => showPanel("settings")
+  },
+  "map.projection": {
+    id: "map.projection",
+    label: "Globe or Flat",
+    desc: "Switch between the globe and web mercator.",
+    icon: "globe",
+    run: () => runMapControl("projection")
+  },
+  "map.terrain": {
+    id: "map.terrain",
+    label: "Terrain",
+    desc: "3D terrain and hillshade.",
+    icon: "terrain",
+    run: () => showPanel("settings")
+  },
+  "map.theme": {
+    id: "map.theme",
+    label: "Light or Dark",
+    desc: "Switch the interface theme.",
+    icon: "theme",
+    run: () => document.getElementById("theme-toggle")?.click()
+  },
+  "map.locate": {
+    id: "map.locate",
+    label: "Find Me",
+    desc: "Centre on this device's position.",
+    icon: "locate",
+    run: () => document.getElementById("btn-locate")?.click()
+  },
+  "map.fullscreen": {
+    id: "map.fullscreen",
+    label: "Full Screen",
+    desc: "Give the map the whole display.",
+    icon: "fullscreen",
+    run: () => runMapControl("fullscreen")
+  },
+  "view.grid": {
+    id: "view.grid",
+    label: "Graticule",
+    desc: "Latitude and longitude lines.",
+    icon: "grid"
+  },
+  "view.scalebar": {
+    id: "view.scalebar",
+    label: "Scale Bar",
+    desc: "Show or hide the scale.",
+    icon: "scalebar"
+  },
+  "view.northArrow": {
+    id: "view.northArrow",
+    label: "North Arrow",
+    desc: "Show or hide the compass on the map.",
+    icon: "compass"
+  },
+  "view.legend": {
+    id: "view.legend",
+    label: "Legend",
+    desc: "Show or hide the legend card.",
+    icon: "legend"
+  },
+  "ui.commands": {
+    id: "ui.commands",
+    label: "Command Search",
+    desc: "Find any command by name.",
+    icon: "search",
+    run: () => openCommandSearch()
+  },
+  "ui.splitView": {
+    id: "ui.splitView",
+    label: "Split View",
+    desc: "Two map frames side by side.",
+    icon: "split"
+  },
+  "ui.sync": {
+    id: "ui.sync",
+    label: "Link Views",
+    desc: "Pan and zoom the frames together.",
+    icon: "link"
+  },
+  "layout.export": {
+    id: "layout.export",
+    label: "Export Map Image",
+    desc: "A print layout: frame, title, north arrow, scale bar, legend and credits.",
+    icon: "image",
+    run: () => openMapExport()
+  },
+  "layout.page": {
+    id: "layout.page",
+    label: "Page Setup",
+    desc: "Size, orientation and margins.",
+    icon: "page"
+  },
+  "layout.title": {
+    id: "layout.title",
+    label: "Title and Subtitle",
+    desc: "What the map is called.",
+    icon: "text"
+  },
+  "layout.elements": {
+    id: "layout.elements",
+    label: "Map Surrounds",
+    desc: "Which of the legend, scale and arrow to draw.",
+    icon: "surrounds"
+  },
+  "publish.pdf": {
+    id: "publish.pdf",
+    label: "PDF",
+    desc: "The layout as a PDF.",
+    icon: "pdf"
+  },
+  "publish.geotiff": {
+    id: "publish.geotiff",
+    label: "GeoTIFF",
+    desc: "The current view as a georeferenced raster.",
+    icon: "raster"
+  },
+  "publish.link": {
+    id: "publish.link",
+    label: "Share a Link",
+    desc: "A URL that opens this exact view and these layers.",
+    icon: "link"
+  },
+  "publish.embed": {
+    id: "publish.embed",
+    label: "Embed",
+    desc: "An iframe snippet for a website.",
+    icon: "embed"
+  },
+  "publish.webmap": {
+    id: "publish.webmap",
+    label: "Publish Web Map",
+    desc: "Push this map to the project's public site.",
+    icon: "cloud"
+  },
+  "report.new": {
+    id: "report.new",
+    label: "New Report",
+    desc: "A document built from the current map and tables.",
+    icon: "report"
+  },
+  "report.template": {
+    id: "report.template",
+    label: "Templates",
+    desc: "Start from a layout someone has already made.",
+    icon: "template"
+  },
+  "plugins.manage": {
+    id: "plugins.manage",
+    label: "Manage Plugins",
+    desc: "Turn community plugins on and off.",
+    icon: "plugin"
+  },
+  "plugins.browse": {
+    id: "plugins.browse",
+    label: "Browse",
+    desc: "Plugins published by the Ghana GIS community.",
+    icon: "browse"
+  },
+  "plugins.install": {
+    id: "plugins.install",
+    label: "Install from File",
+    desc: "Load a plugin from a file.",
+    icon: "install"
+  },
+  "plugins.develop": {
+    id: "plugins.develop",
+    label: "Write a Plugin",
+    desc: "How to add a tab, a tool or a data source.",
+    icon: "code"
+  },
+  "task.record": {
+    id: "task.record",
+    label: "Record a Task",
+    desc: "Capture a sequence of commands to replay.",
+    icon: "record"
+  },
+  "task.run": {
+    id: "task.run",
+    label: "Run a Task",
+    desc: "Replay a saved sequence.",
+    icon: "play"
+  },
+  "task.schedule": {
+    id: "task.schedule",
+    label: "Schedule",
+    desc: "Run a task on a timetable.",
+    icon: "clock"
+  },
+  "ui.settings": {
+    id: "ui.settings",
+    label: "Map Settings",
+    desc: "Basemap, projection, terrain and the model.",
+    icon: "settings",
+    run: () => showPanel("settings", { toggle: true })
+  },
+  "settings.language": {
+    id: "settings.language",
+    label: "Language",
+    desc: "English, Twi, Ewe, Ga, Dagbani, Hausa.",
+    icon: "language"
+  },
+  "settings.units": {
+    id: "settings.units",
+    label: "Units",
+    desc: "Metric or imperial, and the coordinate format.",
+    icon: "units"
+  },
+  "settings.crs": {
+    id: "settings.crs",
+    label: "Coordinate System",
+    desc: "The CRS the map draws and reports in.",
+    icon: "crs"
+  },
+  "settings.cache": {
+    id: "settings.cache",
+    label: "Cache",
+    desc: "How much is held locally.",
+    icon: "cache"
+  },
+  "settings.privacy": {
+    id: "settings.privacy",
+    label: "Privacy",
+    desc: "What leaves this browser, and what never does.",
+    icon: "privacy"
+  },
+  "ui.tour": {
+    id: "ui.tour",
+    label: "Take the Tour",
+    desc: "A guided walk through the map.",
+    icon: "tour",
+    run: () => document.getElementById("story-go")?.click()
+  },
+  "ui.docs": {
+    id: "ui.docs",
+    label: "Documentation",
+    desc: "The full guide.",
+    icon: "book",
+    run: () => window.open("https://desmond-lartey.github.io/ghana-geostack/", "_blank")
+  },
+  "ui.shortcuts": {
+    id: "ui.shortcuts",
+    label: "Keyboard Shortcuts",
+    desc: "What the keys do.",
+    icon: "keyboard"
+  },
+  "ui.contribute": {
+    id: "ui.contribute",
+    label: "Contribute",
+    desc: "How to add a command, a tool or a dataset.",
+    icon: "heart",
+    run: () => window.open("https://github.com/desmond-lartey/ghana-geostack/blob/main/CONTRIBUTING.md", "_blank")
+  },
+  "ui.issues": {
+    id: "ui.issues",
+    label: "Report a Problem",
+    desc: "Tell us what broke.",
+    icon: "bug",
+    run: () => window.open("https://github.com/desmond-lartey/ghana-geostack/issues", "_blank")
+  },
+  "ui.about": {
+    id: "ui.about",
+    label: "About the Data",
+    desc: "Sources, licences and attribution.",
+    icon: "licence",
+    run: () => showPanel("sources")
+  },
+  "gp.pointon": {
+    id: "gp.pointon",
+    label: "Point on Feature",
+    desc: "One point per feature, guaranteed to sit on it.",
+    icon: "point",
+    run: () => openToolbox("", "pointon")
+  },
+  "gp.measure": {
+    id: "gp.measure",
+    label: "Measure",
+    desc: "Area in km\u00b2 and perimeter in km per feature.",
+    icon: "ruler",
+    run: () => openToolbox("", "measure")
+  },
+
+  /* ── The rest of the ArcGIS Pro arrangement ──────────────────────────
+     Slots, every one of them: the tab, the group and the name are here and
+     the function is the work. Kept because an arrangement people already
+     know is only useful if the whole of it is there — a tool missing from
+     where it belongs reads as "this cannot do that", and the answer is
+     "not yet". Ids follow RustGIS where it names one control, so its
+     source reads as a reference implementation. */
+  "ui.addDelimited": {
+    id: "ui.addDelimited",
+    label: "Delimited Text\u2026",
+    desc: "Delimited Text\u2026.",
+    icon: "plus"
+  },
+  "graphics.newLayer": {
+    id: "graphics.newLayer",
+    label: "Graphics Layer",
+    desc: "Graphics Layer.",
+    icon: "plus"
+  },
+  "layer.addSample": {
+    id: "layer.addSample",
+    label: "Sample Data",
+    desc: "Add one of the bundled sample layers to the map.",
+    icon: "plus"
+  },
+  "select.selectByAttributes": {
+    id: "select.selectByAttributes",
+    label: "Select By Attributes",
+    desc: "Select features with a SQL expression.",
+    icon: "select"
+  },
+  "select.selectByLocation": {
+    id: "select.selectByLocation",
+    label: "Select By Location",
+    desc: "Select features that intersect another layer.",
+    icon: "select"
+  },
+  "table.attributes": {
+    id: "table.attributes",
+    label: "Attributes",
+    desc: "Open the attribute table of the selected layer.",
+    icon: "select"
+  },
+  "tool.zoomBox": {
+    id: "tool.zoomBox",
+    label: "Zoom Box",
+    desc: "Drag a box to zoom into.",
+    icon: "info"
+  },
+  "ui.pane.infographics": {
+    id: "ui.pane.infographics",
+    label: "Infographics",
+    desc: "Counts, totals and top categories of what's in view.",
+    icon: "info"
+  },
+  "cache.fill": {
+    id: "cache.fill",
+    label: "Fill",
+    desc: "Prepare every layer's geometry for this projection.",
+    icon: "cache"
+  },
+  "cache.empty": {
+    id: "cache.empty",
+    label: "Empty",
+    desc: "Free the prepared geometry.",
+    icon: "cache"
+  },
+  "cache.cancel": {
+    id: "cache.cancel",
+    label: "Cancel",
+    desc: "Stop filling the cache.",
+    icon: "cache"
+  },
+  "cache.auto": {
+    id: "cache.auto",
+    label: "Auto Cache",
+    desc: "Fill the cache whenever the projection changes.",
+    icon: "cache"
+  },
+  "map.new": {
+    id: "map.new",
+    label: "New Map",
+    desc: "Add a new map to the project.",
+    icon: "file"
+  },
+  "data.toolbox": {
+    id: "data.toolbox",
+    label: "Toolbox",
+    desc: "Browse the geoprocessing toolbox.",
+    icon: "file"
+  },
+  "ui.open": {
+    id: "ui.open",
+    label: "Import Project",
+    desc: "Open a RustGIS project.",
+    icon: "file"
+  },
+  "layout.new": {
+    id: "layout.new",
+    label: "New Layout",
+    desc: "Add a page layout for printing and exporting the map.",
+    icon: "file"
+  },
+  "ui.importLayout": {
+    id: "ui.importLayout",
+    label: "Import Layout\u2026",
+    desc: "Import Layout\u2026.",
+    icon: "file"
+  },
+  "data.browser": {
+    id: "data.browser",
+    label: "Browser",
+    desc: "Browse the project's maps, tables and folders.",
+    icon: "file"
+  },
+  "ui.addFolder": {
+    id: "ui.addFolder",
+    label: "Add Folder",
+    desc: "Connect a folder to the Browser.",
+    icon: "file"
+  },
+  "data.import": {
+    id: "data.import",
+    label: "Import",
+    desc: "Add the maps of a map file, map package, project or project package.",
+    icon: "file"
+  },
+  "data.newCustomTemplate": {
+    id: "data.newCustomTemplate",
+    label: "New Custom Template\u2026",
+    desc: "New Custom Template\u2026.",
+    icon: "file"
+  },
+  "data.openCustomTemplate": {
+    id: "data.openCustomTemplate",
+    label: "Open Custom Template\u2026",
+    desc: "Open Custom Template\u2026.",
+    icon: "file"
+  },
+  "task.task": {
+    id: "task.task",
+    label: "Task",
+    desc: "Tasks: guided steps that each run a command.",
+    icon: "file"
+  },
+  "task.newTaskFromHistory": {
+    id: "task.newTaskFromHistory",
+    label: "New Task From History",
+    desc: "New Task From History.",
+    icon: "file"
+  },
+  "data.importTask": {
+    id: "data.importTask",
+    label: "Import Task\u2026",
+    desc: "Import Task\u2026.",
+    icon: "file"
+  },
+  "layer.layerTemplates": {
+    id: "layer.layerTemplates",
+    label: "Layer Templates",
+    desc: "Add an empty layer with a ready-made schema, to draw into.",
+    icon: "template"
+  },
+  "layer.layerTemplate": {
+    id: "layer.layerTemplate",
+    label: "Layer Template",
+    desc: "Start a layer from a saved template.",
+    icon: "template"
+  },
+  "data.rasterInformation": {
+    id: "data.rasterInformation",
+    label: "Raster Information",
+    desc: "Size, bands, statistics and coordinate system.",
+    icon: "info"
+  },
+  "ui.exportRaster": {
+    id: "ui.exportRaster",
+    label: "Export Raster",
+    desc: "Save the raster as a GeoTIFF.",
+    icon: "download"
+  },
+  "data.exportFeatures": {
+    id: "data.exportFeatures",
+    label: "Export Features\u2026",
+    desc: "Export Features\u2026.",
+    icon: "download"
+  },
+  "data.exportFeaturesTool": {
+    id: "data.exportFeaturesTool",
+    label: "Export Features (tool)",
+    desc: "Export Features (tool).",
+    icon: "download"
+  },
+  "select.all": {
+    id: "select.all",
+    label: "All",
+    desc: "Select every feature.",
+    icon: "select"
+  },
+  "select.switch": {
+    id: "select.switch",
+    label: "Switch",
+    desc: "Invert the selection.",
+    icon: "select"
+  },
+  "select.layerFromSelection": {
+    id: "select.layerFromSelection",
+    label: "Layer From Selection",
+    desc: "Make a new layer of the selected features.",
+    icon: "select"
+  },
+  "data.fields": {
+    id: "data.fields",
+    label: "Fields",
+    desc: "Add a field.",
+    icon: "column"
+  },
+  "data.calculate": {
+    id: "data.calculate",
+    label: "Calculate",
+    desc: "Calculate field values.",
+    icon: "column"
+  },
+  "data.subtypes": {
+    id: "data.subtypes",
+    label: "Subtypes",
+    desc: "Group features by an integer code, each with default values.",
+    icon: "column"
+  },
+  "data.domains": {
+    id: "data.domains",
+    label: "Domains",
+    desc: "Limit a field to coded values or a range.",
+    icon: "column"
+  },
+  "data.attributeRules": {
+    id: "data.attributeRules",
+    label: "Attribute Rules",
+    desc: "Calculate fields and enforce conditions on every edit.",
+    icon: "column"
+  },
+  "data.contingentValues": {
+    id: "data.contingentValues",
+    label: "Contingent Values",
+    desc: "Allow only certain combinations of values across fields.",
+    icon: "column"
+  },
+  "data.archive": {
+    id: "data.archive",
+    label: "Archive",
+    desc: "Keep a history of every edit to the layer, to look back or restore.",
+    icon: "cache"
+  },
+  "data.relatedData": {
+    id: "data.relatedData",
+    label: "Related Data",
+    desc: "Select the rows related to the selection.",
+    icon: "join"
+  },
+  "data.dataRelated": {
+    id: "data.dataRelated",
+    label: "Related Data",
+    desc: "Open the tables related to this one.",
+    icon: "join"
+  },
+  "data.newRelationship": {
+    id: "data.newRelationship",
+    label: "New Relationship\u2026",
+    desc: "New Relationship\u2026.",
+    icon: "join"
+  },
+  "labels.lock": {
+    id: "labels.lock",
+    label: "Lock",
+    desc: "Keep the labelled features fixed as the map moves.",
+    icon: "label"
+  },
+  "labels.pause": {
+    id: "labels.pause",
+    label: "Pause",
+    desc: "Stop drawing labels, for faster navigation.",
+    icon: "label"
+  },
+  "labels.viewUnplaced": {
+    id: "labels.viewUnplaced",
+    label: "View Unplaced",
+    desc: "Show the labels that don't fit, in red.",
+    icon: "label"
+  },
+  "labels.convert": {
+    id: "labels.convert",
+    label: "Convert",
+    desc: "Convert the selected layer's labels into an annotation layer.",
+    icon: "label"
+  },
+  "style.styles": {
+    id: "style.styles",
+    label: "Styles",
+    desc: "Saved symbology: apply it to the selected layer, or save the layer's.",
+    icon: "palette"
+  },
+  "style.new": {
+    id: "style.new",
+    label: "New Style From Layer",
+    desc: "New Style From Layer.",
+    icon: "palette"
+  },
+  "style.addStyleFile": {
+    id: "style.addStyleFile",
+    label: "Add Style File\u2026",
+    desc: "Add Style File\u2026.",
+    icon: "palette"
+  },
+  "style.importStylesFrom": {
+    id: "style.importStylesFrom",
+    label: "Import Styles From\u2026",
+    desc: "Import Styles From\u2026.",
+    icon: "palette"
+  },
+  "layer.zoomTo": {
+    id: "layer.zoomTo",
+    label: "Zoom To Layer",
+    desc: "Zoom to the layer's extent.",
+    icon: "layers"
+  },
+  "layer.visibility": {
+    id: "layer.visibility",
+    label: "Visible",
+    desc: "Show or hide the layer.",
+    icon: "layers"
+  },
+  "layer.remove": {
+    id: "layer.remove",
+    label: "Remove",
+    desc: "Remove the layer from the map.",
+    icon: "layers"
+  },
+  "layer.displayFilters": {
+    id: "layer.displayFilters",
+    label: "Display Filters",
+    desc: "Show different features at different scales.",
+    icon: "blend"
+  },
+  "layer.aggregation": {
+    id: "layer.aggregation",
+    label: "Aggregation",
+    desc: "Draw points as bins coloured by how many fall in each.",
+    icon: "blend"
+  },
+  "layer.extrusion": {
+    id: "layer.extrusion",
+    label: "Type",
+    desc: "Raise polygons by a height or a field.",
+    icon: "extrude"
+  },
+  "layer.faceCulling": {
+    id: "layer.faceCulling",
+    label: "Face Culling",
+    desc: "Hide walls facing away from you.",
+    icon: "polygon"
+  },
+  "layer.lighting": {
+    id: "layer.lighting",
+    label: "Lighting",
+    desc: "Shade walls by the way they face the light.",
+    icon: "polygon"
+  },
+  "layer.enableLighting": {
+    id: "layer.enableLighting",
+    label: "Enable Lighting",
+    desc: "Light the extruded shapes from the north-west.",
+    icon: "hillshade"
+  },
+  "layer.castShadow": {
+    id: "layer.castShadow",
+    label: "Cast Shadow",
+    desc: "Extruded shapes cast shadows on the map.",
+    icon: "hillshade"
+  },
+  "layer.scaleRange": {
+    id: "layer.scaleRange",
+    label: "Clear Limits",
+    desc: "Draw the layer at every scale.",
+    icon: "range"
+  },
+  "layer.symbology": {
+    id: "layer.symbology",
+    label: "Symbology",
+    desc: "Choose how the layer is drawn.",
+    icon: "draw"
+  },
+  "raster.symbology": {
+    id: "raster.symbology",
+    label: "Raster Symbology",
+    desc: "Choose how the raster is drawn.",
+    icon: "stretch"
+  },
+  "raster.dra": {
+    id: "raster.dra",
+    label: "DRA",
+    desc: "Dynamic range adjustment: stretch using the pixels in view.",
+    icon: "stretch"
+  },
+  "layer.blend": {
+    id: "layer.blend",
+    label: "Layer Blend",
+    desc: "How the layer's colours combine with what's beneath.",
+    icon: "image"
+  },
+  "raster.enhance": {
+    id: "raster.enhance",
+    label: "Reset",
+    desc: "Reset brightness, contrast and gamma.",
+    icon: "stretch"
+  },
+  "labels.bold": {
+    id: "labels.bold",
+    label: "Bold",
+    desc: "Bold label text.",
+    icon: "text"
+  },
+  "edit.pasteSpecial": {
+    id: "edit.pasteSpecial",
+    label: "Paste Special (as a new layer)",
+    desc: "Paste Special (as a new layer).",
+    icon: "copy"
+  },
+  "ui.copyPath": {
+    id: "ui.copyPath",
+    label: "Copy Path",
+    desc: "Copy the selected layer's data source path.",
+    icon: "copy"
+  },
+  "ui.save": {
+    id: "ui.save",
+    label: "Save",
+    desc: "Save the project with your edits.",
+    icon: "save"
+  },
+  "edit.status": {
+    id: "edit.status",
+    label: "Status",
+    desc: "Edits since the project was saved.",
+    icon: "save"
+  },
+  "edit.settings": {
+    id: "edit.settings",
+    label: "Settings",
+    desc: "Editing settings.",
+    icon: "save"
+  },
+  "edit.topology": {
+    id: "edit.topology",
+    label: "Topology",
+    desc: "Topology rules and the errors they find.",
+    icon: "save"
+  },
+  "edit.topologyOptions": {
+    id: "edit.topologyOptions",
+    label: "Topology Options\u2026",
+    desc: "Topology Options\u2026.",
+    icon: "save"
+  },
+  "edit.createFeatures": {
+    id: "edit.createFeatures",
+    label: "Create Features",
+    desc: "Draw new features in the selected layer. Double-click to finish lines and polygons.",
+    icon: "polygon"
+  },
+  "edit.moveRotateScale": {
+    id: "edit.moveRotateScale",
+    label: "Move, Rotate, Scale\u2026",
+    desc: "Move, Rotate, Scale\u2026.",
+    icon: "toolbox"
+  },
+  "edit.elevation": {
+    id: "edit.elevation",
+    label: "Elevation Source",
+    desc: "Where new features get their elevation \u2014 the z field.",
+    icon: "terrain"
+  },
+  "edit.constant": {
+    id: "edit.constant",
+    label: "Constant\u2026",
+    desc: "Constant\u2026.",
+    icon: "terrain"
+  },
+  "edit.groundToGrid": {
+    id: "edit.groundToGrid",
+    label: "Ground To Grid",
+    desc: "Scale and rotate entered distances and directions to the grid.",
+    icon: "modify"
+  },
+  "ui.newNotebook": {
+    id: "ui.newNotebook",
+    label: "New Notebook",
+    desc: "A notebook of text and command cells.",
+    icon: "code"
+  },
+  "notebook.addAndOpen": {
+    id: "notebook.addAndOpen",
+    label: "Add and Open",
+    desc: "Open a RustGIS or Jupyter notebook.",
+    icon: "code"
+  },
+  "ui.pane.notebook": {
+    id: "ui.pane.notebook",
+    label: "Notebook Pane",
+    desc: "Edit and run the notebook.",
+    icon: "code"
+  },
+  "gp.tools": {
+    id: "gp.tools",
+    label: "Tools",
+    desc: "Find and run geoprocessing tools.",
+    icon: "toolbox"
+  },
+  "gp.modelBuilder": {
+    id: "gp.modelBuilder",
+    label: "Model Builder",
+    desc: "Chain tools into a model; build one from your history.",
+    icon: "toolbox"
+  },
+  "ui.pane.script": {
+    id: "ui.pane.script",
+    label: "Script",
+    desc: "Run commands from text, one per line.",
+    icon: "toolbox"
+  },
+  "gp.environments": {
+    id: "gp.environments",
+    label: "Environments",
+    desc: "Limit where tools work, and the cell size of new rasters.",
+    icon: "toolbox"
+  },
+  "gp.readyToUse": {
+    id: "gp.readyToUse",
+    label: "Ready To Use",
+    desc: "Everyday tools.",
+    icon: "toolbox"
+  },
+  "gp.uiPaneWorkflows": {
+    id: "gp.uiPaneWorkflows",
+    label: "Workflows",
+    desc: "Open the workflow pane.",
+    icon: "cloud"
+  },
+  "task.workflows": {
+    id: "task.workflows",
+    label: "Workflows",
+    desc: "Guided analysis: suitability, visibility, networks, interpolation and more.",
+    icon: "play"
+  },
+  "task.uiPaneWorkflows": {
+    id: "task.uiPaneWorkflows",
+    label: "Workflow Pane",
+    desc: "Step through a saved workflow.",
+    icon: "play"
+  },
+  "gp.rasterFunctions": {
+    id: "gp.rasterFunctions",
+    label: "Raster Functions",
+    desc: "Slope, aspect, hillshade, NDVI, band math, thresholds.",
+    icon: "image"
+  },
+  "gp.functionEditor": {
+    id: "gp.functionEditor",
+    label: "Function Editor",
+    desc: "Chain raster functions.",
+    icon: "image"
+  },
+  "gp.newWorkspace": {
+    id: "gp.newWorkspace",
+    label: "New Workspace",
+    desc: "Mosaic the visible rasters into an orthomosaic.",
+    icon: "satellite"
+  },
+  "gp.options": {
+    id: "gp.options",
+    label: "Options",
+    desc: "Workspace cell size and blending.",
+    icon: "satellite"
+  },
+  "gp.georeference": {
+    id: "gp.georeference",
+    label: "Georeference",
+    desc: "Place a raster on the map from control points or the view.",
+    icon: "target"
+  },
+  "gp.changeDetection": {
+    id: "gp.changeDetection",
+    label: "Change Detection",
+    desc: "Difference, ratio or percent change between two rasters.",
+    icon: "image"
+  },
+  "gp.spectralAnalysis": {
+    id: "gp.spectralAnalysis",
+    label: "Spectral Analysis",
+    desc: "Every band's value at a pixel.",
+    icon: "image"
+  },
+  "gp.classificationWizard": {
+    id: "gp.classificationWizard",
+    label: "Classification Wizard",
+    desc: "Unsupervised classes (k-means).",
+    icon: "classes"
+  },
+  "gp.classificationTools": {
+    id: "gp.classificationTools",
+    label: "Classification Tools",
+    desc: "Classes from training polygons.",
+    icon: "classes"
+  },
+  "gp.deepLearningTools": {
+    id: "gp.deepLearningTools",
+    label: "Deep Learning Tools",
+    desc: "Train a neural network on training polygons and classify every pixel.",
+    icon: "classes"
+  },
+  "gp.createHostedImagery": {
+    id: "gp.createHostedImagery",
+    label: "Create Hosted Imagery",
+    desc: "Cut a raster into web map tiles (XYZ PNG) with a viewer page.",
+    icon: "cloud"
+  },
+  "gp.mensuration": {
+    id: "gp.mensuration",
+    label: "Mensuration",
+    desc: "Distances along the surface, heights, areas and volumes.",
+    icon: "ruler"
+  },
+  "gp.results": {
+    id: "gp.results",
+    label: "Results",
+    desc: "Measurements so far.",
+    icon: "ruler"
+  },
+  "gp.process": {
+    id: "gp.process",
+    label: "Process",
+    desc: "Clip a raster to the view, or resample it.",
+    icon: "toolbox"
+  },
+  "gp.indices": {
+    id: "gp.indices",
+    label: "Indices",
+    desc: "NDVI, NDWI, SAVI, NBR, NDBI, EVI.",
+    icon: "toolbox"
+  },
+  "gp.pixelEditor": {
+    id: "gp.pixelEditor",
+    label: "Pixel Editor",
+    desc: "Set the pixels inside a polygon.",
+    icon: "toolbox"
+  },
+  "ui.theme": {
+    id: "ui.theme",
+    label: "Dark Mode",
+    desc: "Switch between light and dark themes.",
+    icon: "basemap"
+  },
+  "map.globe": {
+    id: "map.globe",
+    label: "Globe",
+    desc: "Show the map as a 3D globe, or as a flat map again.",
+    icon: "layers"
+  },
+  "map.global": {
+    id: "map.global",
+    label: "Global",
+    desc: "A globe scene.",
+    icon: "layers"
+  },
+  "map.local": {
+    id: "map.local",
+    label: "Local",
+    desc: "A flat scene centred on the view (azimuthal equidistant).",
+    icon: "layers"
+  },
+  "map.illumination": {
+    id: "map.illumination",
+    label: "Illumination",
+    desc: "Day and night shading for a time.",
+    icon: "blend"
+  },
+  "map.weather": {
+    id: "map.weather",
+    label: "Weather",
+    desc: "Haze, fog, rain or snow over the map.",
+    icon: "blend"
+  },
+  "map.visualEffect": {
+    id: "map.visualEffect",
+    label: "Visual Effect",
+    desc: "Vignette and edge outlines.",
+    icon: "blend"
+  },
+  "map.cameraEffect": {
+    id: "map.cameraEffect",
+    label: "Camera Effect",
+    desc: "Tilt-shift blur and film grain.",
+    icon: "blend"
+  },
+  "map.postprocessing": {
+    id: "map.postprocessing",
+    label: "Postprocessing",
+    desc: "Brightness, contrast, saturation and sepia for the whole map.",
+    icon: "blend"
+  },
+  "map.colorVision": {
+    id: "map.colorVision",
+    label: "Color Vision",
+    desc: "See the map as people with colour vision deficiencies do.",
+    icon: "blend"
+  },
+  "map.drawingMode": {
+    id: "map.drawingMode",
+    label: "Wireframe",
+    desc: "Draw polygons as outlines only.",
+    icon: "globe"
+  },
+  "layer.raisePriority": {
+    id: "layer.raisePriority",
+    label: "Raise Priority",
+    desc: "Draw the selected layer above others.",
+    icon: "globe"
+  },
+  "layer.lowerPriority": {
+    id: "layer.lowerPriority",
+    label: "Lower Priority",
+    desc: "Draw the selected layer below others.",
+    icon: "globe"
+  },
+  "map.clipping": {
+    id: "map.clipping",
+    label: "View Clipping",
+    desc: "Hide features far from the view's centre.",
+    icon: "globe"
+  },
+  "map.displayType": {
+    id: "map.displayType",
+    label: "Speed Display",
+    desc: "Faster drawing: no antialiasing.",
+    icon: "globe"
+  },
+  "view.browserPane": {
+    id: "view.browserPane",
+    label: "Browser Pane",
+    desc: "Show or hide the Browser pane.",
+    icon: "layers"
+  },
+  "view.toolsPane": {
+    id: "view.toolsPane",
+    label: "Tools Pane",
+    desc: "Show or hide the Tools pane.",
+    icon: "layers"
+  },
+  "view.details": {
+    id: "view.details",
+    label: "Details",
+    desc: "Details of the selected layer.",
+    icon: "layers"
+  },
+  "map.zoomWorld": {
+    id: "map.zoomWorld",
+    label: "World",
+    desc: "Zoom to the whole world.",
+    icon: "compass"
+  },
+  "map.navigator": {
+    id: "map.navigator",
+    label: "Navigator",
+    desc: "On-screen compass, zoom slider and pan pad.",
+    icon: "compass"
+  },
+  "view.camera": {
+    id: "view.camera",
+    label: "Camera",
+    desc: "See and set the camera's position and scale.",
+    icon: "compass"
+  },
+  "ui.magnifier": {
+    id: "ui.magnifier",
+    label: "Magnifier",
+    desc: "A magnifying lens that follows the pointer.",
+    icon: "compass"
+  },
+  "ui.linkCursors": {
+    id: "ui.linkCursors",
+    label: "Link Cursors",
+    desc: "Show the pointer's place on the other map.",
+    icon: "link"
+  },
+  "ui.catalogView": {
+    id: "ui.catalogView",
+    label: "Browser View",
+    desc: "The project's items in place of the map.",
+    icon: "layers"
+  },
+  "ui.pane.tasks": {
+    id: "ui.pane.tasks",
+    label: "Tasks",
+    desc: "Step through a task.",
+    icon: "layers"
+  },
+  "ui.pane.jobs": {
+    id: "ui.pane.jobs",
+    label: "Workflow Manager",
+    desc: "Track jobs and their status.",
+    icon: "layers"
+  },
+  "ui.paneSet": {
+    id: "ui.paneSet",
+    label: "Pane Sets",
+    desc: "Save the panes you have open, and switch back to them.",
+    icon: "layers"
+  },
+  "ui.itemPopups": {
+    id: "ui.itemPopups",
+    label: "Item Pop-ups",
+    desc: "Show details when hovering items in the Browser view.",
+    icon: "layers"
+  },
+  "animation.add": {
+    id: "animation.add",
+    label: "Add Keyframe",
+    desc: "Add a keyframe at the current view.",
+    icon: "play"
+  },
+  "animation.remove": {
+    id: "animation.remove",
+    label: "Remove",
+    desc: "Remove the last keyframe.",
+    icon: "play"
+  },
+  "ui.animationPlay": {
+    id: "ui.animationPlay",
+    label: "Play",
+    desc: "Play the animation.",
+    icon: "play"
+  },
+  "ui.exportAnimation": {
+    id: "ui.exportAnimation",
+    label: "Export",
+    desc: "Export the animation as PNG frames (zip).",
+    icon: "play"
+  },
+  "ui.pane.profile": {
+    id: "ui.pane.profile",
+    label: "Profile",
+    desc: "Elevation profiles along lines, cross sections and more.",
+    icon: "stats"
+  },
+  "report.reportSection": {
+    id: "report.reportSection",
+    label: "Report Section",
+    desc: "Add pages, layouts, related reports and related records to the report.",
+    icon: "report"
+  },
+  "report.supplementalPage": {
+    id: "report.supplementalPage",
+    label: "Supplemental Page",
+    desc: "Supplemental Page.",
+    icon: "report"
+  },
+  "report.supplementalPageAfter": {
+    id: "report.supplementalPageAfter",
+    label: "Supplemental Page After",
+    desc: "Supplemental Page After.",
+    icon: "report"
+  },
+  "report.newTemplate": {
+    id: "report.newTemplate",
+    label: "New Template (a layout page)",
+    desc: "New Template (a layout page).",
+    icon: "report"
+  },
+  "report.existingTemplate": {
+    id: "report.existingTemplate",
+    label: "From a Template",
+    desc: "Build a report from an existing template.",
+    icon: "report"
+  },
+  "ui.reportLayoutFile": {
+    id: "ui.reportLayoutFile",
+    label: "Layout File\u2026",
+    desc: "Layout File\u2026.",
+    icon: "report"
+  },
+  "report.relatedReport": {
+    id: "report.relatedReport",
+    label: "Related Report",
+    desc: "A report on the rows related to this one.",
+    icon: "report"
+  },
+  "report.subreport": {
+    id: "report.subreport",
+    label: "Subreport",
+    desc: "Embed one report inside another.",
+    icon: "report"
+  },
+  "report.autofill": {
+    id: "report.autofill",
+    label: "Autofill Fields",
+    desc: "Autofill Fields.",
+    icon: "report"
+  },
+  "report.statistics": {
+    id: "report.statistics",
+    label: "Report Statistics",
+    desc: "Totals and summaries on a report section.",
+    icon: "report"
+  },
+  "ui.pane.report": {
+    id: "ui.pane.report",
+    label: "Report Pane",
+    desc: "Preview and set up the report.",
+    icon: "report"
+  },
+  "report.importReport": {
+    id: "report.importReport",
+    label: "Import Report",
+    desc: "Add a report file, or a report template for the selected layer.",
+    icon: "report"
+  },
+  "ui.newPresentation": {
+    id: "ui.newPresentation",
+    label: "New Presentation",
+    desc: "Pages of maps, text, images and videos, shown one after another.",
+    icon: "play"
+  },
+  "presentation.page": {
+    id: "presentation.page",
+    label: "Page",
+    desc: "Add a page to the presentation.",
+    icon: "play"
+  },
+  "presentation.mapTheCurrentView": {
+    id: "presentation.mapTheCurrentView",
+    label: "Map (the current view)",
+    desc: "Map (the current view).",
+    icon: "play"
+  },
+  "presentation.blankPage": {
+    id: "presentation.blankPage",
+    label: "Blank Page",
+    desc: "Add an empty page to the presentation.",
+    icon: "play"
+  },
+  "ui.presentationPicture": {
+    id: "ui.presentationPicture",
+    label: "Image\u2026",
+    desc: "Image\u2026.",
+    icon: "play"
+  },
+  "ui.presentationVideo": {
+    id: "ui.presentationVideo",
+    label: "Video\u2026",
+    desc: "Video\u2026.",
+    icon: "play"
+  },
+  "presentation.importPresentation": {
+    id: "presentation.importPresentation",
+    label: "Import Presentation",
+    desc: "Add a presentation file.",
+    icon: "play"
+  },
+  "ui.pane.presentation": {
+    id: "ui.pane.presentation",
+    label: "Presentation Pane",
+    desc: "Preview, edit and play the presentation.",
+    icon: "play"
+  },
+  "project.thumbnail": {
+    id: "project.thumbnail",
+    label: "Create Thumbnail",
+    desc: "The project's thumbnail, from the map view.",
+    icon: "image"
+  },
+  "publish.importThumbnail": {
+    id: "publish.importThumbnail",
+    label: "Import Thumbnail",
+    desc: "The project's thumbnail, from an image.",
+    icon: "image"
+  },
+  "map.thumbnail": {
+    id: "map.thumbnail",
+    label: "Map Thumbnail",
+    desc: "This map's thumbnail, from the view.",
+    icon: "image"
+  },
+  "publish.import": {
+    id: "publish.import",
+    label: "Import",
+    desc: "This map's thumbnail, from an image.",
+    icon: "image"
+  },
+  "ui.exportMap": {
+    id: "ui.exportMap",
+    label: "Export Map",
+    desc: "Export the map view as a PNG image (with labels and a scale bar).",
+    icon: "download"
+  },
+  "publish.exportFeatures": {
+    id: "publish.exportFeatures",
+    label: "Export Features",
+    desc: "Export the selected layer to GeoJSON or CSV.",
+    icon: "download"
+  },
+  "ui.printMap": {
+    id: "ui.printMap",
+    label: "Print Map",
+    desc: "Print the map view (through the system's PDF viewer).",
+    icon: "download"
+  },
+  "ui.captureMap": {
+    id: "ui.captureMap",
+    label: "Capture To Clipboard",
+    desc: "Copy an image of the map to the clipboard.",
+    icon: "download"
+  },
+  "publish.report": {
+    id: "publish.report",
+    label: "Report",
+    desc: "Export the report, or save it as a report file or template.",
+    icon: "download"
+  },
+  "publish.exportReport": {
+    id: "publish.exportReport",
+    label: "Export Report\u2026",
+    desc: "Export Report\u2026.",
+    icon: "download"
+  },
+  "publish.saveAsReportFile": {
+    id: "publish.saveAsReportFile",
+    label: "Save As Report File\u2026",
+    desc: "Save As Report File\u2026.",
+    icon: "download"
+  },
+  "publish.saveAsReportTemplate": {
+    id: "publish.saveAsReportTemplate",
+    label: "Save As Report Template\u2026",
+    desc: "Save As Report Template\u2026.",
+    icon: "download"
+  },
+  "publish.presentation": {
+    id: "publish.presentation",
+    label: "Presentation",
+    desc: "Export the presentation as a slideshow or PDF, or save it as a file.",
+    icon: "download"
+  },
+  "publish.exportPresentation": {
+    id: "publish.exportPresentation",
+    label: "Export Presentation\u2026",
+    desc: "Export Presentation\u2026.",
+    icon: "download"
+  },
+  "publish.saveAsPresentationFile": {
+    id: "publish.saveAsPresentationFile",
+    label: "Save As Presentation File\u2026",
+    desc: "Save As Presentation File\u2026.",
+    icon: "download"
+  },
+  "publish.exportTo3d": {
+    id: "publish.exportTo3d",
+    label: "Export To 3D",
+    desc: "Export the selected layer as a 3D model (OBJ), polygons extruded.",
+    icon: "download"
+  },
+  "publish.projectPackage": {
+    id: "publish.projectPackage",
+    label: "Project Package",
+    desc: "Bundle the project and its data into one file to share.",
+    icon: "package"
+  },
+  "publish.map": {
+    id: "publish.map",
+    label: "Map",
+    desc: "Bundle the active map and its data.",
+    icon: "package"
+  },
+  "publish.mobileMap": {
+    id: "publish.mobileMap",
+    label: "Mobile Map",
+    desc: "Bundle the visible layers, with simplified geometry for phones and tablets.",
+    icon: "package"
+  },
+  "publish.results": {
+    id: "publish.results",
+    label: "Results",
+    desc: "Bundle the geoprocessing history with the layers it made.",
+    icon: "package"
+  },
+  "publish.webMap": {
+    id: "publish.webMap",
+    label: "Web Map",
+    desc: "Share the map as a web page that needs no server.",
+    icon: "cloud"
+  },
+  "publish.webLayer": {
+    id: "publish.webLayer",
+    label: "Web Layer",
+    desc: "Share the selected layer as an OGC API Features collection with its style.",
+    icon: "cloud"
+  },
+  "publish.webStyle": {
+    id: "publish.webStyle",
+    label: "Web Style",
+    desc: "Share the selected layer's symbology as a MapLibre style.",
+    icon: "cloud"
+  },
+  "publish.locator": {
+    id: "publish.locator",
+    label: "Locator",
+    desc: "Share the selected layer's names as a place-search locator.",
+    icon: "cloud"
+  },
+  "publish.geodataService": {
+    id: "publish.geodataService",
+    label: "Geodata Service",
+    desc: "Share every layer and table as OGC API Features collections.",
+    icon: "cloud"
+  },
+  "publish.webTool": {
+    id: "publish.webTool",
+    label: "Web Tool",
+    desc: "Share the last model as a tool file.",
+    icon: "cloud"
+  },
+  "publish.webScene": {
+    id: "publish.webScene",
+    label: "Web Scene",
+    desc: "Share the map in 3D (glTF), polygons extruded.",
+    icon: "cloud"
+  },
+  "publish.webLinkChart": {
+    id: "publish.webLinkChart",
+    label: "Web Link Chart",
+    desc: "Share the map's relationships as a link chart page.",
+    icon: "cloud"
+  },
+  "ui.pane.shares": {
+    id: "ui.pane.shares",
+    label: "Jobs",
+    desc: "Shares made, with Manage tools to update them.",
+    icon: "cloud"
+  },
+  "publish.deepLearning": {
+    id: "publish.deepLearning",
+    label: "Deep Learning",
+    desc: "Package a trained deep learning model.",
+    icon: "cloud"
+  },
+  "layout.exportLayout": {
+    id: "layout.exportLayout",
+    label: "Export Layout",
+    desc: "Export the open layout as PDF or PNG.",
+    icon: "dot"
+  },
+  "layout.printLayout": {
+    id: "layout.printLayout",
+    label: "Print Layout",
+    desc: "Print the open layout (through the system's PDF viewer).",
+    icon: "dot"
+  },
+  "ui.saveAs": {
+    id: "ui.saveAs",
+    label: "Project",
+    desc: "Save the project under a new name.",
+    icon: "save"
+  },
+  "publish.layoutFile": {
+    id: "publish.layoutFile",
+    label: "Layout File",
+    desc: "Save the open layout as a layout file.",
+    icon: "save"
+  },
+  "publish.mapFile": {
+    id: "publish.mapFile",
+    label: "Map File",
+    desc: "Save the active map (with its data) as a map file.",
+    icon: "save"
+  },
+  "publish.layerFile": {
+    id: "publish.layerFile",
+    label: "Layer File",
+    desc: "Save the selected layer with its symbology as a layer file.",
+    icon: "save"
+  },
+  "publish.styleItems": {
+    id: "publish.styleItems",
+    label: "Style Items",
+    desc: "Save the project's styles to a style file.",
+    icon: "save"
+  },
+  "publish.projectTemplate": {
+    id: "publish.projectTemplate",
+    label: "Project Template",
+    desc: "Save the project's setup, without its features, as a template.",
+    icon: "save"
+  },
+  "publish.taskItem": {
+    id: "publish.taskItem",
+    label: "Task Item",
+    desc: "Save the last task as a task file.",
+    icon: "save"
+  },
+  "layout.addFrame": {
+    id: "layout.addFrame",
+    label: "Map Frame",
+    desc: "Add a map frame showing a map of the project.",
+    icon: "box"
+  },
+  "layout.grid": {
+    id: "layout.grid",
+    label: "Grid",
+    desc: "Draw a labelled latitude/longitude grid over the map frame.",
+    icon: "box"
+  },
+  "layout.extentIndicator": {
+    id: "layout.extentIndicator",
+    label: "Extent Indicator",
+    desc: "Outline another frame's extent in this map frame.",
+    icon: "box"
+  },
+  "layout.series": {
+    id: "layout.series",
+    label: "Map Series",
+    desc: "One page per feature of an index layer.",
+    icon: "box"
+  },
+  "layout.previousPage": {
+    id: "layout.previousPage",
+    label: "Previous Page",
+    desc: "Show the previous map series page.",
+    icon: "box"
+  },
+  "layout.nextPage": {
+    id: "layout.nextPage",
+    label: "Next Page",
+    desc: "Show the next map series page.",
+    icon: "box"
+  },
+  "layout.tableFrame": {
+    id: "layout.tableFrame",
+    label: "Table Frame",
+    desc: "Add the attribute table of a layer in the map frame.",
+    icon: "legend"
+  },
+  "layout.chartFrame": {
+    id: "layout.chartFrame",
+    label: "Chart Frame",
+    desc: "Add a bar chart of a layer's numeric field.",
+    icon: "legend"
+  },
+  "layout.more": {
+    id: "layout.more",
+    label: "More",
+    desc: "Additional surrounds.",
+    icon: "legend"
+  },
+  "layout.dynamicText": {
+    id: "layout.dynamicText",
+    label: "Dynamic Text",
+    desc: "Add text that updates: page, date, scale, map and more.",
+    icon: "text"
+  },
+  "ui.layoutPicture": {
+    id: "ui.layoutPicture",
+    label: "Picture",
+    desc: "Add a PNG or JPEG picture to the page.",
+    icon: "text"
+  },
+  "publish.export": {
+    id: "publish.export",
+    label: "Export",
+    desc: "Export the layout as PDF or PNG.",
+    icon: "download"
+  },
+  "publish.print": {
+    id: "publish.print",
+    label: "Print",
+    desc: "Print the layout.",
+    icon: "download"
+  },
+  "publish.saveLayoutFile": {
+    id: "publish.saveLayoutFile",
+    label: "Save Layout File",
+    desc: "Save the layout as a layout file.",
+    icon: "download"
+  },
+  "layout.close": {
+    id: "layout.close",
+    label: "Show Map",
+    desc: "Close the layout and show the map.",
+    icon: "download"
+  },
+  "plugins.pluginManager": {
+    id: "plugins.pluginManager",
+    label: "Plugin Manager",
+    desc: "Browse, install, update and remove plugins.",
+    icon: "plugin"
+  },
+  "plugins.browsePlugins": {
+    id: "plugins.browsePlugins",
+    label: "Browse Plugins",
+    desc: "Find plugins in the RustGIS plugin registry.",
+    icon: "plugin"
+  },
+  "ui.customizeRibbon": {
+    id: "ui.customizeRibbon",
+    label: "Ribbon",
+    desc: "Choose which tabs the ribbon shows.",
+    icon: "settings"
+  },
+  "ui.quickAccess": {
+    id: "ui.quickAccess",
+    label: "Quick Access",
+    desc: "Choose extra buttons for the Quick Access Toolbar.",
+    icon: "settings"
+  },
+  "ui.pane.diagnostics": {
+    id: "ui.pane.diagnostics",
+    label: "Diagnostic Monitor",
+    desc: "Frame rate, draw time, data size and memory.",
+    icon: "stats"
+  },
+  "ui.learn": {
+    id: "ui.learn",
+    label: "Learning Resources",
+    desc: "Open the RustGIS user guide.",
+    icon: "book"
+  },
+  "ui.checkUpdate": {
+    id: "ui.checkUpdate",
+    label: "Check for Updates",
+    desc: "See whether a newer RustGIS has been released.",
+    icon: "info"
+  }
+};
+
+const RIBBON = [
+  { tab: "Home", groups: [
+    { group: "Navigate", controls: [{ cmd: "map.pan", size: "big" }, { cmd: "map.bookmarkList", size: "big" }, { cmd: "map.zoomIn", size: "small" }, { cmd: "map.zoomOut", size: "small" }, { cmd: "map.fullExtent", size: "small" }, { cmd: "map.previous", size: "small" }, { cmd: "map.next", size: "small" }, { cmd: "map.north", size: "small" }, { cmd: "map.goToXY", size: "small" }, { cmd: "map.bookmarkNew", size: "small" }] },
+    { group: "Add Data", controls: [{ cmd: "data.eeSearch", size: "big" }, { cmd: "data.liveHealth", size: "small" }, { cmd: "data.liveEducation", size: "small" }, { cmd: "data.liveWater", size: "small" }, { cmd: "data.liveMarket", size: "small" }, { cmd: "data.liveRoad", size: "small" }, { cmd: "data.liveBuilding", size: "small" }, { cmd: "data.addFile", size: "small" }, { cmd: "data.addUrl", size: "small" }, { cmd: "data.addWms", size: "small" }] },
+    { group: "Selection", controls: [{ cmd: "select.byRectangle", size: "big" }, { cmd: "select.byAttributes", size: "small" }, { cmd: "select.byLocation", size: "small" }, { cmd: "select.clear", size: "small" }, { cmd: "select.zoomTo", size: "small" }, { cmd: "select.clip", size: "small" }] },
+    { group: "Inspect", controls: [{ cmd: "map.identify", size: "big" }, { cmd: "map.measure", size: "small" }, { cmd: "layer.table", size: "small" }, { cmd: "ui.query", size: "small" }] },
+    { group: "Add", controls: [{ cmd: "ui.addDelimited", size: "big" }, { cmd: "graphics.newLayer", size: "small" }, { cmd: "layer.addSample", size: "small" }] },
+    { group: "Selection", controls: [{ cmd: "select.selectByAttributes", size: "small" }, { cmd: "select.selectByLocation", size: "small" }, { cmd: "table.attributes", size: "small" }] },
+    { group: "Inspect", controls: [{ cmd: "tool.zoomBox", size: "small" }, { cmd: "ui.pane.infographics", size: "small" }] }
+  ] },
+  { tab: "Data", groups: [
+    { group: "Catalogue", controls: [{ cmd: "data.eeSearch", size: "big" }, { cmd: "data.catalogue", size: "small" }, { cmd: "data.refresh", size: "small" }, { cmd: "data.sources", size: "small" }] },
+    { group: "Connect", controls: [{ cmd: "data.connectPostgis", size: "big" }, { cmd: "data.connectDuckdb", size: "small" }, { cmd: "data.connectS3", size: "small" }, { cmd: "data.connectStac", size: "small" }] },
+    { group: "Table", controls: [{ cmd: "table.open", size: "big" }, { cmd: "table.addField", size: "small" }, { cmd: "table.calculate", size: "small" }, { cmd: "table.statistics", size: "small" }, { cmd: "table.join", size: "small" }] },
+    { group: "Definition Query", controls: [{ cmd: "data.definitionQuery", size: "big" }, { cmd: "data.clearQuery", size: "small" }] },
+    { group: "Export", controls: [{ cmd: "data.downloadGeoJSON", size: "big" }, { cmd: "data.downloadCSV", size: "small" }, { cmd: "data.exportGpkg", size: "small" }, { cmd: "data.exportParquet", size: "small" }, { cmd: "data.exportShapefile", size: "small" }] },
+    { group: "Offline", controls: [{ cmd: "offline.download", size: "big" }, { cmd: "offline.sync", size: "small" }, { cmd: "offline.clear", size: "small" }] },
+    { group: "Feature Cache", controls: [{ cmd: "cache.fill", size: "big" }, { cmd: "cache.empty", size: "small" }, { cmd: "cache.cancel", size: "small" }, { cmd: "cache.auto", size: "small" }] },
+    { group: "Project", controls: [{ cmd: "map.new", size: "big" }, { cmd: "data.toolbox", size: "small" }, { cmd: "ui.open", size: "small" }, { cmd: "layout.new", size: "small" }, { cmd: "ui.importLayout", size: "small" }, { cmd: "data.browser", size: "small" }, { cmd: "ui.addFolder", size: "small" }, { cmd: "data.import", size: "small" }, { cmd: "data.newCustomTemplate", size: "small" }, { cmd: "data.openCustomTemplate", size: "small" }, { cmd: "task.task", size: "small" }, { cmd: "task.newTaskFromHistory", size: "small" }, { cmd: "data.importTask", size: "small" }] },
+    { group: "Layer Templates", controls: [{ cmd: "layer.layerTemplates", size: "big" }, { cmd: "layer.layerTemplate", size: "small" }] },
+    { group: "Information", controls: [{ cmd: "data.rasterInformation", size: "big" }] },
+    { group: "Export", controls: [{ cmd: "ui.exportRaster", size: "small" }, { cmd: "data.exportFeatures", size: "small" }, { cmd: "data.exportFeaturesTool", size: "small" }] },
+    { group: "Selection", controls: [{ cmd: "select.all", size: "big" }, { cmd: "select.switch", size: "small" }, { cmd: "select.layerFromSelection", size: "small" }] },
+    { group: "Data Design", controls: [{ cmd: "data.fields", size: "big" }, { cmd: "data.calculate", size: "small" }, { cmd: "data.subtypes", size: "small" }, { cmd: "data.domains", size: "small" }, { cmd: "data.attributeRules", size: "small" }, { cmd: "data.contingentValues", size: "small" }] },
+    { group: "Archiving", controls: [{ cmd: "data.archive", size: "big" }] },
+    { group: "Relationship", controls: [{ cmd: "data.relatedData", size: "big" }, { cmd: "data.dataRelated", size: "small" }, { cmd: "data.newRelationship", size: "small" }] }
+  ] },
+  { tab: "Style", groups: [
+    { group: "Layer", controls: [{ cmd: "style.symbology", size: "big" }, { cmd: "style.graduated", size: "small" }, { cmd: "style.categorised", size: "small" }, { cmd: "style.single", size: "small" }, { cmd: "style.opacity", size: "small" }] },
+    { group: "Classification", controls: [{ cmd: "style.quantile", size: "small" }, { cmd: "style.equalInterval", size: "small" }, { cmd: "style.naturalBreaks", size: "small" }, { cmd: "style.classCount", size: "small" }, { cmd: "style.palette", size: "small" }] },
+    { group: "Labels", controls: [{ cmd: "labels.enable", size: "big" }, { cmd: "labels.field", size: "small" }, { cmd: "labels.placement", size: "small" }, { cmd: "labels.halo", size: "small" }, { cmd: "labels.scaleRange", size: "small" }] },
+    { group: "Effects", controls: [{ cmd: "style.extrude", size: "big" }, { cmd: "style.visibilityRange", size: "small" }, { cmd: "style.blend", size: "small" }, { cmd: "style.swipe", size: "small" }] },
+    { group: "Raster", controls: [{ cmd: "raster.stretch", size: "big" }, { cmd: "raster.bands", size: "small" }, { cmd: "raster.resampling", size: "small" }, { cmd: "raster.hillshade", size: "small" }] },
+    { group: "Labeling", controls: [{ cmd: "labels.lock", size: "big" }, { cmd: "labels.pause", size: "small" }, { cmd: "labels.viewUnplaced", size: "small" }, { cmd: "labels.convert", size: "small" }] },
+    { group: "Styles", controls: [{ cmd: "style.styles", size: "big" }, { cmd: "style.new", size: "small" }, { cmd: "style.addStyleFile", size: "small" }, { cmd: "style.importStylesFrom", size: "small" }] },
+    { group: "Layer", controls: [{ cmd: "layer.zoomTo", size: "small" }, { cmd: "layer.visibility", size: "small" }, { cmd: "layer.remove", size: "small" }] },
+    { group: "Drawing Effects", controls: [{ cmd: "layer.displayFilters", size: "big" }, { cmd: "layer.aggregation", size: "small" }] },
+    { group: "Extrusion", controls: [{ cmd: "layer.extrusion", size: "big" }] },
+    { group: "Faces", controls: [{ cmd: "layer.faceCulling", size: "big" }, { cmd: "layer.lighting", size: "small" }] },
+    { group: "Light and Shadow", controls: [{ cmd: "layer.enableLighting", size: "big" }, { cmd: "layer.castShadow", size: "small" }] },
+    { group: "Visibility Range", controls: [{ cmd: "layer.scaleRange", size: "big" }] },
+    { group: "Drawing", controls: [{ cmd: "layer.symbology", size: "big" }] },
+    { group: "Rendering", controls: [{ cmd: "raster.symbology", size: "big" }, { cmd: "raster.dra", size: "small" }] },
+    { group: "Raster Effects", controls: [{ cmd: "layer.blend", size: "big" }] },
+    { group: "Enhancement", controls: [{ cmd: "raster.enhance", size: "big" }] },
+    { group: "Text Symbol", controls: [{ cmd: "labels.bold", size: "big" }] }
+  ] },
+  { tab: "Edit", groups: [
+    { group: "Manage Edits", controls: [{ cmd: "edit.enable", size: "big" }, { cmd: "edit.save", size: "small" }, { cmd: "edit.discard", size: "small" }, { cmd: "edit.undo", size: "small" }, { cmd: "edit.redo", size: "small" }] },
+    { group: "Features", controls: [{ cmd: "edit.create", size: "big" }, { cmd: "edit.modify", size: "small" }, { cmd: "edit.delete", size: "small" }, { cmd: "edit.split", size: "small" }, { cmd: "edit.merge", size: "small" }] },
+    { group: "Draw", controls: [{ cmd: "edit.drawPolygon", size: "big" }, { cmd: "edit.drawLine", size: "small" }, { cmd: "edit.drawPoint", size: "small" }, { cmd: "edit.drawText", size: "small" }] },
+    { group: "Snapping", controls: [{ cmd: "edit.snapping", size: "big" }, { cmd: "edit.snapVertex", size: "small" }, { cmd: "edit.snapEdge", size: "small" }] },
+    { group: "Clipboard", controls: [{ cmd: "edit.copy", size: "big" }, { cmd: "edit.paste", size: "small" }, { cmd: "edit.cut", size: "small" }] },
+    { group: "Clipboard", controls: [{ cmd: "edit.pasteSpecial", size: "small" }, { cmd: "ui.copyPath", size: "small" }] },
+    { group: "Manage Edits", controls: [{ cmd: "ui.save", size: "small" }, { cmd: "edit.status", size: "small" }, { cmd: "edit.settings", size: "small" }, { cmd: "edit.topology", size: "small" }, { cmd: "edit.topologyOptions", size: "small" }] },
+    { group: "Features", controls: [{ cmd: "edit.createFeatures", size: "small" }] },
+    { group: "Tools", controls: [{ cmd: "edit.moveRotateScale", size: "big" }] },
+    { group: "Elevation", controls: [{ cmd: "edit.elevation", size: "big" }, { cmd: "edit.constant", size: "small" }] },
+    { group: "Corrections", controls: [{ cmd: "edit.groundToGrid", size: "big" }] }
+  ] },
+  { tab: "Analyze", groups: [
+    { group: "Geoprocessing", controls: [{ cmd: "gp.toolbox", size: "big" }, { cmd: "gp.clip", size: "small" }, { cmd: "gp.buffer", size: "small" }, { cmd: "gp.dissolve", size: "small" }, { cmd: "gp.overlay", size: "small" }, { cmd: "gp.history", size: "small" }] },
+    { group: "Vector", controls: [{ cmd: "gp.centroid", size: "small" }, { cmd: "gp.convex", size: "small" }, { cmd: "gp.envelope", size: "small" }, { cmd: "gp.simplify", size: "small" }, { cmd: "gp.voronoi", size: "small" }, { cmd: "gp.nearest", size: "small" }] },
+    { group: "Raster", controls: [{ cmd: "ee.summarise", size: "big" }, { cmd: "ee.classAreas", size: "small" }, { cmd: "gp.elevation", size: "small" }, { cmd: "raster.calculator", size: "small" }, { cmd: "raster.reclassify", size: "small" }] },
+    { group: "Statistics", controls: [{ cmd: "gp.sql", size: "big" }, { cmd: "stats.summary", size: "small" }, { cmd: "stats.hotspot", size: "small" }, { cmd: "stats.correlation", size: "small" }] },
+    { group: "Assistant", controls: [{ cmd: "ui.assistant", size: "big" }, { cmd: "ai.explainLayer", size: "small" }, { cmd: "ai.suggest", size: "small" }] },
+    { group: "Notebook", controls: [{ cmd: "ui.newNotebook", size: "big" }, { cmd: "notebook.addAndOpen", size: "small" }, { cmd: "ui.pane.notebook", size: "small" }] },
+    { group: "Geoprocessing", controls: [{ cmd: "gp.tools", size: "small" }, { cmd: "gp.modelBuilder", size: "small" }, { cmd: "ui.pane.script", size: "small" }, { cmd: "gp.environments", size: "small" }, { cmd: "gp.readyToUse", size: "small" }] },
+    { group: "Portal", controls: [{ cmd: "gp.uiPaneWorkflows", size: "big" }] },
+    { group: "Workflows", controls: [{ cmd: "task.workflows", size: "big" }, { cmd: "task.uiPaneWorkflows", size: "small" }] },
+    { group: "Raster", controls: [{ cmd: "gp.rasterFunctions", size: "small" }, { cmd: "gp.functionEditor", size: "small" }] },
+    { group: "Ortho Mapping", controls: [{ cmd: "gp.newWorkspace", size: "big" }, { cmd: "gp.options", size: "small" }] },
+    { group: "Alignment", controls: [{ cmd: "gp.georeference", size: "big" }] },
+    { group: "Image Analysis", controls: [{ cmd: "gp.changeDetection", size: "big" }, { cmd: "gp.spectralAnalysis", size: "small" }] },
+    { group: "Image Classification", controls: [{ cmd: "gp.classificationWizard", size: "big" }, { cmd: "gp.classificationTools", size: "small" }, { cmd: "gp.deepLearningTools", size: "small" }] },
+    { group: "Imagery Sharing", controls: [{ cmd: "gp.createHostedImagery", size: "big" }] },
+    { group: "Mensuration", controls: [{ cmd: "gp.mensuration", size: "big" }, { cmd: "gp.results", size: "small" }] },
+    { group: "Imagery Tools", controls: [{ cmd: "gp.process", size: "big" }, { cmd: "gp.indices", size: "small" }, { cmd: "gp.pixelEditor", size: "small" }] }
+  ] },
+  { tab: "View", groups: [
+    { group: "Panels", controls: [{ cmd: "ui.layers", size: "big" }, { cmd: "ui.style", size: "small" }, { cmd: "ui.catalogue", size: "small" }, { cmd: "ui.query", size: "small" }, { cmd: "ui.assistant", size: "small" }, { cmd: "ui.log", size: "small" }] },
+    { group: "Map", controls: [{ cmd: "map.basemap", size: "big" }, { cmd: "map.projection", size: "small" }, { cmd: "map.terrain", size: "small" }, { cmd: "map.theme", size: "small" }, { cmd: "map.locate", size: "small" }, { cmd: "map.fullscreen", size: "small" }] },
+    { group: "Display", controls: [{ cmd: "view.grid", size: "small" }, { cmd: "view.scalebar", size: "small" }, { cmd: "view.northArrow", size: "small" }, { cmd: "view.legend", size: "small" }] },
+    { group: "Windows", controls: [{ cmd: "ui.commands", size: "big" }, { cmd: "ui.splitView", size: "small" }, { cmd: "ui.sync", size: "small" }] },
+    { group: "Display", controls: [{ cmd: "ui.theme", size: "small" }] },
+    { group: "View", controls: [{ cmd: "map.globe", size: "big" }, { cmd: "map.global", size: "small" }, { cmd: "map.local", size: "small" }] },
+    { group: "Effects", controls: [{ cmd: "map.illumination", size: "big" }, { cmd: "map.weather", size: "small" }, { cmd: "map.visualEffect", size: "small" }, { cmd: "map.cameraEffect", size: "small" }, { cmd: "map.postprocessing", size: "small" }, { cmd: "map.colorVision", size: "small" }] },
+    { group: "Scene", controls: [{ cmd: "map.drawingMode", size: "big" }, { cmd: "layer.raisePriority", size: "small" }, { cmd: "layer.lowerPriority", size: "small" }, { cmd: "map.clipping", size: "small" }, { cmd: "map.displayType", size: "small" }] },
+    { group: "Windows", controls: [{ cmd: "view.browserPane", size: "small" }, { cmd: "view.toolsPane", size: "small" }, { cmd: "view.details", size: "small" }] },
+    { group: "Navigation", controls: [{ cmd: "map.zoomWorld", size: "big" }, { cmd: "map.navigator", size: "small" }, { cmd: "view.camera", size: "small" }, { cmd: "ui.magnifier", size: "small" }] },
+    { group: "Link", controls: [{ cmd: "ui.linkCursors", size: "big" }] },
+    { group: "Workspace", controls: [{ cmd: "ui.catalogView", size: "big" }, { cmd: "ui.pane.tasks", size: "small" }, { cmd: "ui.pane.jobs", size: "small" }, { cmd: "ui.paneSet", size: "small" }, { cmd: "ui.itemPopups", size: "small" }] },
+    { group: "Animation", controls: [{ cmd: "animation.add", size: "big" }, { cmd: "animation.remove", size: "small" }, { cmd: "ui.animationPlay", size: "small" }, { cmd: "ui.exportAnimation", size: "small" }] },
+    { group: "Profile", controls: [{ cmd: "ui.pane.profile", size: "big" }] }
+  ] },
+  { tab: "Publish", groups: [
+    { group: "Map Image", controls: [{ cmd: "layout.export", size: "big" }, { cmd: "layout.page", size: "small" }, { cmd: "layout.title", size: "small" }, { cmd: "layout.elements", size: "small" }] },
+    { group: "Export Data", controls: [{ cmd: "data.downloadGeoJSON", size: "big" }, { cmd: "data.downloadCSV", size: "small" }, { cmd: "publish.pdf", size: "small" }, { cmd: "publish.geotiff", size: "small" }] },
+    { group: "Share", controls: [{ cmd: "publish.link", size: "big" }, { cmd: "publish.embed", size: "small" }, { cmd: "publish.webmap", size: "small" }] },
+    { group: "Report", controls: [{ cmd: "report.new", size: "big" }, { cmd: "report.template", size: "small" }] },
+    { group: "Report", controls: [{ cmd: "report.reportSection", size: "small" }, { cmd: "report.supplementalPage", size: "small" }, { cmd: "report.supplementalPageAfter", size: "small" }, { cmd: "report.newTemplate", size: "small" }, { cmd: "report.existingTemplate", size: "small" }, { cmd: "ui.reportLayoutFile", size: "small" }, { cmd: "report.relatedReport", size: "small" }, { cmd: "report.subreport", size: "small" }, { cmd: "report.autofill", size: "small" }, { cmd: "report.statistics", size: "small" }, { cmd: "ui.pane.report", size: "small" }, { cmd: "report.importReport", size: "small" }] },
+    { group: "Presentation", controls: [{ cmd: "ui.newPresentation", size: "big" }, { cmd: "presentation.page", size: "small" }, { cmd: "presentation.mapTheCurrentView", size: "small" }, { cmd: "presentation.blankPage", size: "small" }, { cmd: "ui.presentationPicture", size: "small" }, { cmd: "ui.presentationVideo", size: "small" }, { cmd: "presentation.importPresentation", size: "small" }, { cmd: "ui.pane.presentation", size: "small" }] },
+    { group: "Thumbnail", controls: [{ cmd: "project.thumbnail", size: "big" }, { cmd: "publish.importThumbnail", size: "small" }, { cmd: "map.thumbnail", size: "small" }, { cmd: "publish.import", size: "small" }] },
+    { group: "Output", controls: [{ cmd: "ui.exportMap", size: "big" }, { cmd: "publish.exportFeatures", size: "small" }, { cmd: "ui.printMap", size: "small" }, { cmd: "ui.captureMap", size: "small" }, { cmd: "publish.report", size: "small" }, { cmd: "publish.exportReport", size: "small" }, { cmd: "publish.saveAsReportFile", size: "small" }, { cmd: "publish.saveAsReportTemplate", size: "small" }, { cmd: "publish.presentation", size: "small" }, { cmd: "publish.exportPresentation", size: "small" }, { cmd: "publish.saveAsPresentationFile", size: "small" }, { cmd: "publish.exportTo3d", size: "small" }] },
+    { group: "Package", controls: [{ cmd: "publish.projectPackage", size: "big" }, { cmd: "publish.map", size: "small" }, { cmd: "publish.mobileMap", size: "small" }, { cmd: "publish.results", size: "small" }] },
+    { group: "Share As", controls: [{ cmd: "publish.webMap", size: "big" }, { cmd: "publish.webLayer", size: "small" }, { cmd: "publish.webStyle", size: "small" }, { cmd: "publish.locator", size: "small" }, { cmd: "publish.geodataService", size: "small" }, { cmd: "publish.webTool", size: "small" }, { cmd: "publish.webScene", size: "small" }, { cmd: "publish.webLinkChart", size: "small" }, { cmd: "ui.pane.shares", size: "small" }, { cmd: "publish.deepLearning", size: "small" }] },
+    { group: "Layout", controls: [{ cmd: "layout.exportLayout", size: "big" }, { cmd: "layout.printLayout", size: "small" }] },
+    { group: "Save As", controls: [{ cmd: "ui.saveAs", size: "big" }, { cmd: "publish.layoutFile", size: "small" }, { cmd: "publish.mapFile", size: "small" }, { cmd: "publish.layerFile", size: "small" }, { cmd: "publish.styleItems", size: "small" }, { cmd: "publish.projectTemplate", size: "small" }, { cmd: "publish.taskItem", size: "small" }] },
+    { group: "Map Frames", controls: [{ cmd: "layout.addFrame", size: "big" }, { cmd: "layout.grid", size: "small" }, { cmd: "layout.extentIndicator", size: "small" }, { cmd: "layout.series", size: "small" }, { cmd: "layout.previousPage", size: "small" }, { cmd: "layout.nextPage", size: "small" }] },
+    { group: "Map Surrounds", controls: [{ cmd: "layout.tableFrame", size: "big" }, { cmd: "layout.chartFrame", size: "small" }, { cmd: "layout.more", size: "small" }] },
+    { group: "Text", controls: [{ cmd: "layout.dynamicText", size: "big" }, { cmd: "ui.layoutPicture", size: "small" }] },
+    { group: "Export", controls: [{ cmd: "publish.export", size: "big" }, { cmd: "publish.print", size: "small" }, { cmd: "publish.saveLayoutFile", size: "small" }, { cmd: "layout.close", size: "small" }] }
+  ] },
+  { tab: "Plugins", groups: [
+    { group: "Plugins", controls: [{ cmd: "plugins.manage", size: "big" }, { cmd: "plugins.browse", size: "small" }, { cmd: "plugins.install", size: "small" }, { cmd: "plugins.develop", size: "small" }] },
+    { group: "Automation", controls: [{ cmd: "task.record", size: "big" }, { cmd: "task.run", size: "small" }, { cmd: "task.schedule", size: "small" }] },
+    { group: "Plugins", controls: [{ cmd: "plugins.pluginManager", size: "small" }, { cmd: "plugins.browsePlugins", size: "small" }] }
+  ] },
+  { tab: "Settings", groups: [
+    { group: "Interface", controls: [{ cmd: "ui.settings", size: "big" }, { cmd: "map.theme", size: "small" }, { cmd: "settings.language", size: "small" }, { cmd: "settings.units", size: "small" }] },
+    { group: "Data", controls: [{ cmd: "settings.crs", size: "big" }, { cmd: "settings.cache", size: "small" }, { cmd: "settings.privacy", size: "small" }] }
+  ] },
+  { tab: "Help", groups: [
+    { group: "Learn", controls: [{ cmd: "ui.tour", size: "big" }, { cmd: "ui.docs", size: "small" }, { cmd: "ui.commands", size: "small" }, { cmd: "ui.shortcuts", size: "small" }] },
+    { group: "Community", controls: [{ cmd: "ui.contribute", size: "big" }, { cmd: "ui.issues", size: "small" }, { cmd: "ui.about", size: "small" }] },
+    { group: "Customize", controls: [{ cmd: "ui.customizeRibbon", size: "big" }, { cmd: "ui.quickAccess", size: "small" }] },
+    { group: "Performance", controls: [{ cmd: "ui.pane.diagnostics", size: "big" }] },
+    { group: "Learn", controls: [{ cmd: "ui.learn", size: "small" }] },
+    { group: "Help", controls: [{ cmd: "ui.checkUpdate", size: "big" }] }
+  ] }
+];
+
+
+/* ── The ribbon ────────────────────────────────────────────────────────────
+
+   Ten tabs, groups within them, and every control running one command by id.
+   The arrangement is ArcGIS Pro's, by way of RustGIS, because tens of
+   thousands of people in Ghana already know where things live in ArcGIS and a
+   layout people already know needs no explaining.
+
+   The ribbon is rendered from RIBBON and COMMANDS rather than written as
+   markup. Three hundred hand-written buttons is three hundred places for the
+   label and the behaviour to drift apart, and it makes adding a command a
+   change in two files instead of one.
+
+   A command with no `run` is a slot, not a bug. The frame is here and the
+   function is not: pressing one says what it would do, gives its id, and says
+   where to write it. That is deliberate — this platform is meant to be
+   finished by the Ghanaian GIS community, and an empty slot with a name and an
+   address is an invitation where a hidden one is nothing at all.           */
+
+let ribbonTab = "Home";
+
+function renderRibbon() {
+  const strip = document.getElementById("ribbon-tabs");
+  const body = document.getElementById("ribbon-body");
+  if (!strip || !body) return;
+
+  strip.innerHTML = RIBBON.map((t) =>
+    `<button type="button" class="ribbon-tab" data-tab="${escapeHtml(t.tab)}"
+             aria-selected="${t.tab === ribbonTab}">${escapeHtml(t.tab)}</button>`).join("");
+
+  const tab = RIBBON.find((t) => t.tab === ribbonTab) ?? RIBBON[0];
+  body.innerHTML = tab.groups.map((g) => {
+    const big = g.controls.filter((c) => c.size === "big");
+    const small = g.controls.filter((c) => c.size !== "big");
+
+    // Small controls stack three to a column, as they do in a desktop ribbon.
+    const columns = [];
+    for (let i = 0; i < small.length; i += 3) columns.push(small.slice(i, i + 3));
+
+    return `<section class="rib-group">
+      <div class="rib-controls">
+        ${big.map((c) => ribControl(c, true)).join("")}
+        ${columns.map((col) =>
+          `<div class="rib-col">${col.map((c) => ribControl(c, false)).join("")}</div>`).join("")}
+      </div>
+      <h3>${escapeHtml(g.group)}</h3>
+    </section>`;
+  }).join("");
+
+  // One handler for the whole ribbon: a listener per control is a listener
+  // per control to get wrong.
+  strip.onclick = (e) => {
+    const button = e.target.closest("[data-tab]");
+    if (!button) return;
+    ribbonTab = button.dataset.tab;
+    renderRibbon();
+  };
+  body.onclick = (e) => {
+    const button = e.target.closest("[data-cmd]");
+    if (button) runCommand(button.dataset.cmd);
+  };
+}
+
+function ribControl(control, isBig) {
+  const cmd = COMMANDS[control.cmd];
+  if (!cmd) return "";
+  const planned = typeof cmd.run !== "function";
+  const label = escapeHtml(cmd.label);
+  return `<button type="button" class="rib-btn ${isBig ? "big" : "small"}"
+    data-cmd="${escapeHtml(cmd.id)}" data-planned="${planned}"
+    title="${escapeHtml(cmd.label)} — ${escapeHtml(cmd.desc)}${planned ? "  (not built yet)" : ""}">
+    ${ribIcon(cmd.icon)}<span>${label}</span>
+  </button>`;
+}
+
+/* One way in for every command, so the ribbon, the command search, a keyboard
+   shortcut and anything a plugin adds all run the same code. */
+function runCommand(id) {
+  const cmd = COMMANDS[id];
+  if (!cmd) {
+    setStatus(`No command "${id}".`, true);
+    return undefined;
+  }
+  if (typeof cmd.run !== "function") return showPlanned(cmd);
+
+  window.ghLog?.("info", `Command: ${id}`);
+  try {
+    return cmd.run();
+  } catch (err) {
+    console.error(`Command ${id}:`, err);
+    setStatus(`${cmd.label} failed: ${err.message || err}`, true);
+    window.ghLog?.("error", `Command ${id} failed`, String(err.message ?? err));
+    return undefined;
+  }
+}
+
+/* A slot, explained. What it is for, what it is called, and where it would be
+   written — which is the difference between a dead button and a job. */
+function showPlanned(cmd) {
+  const host = document.getElementById("pane-planned");
+  if (!host) return;
+  host.innerHTML = `
+    <h3>${escapeHtml(cmd.label)}</h3>
+    <p class="planned-desc">${escapeHtml(cmd.desc)}</p>
+    <div class="planned-card">
+      <p><strong>This one is not built yet.</strong> The ribbon, the command
+      registry and the place it plugs into are; the function behind it is open.</p>
+      <dl>
+        <dt>Command id</dt>
+        <dd><code>${escapeHtml(cmd.id)}</code></dd>
+        <dt>To implement it</dt>
+        <dd>Add a <code>run</code> to <code>${escapeHtml(cmd.id)}</code> in the
+            <code>COMMANDS</code> registry in <code>web/index.html</code>. The
+            ribbon picks it up with no other change — the button, its icon, its
+            tooltip and its place on the tab are already declared.</dd>
+      </dl>
+      <div class="planned-actions">
+        <button class="btn btn-quiet" data-planned-copy="${escapeHtml(cmd.id)}">Copy the id</button>
+        <a class="btn btn-quiet" target="_blank" rel="noopener"
+           href="https://github.com/desmond-lartey/ghana-geostack/issues/new?title=${
+             encodeURIComponent("Implement " + cmd.id + " — " + cmd.label)}&body=${
+             encodeURIComponent(cmd.desc + "\n\nCommand id: " + cmd.id)}">Open an issue</a>
+      </div>
+    </div>
+    <p class="legend-note">Ghana GeoStack is meant to be finished by the people
+      who use it. Every slot here is a small, self-contained job with a name
+      and an address.</p>`;
+
+  host.querySelector("[data-planned-copy]")?.addEventListener("click", (e) => {
+    navigator.clipboard?.writeText(e.target.dataset.plannedCopy);
+    e.target.textContent = "Copied";
+  });
+  showPanel("planned");
+  return undefined;
+}
+
+/* Everything the ribbon can do, by name. A ribbon with ten tabs needs this the
+   way a desktop GIS needs its command search: knowing a tool exists and
+   finding which tab it is on are different problems. */
+function openCommandSearch() {
+  const dialog = document.getElementById("command-search");
+  if (!dialog) return;
+  dialog.hidden = false;
+  const input = document.getElementById("command-search-input");
+  input.value = "";
+  renderCommandHits("");
+  input.focus();
+}
+
+function renderCommandHits(term) {
+  const host = document.getElementById("command-search-results");
+  if (!host) return;
+  const needle = term.trim().toLowerCase();
+
+  const where = new Map();
+  for (const t of RIBBON) {
+    for (const g of t.groups) {
+      for (const c of g.controls) where.set(c.cmd, `${t.tab} › ${g.group}`);
+    }
+  }
+
+  const hits = Object.values(COMMANDS)
+    .filter((c) => !needle
+      || c.label.toLowerCase().includes(needle)
+      || c.id.toLowerCase().includes(needle)
+      || c.desc.toLowerCase().includes(needle))
+    // Built first: a search that leads with what cannot run yet is a search
+    // that wastes the reader's time.
+    .sort((a, b) => Number(typeof b.run === "function") - Number(typeof a.run === "function"))
+    .slice(0, 40);
+
+  host.innerHTML = hits.length
+    ? hits.map((c) => `
+      <button type="button" data-cmd="${escapeHtml(c.id)}" data-planned="${typeof c.run !== "function"}">
+        ${ribIcon(c.icon)}
+        <span class="cs-label">${escapeHtml(c.label)}
+          <span class="cs-where">${escapeHtml(where.get(c.id) || "")}</span></span>
+        <code>${escapeHtml(c.id)}</code>
+      </button>`).join("")
+    : `<p class="hint">Nothing matching “${escapeHtml(term)}”.</p>`;
+}
+
+function wireCommandSearch() {
+  const dialog = document.getElementById("command-search");
+  const input = document.getElementById("command-search-input");
+  const results = document.getElementById("command-search-results");
+  if (!dialog || !input || !results) return;
+
+  const close = () => { dialog.hidden = true; };
+  input.addEventListener("input", () => renderCommandHits(input.value));
+  input.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") close();
+    if (e.key === "Enter") results.querySelector("button[data-cmd]")?.click();
+  });
+  results.addEventListener("click", (e) => {
+    const button = e.target.closest("[data-cmd]");
+    if (!button) return;
+    close();
+    runCommand(button.dataset.cmd);
+  });
+  document.getElementById("command-search-close")?.addEventListener("click", close);
+
+  // The shortcut every desktop GIS has for this.
+  document.addEventListener("keydown", (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
+      e.preventDefault();
+      openCommandSearch();
+    }
+  });
+}
+
+/* ── What the ribbon needed that the viewer did not have yet ────────────── */
+
+/* Extent history, so Previous and Next mean something. Recorded on moveend and
+   suppressed while replaying, or stepping back would push the step itself. */
+const mapHistory = { stack: [], at: -1, replaying: false };
+
+function mapHistoryPush() {
+  if (mapHistory.replaying) return;
+  const c = map.getCenter();
+  const here = { center: [c.lng, c.lat], zoom: map.getZoom(),
+                 bearing: map.getBearing?.() ?? 0, pitch: map.getPitch?.() ?? 0 };
+  const last = mapHistory.stack[mapHistory.at];
+  if (last && Math.abs(last.zoom - here.zoom) < 0.01
+           && Math.abs(last.center[0] - here.center[0]) < 1e-6
+           && Math.abs(last.center[1] - here.center[1]) < 1e-6) return;
+  mapHistory.stack = mapHistory.stack.slice(0, mapHistory.at + 1);
+  mapHistory.stack.push(here);
+  if (mapHistory.stack.length > 50) mapHistory.stack.shift();
+  mapHistory.at = mapHistory.stack.length - 1;
+}
+
+function mapHistoryGo(step) {
+  const next = mapHistory.at + step;
+  if (next < 0 || next >= mapHistory.stack.length) {
+    setStatus(step < 0 ? "No earlier extent." : "No later extent.");
+    return;
+  }
+  mapHistory.at = next;
+  mapHistory.replaying = true;
+  const view = mapHistory.stack[next];
+  map.easeTo({ center: view.center, zoom: view.zoom, bearing: view.bearing,
+               pitch: view.pitch, duration: 600 });
+  setTimeout(() => { mapHistory.replaying = false; }, 700);
+}
+
+/* Bookmarks: a named extent, kept in this browser. */
+function savedBookmarks() {
+  try { return JSON.parse(localStorage.getItem("gh:bookmarks") || "[]"); }
+  catch { return []; }
+}
+
+function bookmarkAdd() {
+  const name = prompt("Name this extent:");
+  if (!name) return;
+  const list = savedBookmarks().filter((b) => b.name !== name);
+  const c = map.getCenter();
+  list.push({ name, center: [c.lng, c.lat], zoom: map.getZoom(),
+              bearing: map.getBearing?.() ?? 0, pitch: map.getPitch?.() ?? 0 });
+  try { localStorage.setItem("gh:bookmarks", JSON.stringify(list)); }
+  catch { setStatus("This browser will not store bookmarks.", true); return; }
+  setStatus(`Bookmarked “${name}”.`);
+  renderBookmarks();
+}
+
+function renderBookmarks() {
+  const host = document.getElementById("pane-bookmarks");
+  if (!host) return;
+  const list = savedBookmarks();
+  host.innerHTML = `<h3>Bookmarks</h3>
+    <p class="legend-note">A named extent, kept in this browser only.</p>
+    ${list.length ? list.map((b) => `
+      <div class="bookmark-row">
+        <button type="button" class="bookmark-go" data-go="${escapeHtml(b.name)}">
+          ${escapeHtml(b.name)}
+          <span>zoom ${b.zoom.toFixed(1)} · ${b.center[1].toFixed(3)}, ${b.center[0].toFixed(3)}</span>
+        </button>
+        <button type="button" class="bookmark-del" data-del="${escapeHtml(b.name)}"
+                title="Remove">${ICON.trash}</button>
+      </div>`).join("")
+      : `<p class="hint">None yet. Home → New Bookmark saves the current view.</p>`}
+    <div class="actions" style="margin-top:12px">
+      <button class="btn btn-quiet" id="bookmark-add">Bookmark this view</button>
+    </div>`;
+
+  host.querySelector("#bookmark-add")?.addEventListener("click", bookmarkAdd);
+  for (const el of host.querySelectorAll("[data-go]")) {
+    el.addEventListener("click", () => {
+      const b = savedBookmarks().find((x) => x.name === el.dataset.go);
+      if (b) map.easeTo({ center: b.center, zoom: b.zoom, bearing: b.bearing,
+                          pitch: b.pitch, duration: 900 });
+    });
+  }
+  for (const el of host.querySelectorAll("[data-del]")) {
+    el.addEventListener("click", () => {
+      const list = savedBookmarks().filter((b) => b.name !== el.dataset.del);
+      try { localStorage.setItem("gh:bookmarks", JSON.stringify(list)); } catch { /* blocked */ }
+      renderBookmarks();
+    });
+  }
+}
+
+/* The map tool the pointer is in. Identify is the one the ribbon adds; pan is
+   the map's own behaviour, so switching back is switching this off. */
+let mapTool = "pan";
+
+function setMapTool(tool) {
+  mapTool = tool;
+  // Bound once, on first use: identify is a mode the map is in, not a
+  // listener that should exist before anyone asks for it.
+  if (tool === "identify" && !setMapTool.wired) {
+    setMapTool.wired = true;
+    map.on("click", (e) => { if (mapTool === "identify") identifyAt(e.point, e.lngLat); });
+  }
+  map.getCanvas().style.cursor = tool === "identify" ? "help" : "";
+  setStatus(tool === "identify"
+    ? "Identify: click a feature to read its attributes."
+    : "Pan: drag to move, scroll to zoom.");
+  for (const button of document.querySelectorAll("#ribbon-body [data-cmd]")) {
+    if (button.dataset.cmd === "map.pan" || button.dataset.cmd === "map.identify") {
+      button.setAttribute("aria-pressed",
+        String(button.dataset.cmd === `map.${tool}`));
+    }
+  }
+}
+
+/* Equal count or equal interval, applied to whatever is graduated. classify()
+   already takes the mode; nothing in the interface reached it, so the two
+   ribbon commands are the way in. */
+function setClassificationMode(mode) {
+  const targets = styleTargets().filter((x) => styleState[x.key]?.field);
+  if (!targets.length) {
+    showPanel("style");
+    setStatus("Colour a layer by a column first — a classification needs a number to cut.", true);
+    return;
+  }
+  for (const target of targets) {
+    styleState[target.key].mode = mode;
+    applyStyle(target);
+  }
+  renderStylePane();
+  setStatus(mode === "equal"
+    ? "Equal interval: the range cut into equal widths."
+    : "Equal count: the same number of features in each class.");
+}
+
+/* The ribbon's two zonal commands act on whichever dataset the Data panel has
+   open, because a reduction needs a raster and the ribbon has no way to hold
+   one. With none chosen it opens the panel and says so, rather than failing
+   quietly on an empty selection. */
+async function eeZonalFromRibbon(which) {
+  const dataset = eeState.selected;
+  if (!dataset) {
+    showPanel("data");
+    setStatus("Open a dataset in the Data panel first — a summary needs a raster.", true);
+    return;
+  }
+  if (which === "classAreas" && !dataset.classes) {
+    setStatus(`${dataset.title} is not classified. Use Summarise by Zone instead.`, true);
+    return;
+  }
+  if (which === "summarise" && dataset.classes) {
+    setStatus(`${dataset.title} is classified. Use Land Cover Areas instead.`, true);
+    return;
+  }
+  showPanel("data");
+  if (which === "classAreas") await runClassAreas(dataset, "region");
+  else await summariseEe(dataset, "region");
+}
+
+/* Identify, as a desktop GIS means it: everything under the click, from every
+   drawn layer, listed together. The per-feature popups answer "what is this
+   one"; this answers "what is here", which is a different question and the
+   one you ask where layers overlap. */
+function identifyAt(point, lngLat) {
+  const features = map.queryRenderedFeatures(point) || [];
+  const host = document.getElementById("pane-identify");
+  if (!host) return;
+
+  const byLayer = new Map();
+  for (const f of features) {
+    const label = userLayerLabelFor(f.layer?.id);
+    if (!label) continue;                 // the basemap is not an answer
+    if (!byLayer.has(label)) byLayer.set(label, []);
+    if (byLayer.get(label).length < 4) byLayer.get(label).push(f);
+  }
+
+  host.innerHTML = `<h3>Identify</h3>
+    <p class="legend-note">${lngLat.lng.toFixed(5)}, ${lngLat.lat.toFixed(5)}</p>
+    ${byLayer.size ? [...byLayer].map(([label, rows]) => `
+      <div class="identify-layer">
+        <h4>${escapeHtml(label)}</h4>
+        ${rows.map((f) => {
+          const props = Object.entries(f.properties || {})
+            .filter(([k]) => k !== "geom").slice(0, 12);
+          return props.length
+            ? `<dl class="identify-props">${props.map(([k, v]) =>
+                 `<dt>${escapeHtml(k)}</dt><dd>${escapeHtml(String(v))}</dd>`).join("")}</dl>`
+            : `<p class="hint">No attributes on this feature.</p>`;
+        }).join("")}
+      </div>`).join("")
+      : `<p class="hint">None of this session's layers are drawn at that point.
+         The basemap is not listed, because "which basemap tile did I click" is
+         not a question anyone asks.</p>`}`;
+  showPanel("identify");
+}
+
+/* Which registered layer a map layer id belongs to, or null for the basemap. */
+function userLayerLabelFor(layerId) {
+  for (const entry of userLayers.values()) {
+    if (entry.layerIds.includes(layerId)) return entry.label;
+  }
+  const fixed = LAYERS.find((l) => (l.sublayers || []).includes(layerId));
+  return fixed?.name || null;
+}
+
+/* The layer selected in the Layers dock, for the commands that act on one. */
+function selectedLayerEntry() {
+  return selectedLayerId ? userLayers.get(selectedLayerId) : null;
+}
+
+function zoomToSelectedLayer() {
+  const entry = selectedLayerEntry();
+  if (!entry?.bbox) return setStatus("Select a layer with an extent first.", true);
+  map.fitBounds([[entry.bbox[0], entry.bbox[1]], [entry.bbox[2], entry.bbox[3]]],
+                { padding: 60, duration: 900 });
+  return undefined;
+}
+
+function removeSelectedLayer() {
+  const entry = selectedLayerEntry();
+  if (!entry) return setStatus("Select a layer in the Layers panel first.", true);
+  forgetUserLayer(entry.id);
+  return undefined;
+}
+
+function openSelectedLayerTable() {
+  const entry = selectedLayerEntry();
+  showPanel("query");
+  if (entry) {
+    document.getElementById("sql").value =
+      `-- ${entry.label}\n-- Drawn layers are queryable once written to a table.\n`
+      + `SELECT * FROM ghana.district LIMIT 20;`;
+  }
+  return undefined;
+}
+
 /* ── Driving the shell ─────────────────────────────────────────────────── */
 
 const PANEL_TITLES = {
   style: "Style", data: "Data", query: "SQL workspace", ask: "AI Assistant",
-  log: "Log", sources: "About the data", settings: "Map", layers: "Layers"
+  log: "Log", sources: "About the data", settings: "Map", layers: "Layers",
+  planned: "Not built yet", bookmarks: "Bookmarks", identify: "Identify"
 };
 
 /* One pane shows in the right-hand panel at a time. Asking for the pane that
@@ -8109,6 +11529,27 @@ function turfLikeDistanceKm(lon1, lat1, lon2, lat2) {
     }
 
     wireDockSearch();
+
+    // The ribbon, and the ways into it.
+    renderRibbon();
+    wireCommandSearch();
+    renderBookmarks();
+    document.getElementById("ribbon-search")?.addEventListener("click", openCommandSearch);
+    document.getElementById("ribbon-body")?.addEventListener("wheel", (e) => {
+      const band = e.currentTarget;
+      if (band.scrollWidth <= band.clientWidth) return;
+      if (Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return;   // already sideways
+      e.preventDefault();
+      band.scrollLeft += e.deltaY;
+    }, { passive: false });
+    document.getElementById("ribbon-collapse")?.addEventListener("click", () => {
+      const ribbon = document.getElementById("ribbon");
+      const collapsed = ribbon.dataset.collapsed === "true";
+      ribbon.dataset.collapsed = String(!collapsed);
+      map.resize();
+    });
+    map.on("moveend", mapHistoryPush);
+    mapHistoryPush();
 
     // The panel toolbar on the map: one button per panel, each closing what
     // it opened.

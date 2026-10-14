@@ -44,6 +44,8 @@ class FakeMap {
   getCenter() { return { lng: -1.09, lat: 7.95 }; }
   getZoom() { return 6.2; }
   getBearing() { return 0; }
+  isStyleLoaded() { return true; }
+  setStyle() {} loaded() { return true; }
   getPitch() { return 0; }
   getCanvas() { return { width: 1200, height: 800, clientWidth: 1200, clientHeight: 800 }; }
   getBounds() { return { getSouth: () => 4.7, getWest: () => -3.3,

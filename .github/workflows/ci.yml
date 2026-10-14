@@ -144,3 +144,9 @@ jobs:
       # read the image that comes out.
       - name: The map exports as a laid-out image
         run: node tests/export.cjs
+
+      # A ribbon is a promise: every control says it does something. This runs
+      # every command that claims to be built, and checks that the ones that
+      # are not say so.
+      - name: Every ribbon command does what it says
+        run: node tests/ribbon.cjs

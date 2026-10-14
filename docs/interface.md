@@ -1,8 +1,9 @@
 # The map interface
 
 The viewer is laid out as a desktop GIS rather than as a web page with a map on
-it: a menu bar across the top, a status bar along the bottom, the map filling
+it: a ribbon across the top, a status bar along the bottom, the map filling
 everything between them, and panels floating over it that can each be put away.
+The ribbon has [its own page](ribbon.md); this one covers the rest of the frame.
 Geoprocessing is a floating toolbox opened from the **Processing** menu, not a
 tab competing with everything else.
 

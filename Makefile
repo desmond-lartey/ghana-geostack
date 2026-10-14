@@ -94,6 +94,7 @@ icons:  ## Regenerate the favicon and logo from the national boundary
 
 docs:  ## Sync the generated documentation pages
 	$(PY) scripts/sync_docs.py
+	$(PY) scripts/commands_doc.py
 
 docs-serve: docs  ## Serve the documentation at http://localhost:8000
 	mkdocs serve
@@ -119,7 +120,7 @@ test:  ## Run the test suite
 	@command -v node >/dev/null && { $(MAKE) -s web >/dev/null && \
 	  node tests/smoke_viewer.cjs && node tests/ee_clip.cjs && \
 	  node tests/ee_rainfall.cjs && node tests/legend.cjs && \
-	  node tests/export.cjs; } || \
+	  node tests/export.cjs && node tests/ribbon.cjs; } || \
 	 echo "node not installed, skipping the browser tests"
 
 # ── Housekeeping ──────────────────────────────────────────────────────────

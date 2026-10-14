@@ -431,4 +431,14 @@ The pipeline architecture is adapted from
 The agent workflow, and the practice of validating every result in SQL before
 rendering, is adapted from
 [dekart-xyz/geosql](https://github.com/dekart-xyz/geosql) (MIT).
+
+The interface owes two debts. The floating panels, the layer cards and the
+geoprocessing toolbox follow [GeoLibre](https://github.com/opengeos/GeoLibre).
+The ribbon — ten tabs, groups within them, and one command registry
+underneath — follows [RustGIS](https://github.com/rustgis/rustgis), whose own
+arrangement is ArcGIS Pro's. RustGIS is Rust compiled to WebAssembly and this
+is a single HTML page, so no code crossed between them; what was taken is the
+architecture, which was the part worth taking. See
+[`docs/ribbon.md`](docs/ribbon.md).
+
 Details in [`docs/migration-notes.md`](docs/migration-notes.md).

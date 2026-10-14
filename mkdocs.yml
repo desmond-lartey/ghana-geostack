@@ -121,6 +121,8 @@ nav:
   - Architecture: architecture.md
   - Querying the data: querying.md
   - The map interface: interface.md
+  - The ribbon: ribbon.md
+  - Command reference: commands.md
   - Layers and clipping: layers-and-clipping.md
   - Earth observation catalogue: catalog.md
   - Earth Engine in the browser: earth-engine.md
