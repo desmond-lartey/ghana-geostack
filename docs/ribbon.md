@@ -161,7 +161,7 @@ name and not its tab.
 A command with no `run` is a slot. The ribbon, the registry and the place it
 plugs into are built; the function behind it is not.
 
-There are **318 of them**, against 83 that are built, and they are shown rather
+There are **316 of them**, against 85 that are built, and they are shown rather
 than hidden: a gold dot on the control, and pressing it says what the command
 is for, what it is called, and where to write it. The full list, generated from
 the registry so it cannot go stale, is in
@@ -223,8 +223,15 @@ Some tabs are wider than a screen - Publish carries 12 groups and 87
 controls, Analyze 14 groups. ArcGIS Pro
 collapses a group into a single drop-down when it runs out of room; this does
 not, yet. The band scrolls sideways with the wheel, and **Ctrl K** reaches any
-command without hunting for its tab at all. Group collapsing is
-`ui.ribbonCollapseGroups`, and it is open.
+command without hunting for its tab at all.
+
+A chevron appears at whichever end of the band has something that way, and
+scrolls it by six tenths of a view. RustGIS puts the same button in the same
+place, for the reason its source gives: the scroll bar would sit across the
+group labels, and the wheel alone is undiscoverable. Nothing on screen said
+the band moved, so a tab with twelve groups read as a tab with four. Group
+collapsing - folding a group into a single drop-down the way ArcGIS Pro does
+when it runs out of room - is still open, as `ui.ribbonCollapseGroups`.
 
 A ribbon wider than the screen used to widen the whole window with it. The
 shell is a CSS grid, and a grid item's `min-width` is `auto` - a track of `1fr`

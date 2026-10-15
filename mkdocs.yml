@@ -140,6 +140,7 @@ nav:
   - Working with agents: project/agents.md
   - Data licensing: project/licensing.md
   - Roadmap: project/roadmap.md
+  - What was broken: what-was-broken.md
   - Migration notes: migration-notes.md
 
 watch:

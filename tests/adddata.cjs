@@ -119,6 +119,33 @@ const WKT_CSV = 'id,wkt\n1,"POLYGON((-1.7 6.6, -1.5 6.6, -1.5 6.8, -1.7 6.6))"\n
     result.refusedSaid = document.getElementById("adddata-status").innerText.trim();
     result.refusedAddedNothing = window.__ghLayers.list().length === before;
 
+    // A real drop, dispatched the way a browser dispatches one. The handler
+    // used to be on the map alone, so a file let go two pixels into the layer
+    // list went to the browser, which navigated to it and threw the session
+    // away. The target is the window now, and this drops on the ribbon -
+    // about as far from the map as it is possible to get.
+    const dropped = new DataTransfer();
+    dropped.items.add(new File(['{"type":"FeatureCollection","features":['
+      + '{"type":"Feature","properties":{"name":"Ho"},'
+      + '"geometry":{"type":"Point","coordinates":[0.4713,6.6008]}}]}'],
+      "dropped.geojson", { type: "application/geo+json" }));
+
+    const onRibbon = document.getElementById("ribbon") || document.body;
+    const beforeDrop = window.__ghLayers.list().length;
+    for (const type of ["dragenter", "dragover"]) {
+      onRibbon.dispatchEvent(new DragEvent(type,
+        { bubbles: true, cancelable: true, dataTransfer: dropped }));
+    }
+    result.veilShown = !document.getElementById("drop-veil").hidden;
+    const drop = new DragEvent("drop",
+      { bubbles: true, cancelable: true, dataTransfer: dropped });
+    onRibbon.dispatchEvent(drop);
+    // A drop the page did not accept is a drop the browser will act on.
+    result.dropPrevented = drop.defaultPrevented;
+    await new Promise((r) => setTimeout(r, 500));
+    result.dropAdded = window.__ghLayers.list().length - beforeDrop;
+    result.veilHidden = document.getElementById("drop-veil").hidden;
+
     // The drop veil exists and the map listens for a drop.
     result.hasVeil = Boolean(document.getElementById("drop-veil"));
 
@@ -158,6 +185,13 @@ const WKT_CSV = 'id,wkt\n1,"POLYGON((-1.7 6.6, -1.5 6.6, -1.5 6.8, -1.7 6.6))"\n
     bad.push(`an unreadable file did not say why: "${out.refusedSaid}"`);
   }
   if (!out.hasVeil) bad.push("there is no drop target on the map");
+  if (!out.veilShown) bad.push("dragging a file over the ribbon showed no drop target");
+  if (!out.dropPrevented) {
+    bad.push("the drop was not accepted, so the browser would have opened the file "
+           + "and thrown the session away");
+  }
+  if (out.dropAdded !== 1) bad.push(`dropping a file added ${out.dropAdded} layers, not 1`);
+  if (!out.veilHidden) bad.push("the drop target stayed on screen after the drop");
   const bm = out.basemap || {};
   if (bm.id !== "osm") bad.push(`the basemap did not change, it is "${bm.id}"`);
   else if (!bm.before) bad.push("nothing was drawn before the basemap changed, so this proves nothing");
@@ -172,6 +206,8 @@ const WKT_CSV = 'id,wkt\n1,"POLYGON((-1.7 6.6, -1.5 6.6, -1.5 6.8, -1.7 6.6))"\n
     for (const line of bad) console.error("  " + line);
     process.exit(1);
   }
+  console.log("a file dropped on the ribbon lands on the map, and the browser "
+    + "does not navigate to it");
   console.log("add data works - " + out.added.map((a) => `${a.file} (${a.note})`).join(", "));
   console.log(`changing the basemap keeps them - ${out.basemap.before} drawn, `
     + `${out.basemap.after} after switching to ${out.basemap.id}`);

@@ -61,7 +61,7 @@ made it a half-truth and the numbers beside it misleading.
 
 | Where | What the clip does |
 | --- | --- |
-| Tools | The output is cut to the boundary before it is drawn |
+| Tools | The output is cut to the boundary before it is drawn. A named boundary needs the database; without it the tool says so rather than failing with a null |
 | Live OpenStreetMap | Fetched features outside it are dropped |
 | Query results | Rows whose geometry falls outside are not drawn, and the count says how many |
 | Earth Engine layers | The raster is clipped server-side, so one district is a hundredth of the work of the whole country. Changing the clip redraws the rasters already on the map, from the form each was drawn with |

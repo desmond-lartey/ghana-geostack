@@ -160,3 +160,13 @@ jobs:
       # and then does nothing is the catalogue lying.
       - name: The Ghana data library
         run: node tests/library.cjs
+
+      # Opening a table of what you have open is the first thing anyone does
+      # after adding data, and it used to open the SQL pane instead.
+      - name: The attribute table
+        run: node tests/table.cjs
+
+      # The toolbox had no test, which is how it shipped with a ReferenceError
+      # on the first line of every run.
+      - name: The geoprocessing tools
+        run: node tests/toolbox.cjs

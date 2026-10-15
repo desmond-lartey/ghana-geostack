@@ -52,11 +52,20 @@ is how to find a tool when you know what it is called and not which tab it is
 on.
 
 **Contents**, on the left, is what this session has put on the map, newest at
-the top, and under it the published catalogue by group. **The panes** on the
-right are one at a time - Style, Data, the SQL workspace, Ask, the Log,
-Basemap, Add data, Bookmarks, Identify. Both columns close from the × in their
-own header or from **View → Panels**, and with both closed the map has the
-whole window.
+the top, and under it the published catalogue by group. Each layer carries the
+symbology it is drawn with, underneath it. **The panes** on the right are one
+at a time - Style, Data, the SQL workspace, Ask, the Log, Basemap, Add data,
+Bookmarks, Identify. Both columns close from the × in their own header or from
+**View → Panels**, and with both closed the map has the whole window.
+
+Closing one gives its width to the map. That is worth stating because for a
+while it did the opposite: each dock is a grid column, a hidden grid item
+leaves the flow, and with no column named explicitly the map slid into the
+track the dock had vacated - a track sized to its contents, which for a map
+whose only child is absolutely positioned is zero. Closing the layer list made
+the map nought pixels wide, and everything drawn on it went with it. The
+columns are named now, and the map is watched by a `ResizeObserver` so the
+WebGL canvas follows the column whatever changed its width.
 
 A ribbon button that names a panel opens it. It does not toggle it shut, which
 it used to: pressing **AI Assistant** from the Analyze tab, with Ask already
@@ -220,11 +229,18 @@ what is drawn before and after to keep it that way.
 
 ---
 
-## The legend
+## Where the symbology lives
 
-The legend sits at the bottom left of the map, and it is only there when there
-is something to explain. It describes what is *drawn*, which is not the same as
-what is in the layer list - a layer switched off explains nothing.
+Under the layer, in Contents - not in a card floating over the map. Neither
+ArcGIS Pro nor RustGIS puts a legend on the map canvas, and the reason is
+plain once the two are side by side: a block of colour over the map covers the
+map, and you still have to look somewhere else to find out which layer it
+belongs to. Under the layer, the question *what is this drawn by* is answered
+where it is asked.
+
+The printed map is the exception and keeps a proper legend, because a sheet of
+paper has no layer list to read the colours against. See
+[Exporting a map image](#exporting-a-map-image).
 
 A layer coloured by a value comes first, names the column, and lists its
 classes: a swatch and a range for each, the way QGIS and ArcGIS write a
@@ -240,11 +256,41 @@ since an unrounded break is honest to five decimal places and unreadable.
 
 A classified raster brings the producer's own class table with it, so ESA
 WorldCover is listed class by class in the producer's colours. A continuous
-raster shows its ramp with the minimum and maximum it was stretched to. Every
-other drawn layer is one row under *On the map*, so the legend is a list of
-what is on the map rather than a list of what happens to have a colour. A layer
-that has its own group is not repeated as a swatch. The reference boundaries
-keep the legend they were written with.
+raster shows its ramp with the minimum and maximum it was stretched to. A
+layer with a single colour shows the swatch already on its row and needs
+nothing more.
+
+---
+
+## The attribute table
+
+**Home → Inspect → Attribute Table**, the table button on a layer card, or the
+one beside a catalogue layer that is switched on. It opens under the map,
+where ArcGIS Pro and RustGIS put it, and it can be dragged taller.
+
+| | |
+| --- | --- |
+| Click a header | Sort ascending, then descending, then back to the file's own order |
+| Click a row | Select it, and light that feature up on the map |
+| Ctrl or Shift click | Add to the selection rather than replacing it |
+| Filter rows | Any cell in the row, matched as you type |
+| Select by attribute | A column, a comparison and a value. For anything beyond that the SQL workspace is a tab away |
+| Zoom to selection | Fit the map to what is selected |
+| Switch | Invert the selection |
+| CSV | Download what is shown, filtered and sorted as it appears |
+
+Columns are typed from their values rather than declared, and the type decides
+how the column sorts: `139, 214, 385, 1180` for a number, where sorting the
+same column as text puts `1180` first. A blank cell sorts last either way,
+because a blank is not a small number.
+
+A raster has no rows, and says so rather than opening an empty grid. Summarise
+it first - *Summarise* in the Data pane turns a raster into rows.
+
+What was here before opened the SQL workspace and typed a comment into it.
+That is not an attribute table, and it is not an answer to *what is in this
+layer*, which is the question anyone asks within a minute of adding
+anything.
 
 ---
 

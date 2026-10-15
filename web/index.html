@@ -259,39 +259,11 @@ button { cursor: pointer; border: none; background: none; }
 
 /* --- Legend --------------------------------------------------------------- */
 
-#legend {
-  position: absolute;
-  top: var(--pad);
-  left: var(--pad);
-  width: 258px;
-  z-index: 20;
-  overflow: hidden;
-}
 
-#legend-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  width: 100%;
-  padding: 13px 15px;
-  text-align: left;
-}
 
-#legend-title {
-  font-family: var(--font-display);
-  font-size: 16px;
-  font-weight: 600;
-  letter-spacing: -0.01em;
-}
 
-#legend-sub { font-size: 13px; color: var(--text-2); margin-top: 1px; }
 
-#legend-chev { color: var(--text-3); transition: transform 0.24s var(--ease); flex: none; }
-#legend[data-open="false"] #legend-chev { transform: rotate(-90deg); }
-#legend[data-open="false"] #legend-body { display: none; }
 
-#legend-body { padding: 0 15px 15px; }
 
 .ramp { height: 9px; border-radius: 5px; margin-bottom: 7px; }
 
@@ -694,7 +666,9 @@ td { font-family: var(--font-mono); font-size: 12.5px; font-variant-numeric: tab
 #shell {
   position: absolute; inset: 0;
   display: grid;
-  grid-template-rows: auto 1fr 26px;
+  /* ribbon · workspace · attribute table · status bar. The table's row is
+     auto, so it takes nothing at all while it is closed. */
+  grid-template-rows: auto minmax(0, 1fr) auto 26px;
   /* minmax(0, 1fr), not 1fr. A grid item's min-width is auto, so a track of
      1fr is still at least as wide as its widest content - and the ribbon on
      the Publish tab is far wider than any screen. That widened the whole
@@ -785,6 +759,16 @@ td { font-family: var(--font-mono); font-size: 12.5px; font-variant-numeric: tab
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
 }
+
+/* Each panel owns a column by name. Without this, hiding one was enough to
+   lose the map: a hidden grid item is out of the flow, so auto-placement slid
+   the map from the 1fr track into the `auto` track the dock had been in - and
+   the map's only child is absolutely positioned, so an auto track around it
+   is zero wide. Closing the layer list made the map 0px and everything on it
+   went with it, which is exactly what it looked like. */
+#dock-left { grid-column: 1; grid-row: 1; }
+#map-wrap  { grid-column: 2; grid-row: 1; }
+#panel     { grid-column: 3; grid-row: 1; }
 
 .dock {
   position: relative;
@@ -1115,12 +1099,38 @@ td { font-family: var(--font-mono); font-size: 12.5px; font-variant-numeric: tab
 #ribbon-head .ribbon-right button svg { width: 15px; height: 15px; }
 #ribbon-head .ribbon-right button:hover { background: var(--surface-2); color: var(--text); }
 
+#ribbon-band { position: relative; min-width: 0; }
 #ribbon-body {
   min-width: 0;
   display: flex; align-items: stretch; gap: 0;
   padding: 0 4px; min-height: 86px;
   overflow-x: auto; overflow-y: hidden;
+  scroll-behavior: smooth;
+  /* The scrollbar would sit across the group labels, and a ribbon with a
+     scrollbar in it looks like a web page. The chevrons replace it. */
+  scrollbar-width: none;
 }
+#ribbon-body::-webkit-scrollbar { display: none; }
+
+/* A chevron at each end, shown only when there is something that way. The
+   wheel scrolls the band too, but a wheel is not an affordance: nothing on
+   screen says the band moves, which is how a tab three groups wide becomes a
+   tab with three groups. ArcGIS Pro puts the same button in the same place. */
+.rib-scroll {
+  position: absolute; top: 0; bottom: 0; width: 26px;
+  display: grid; place-items: center;
+  border: 0; border-right: 1px solid var(--border);
+  background: linear-gradient(to right, var(--surface) 62%, transparent);
+  color: var(--text-2); cursor: pointer; z-index: 3;
+}
+.rib-scroll.right {
+  left: auto; right: 0;
+  border-right: 0; border-left: 1px solid var(--border);
+  background: linear-gradient(to left, var(--surface) 62%, transparent);
+}
+.rib-scroll[hidden] { display: none; }
+.rib-scroll:hover { color: var(--text); }
+.rib-scroll svg { width: 15px; height: 15px; }
 #ribbon-body::-webkit-scrollbar { height: 6px; }
 #ribbon-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
 #ribbon[data-collapsed="true"] #ribbon-body { display: none; }
@@ -1270,8 +1280,10 @@ td { font-family: var(--font-mono); font-size: 12.5px; font-variant-numeric: tab
 #adddata-drop span { font-size: 11px; color: var(--text-3); }
 
 /* The whole map is a drop target; this says so the moment a file is over it. */
+/* Over everything, including the docks and the ribbon, because the drop is
+   accepted over everything. */
 #drop-veil {
-  position: absolute; inset: 0; z-index: 40;
+  position: fixed; inset: 0; z-index: 95;
   display: grid; place-items: center;
   background: color-mix(in srgb, var(--accent) 14%, rgba(0, 0, 0, .35));
   border: 3px dashed var(--accent);
@@ -1353,22 +1365,6 @@ td { font-family: var(--font-mono); font-size: 12.5px; font-variant-numeric: tab
 #menubar[hidden],
 #header[hidden],
 #controls[hidden] { display: none !important; }
-
-/* The legend sits where a printed map puts it: bottom left, over the map,
-   out of the way of the docks either side. It is only there when there is
-   something to explain. */
-#legend {
-  top: auto;
-  bottom: var(--pad);
-  left: var(--pad);
-  width: 246px;
-  max-height: calc(100% - var(--pad) * 2);
-  display: flex;
-  flex-direction: column;
-}
-#legend[hidden] { display: none !important; }
-#workspace:has(#dock-left:not([hidden])) #legend { left: 344px; }
-#legend-body { overflow-y: auto; }
 
 .legend-group + .legend-group {
   margin-top: 10px;
@@ -1561,6 +1557,134 @@ td { font-family: var(--font-mono); font-size: 12.5px; font-variant-numeric: tab
   .lib-search { grid-column: 1 / -1; }
 }
 
+/* ── Symbology under the layer, as a desktop GIS lists it ──────────── */
+
+.lc-legend { margin: 7px 0 2px 26px; }
+.lc-legend-field {
+  font-size: 11px; color: var(--text-3); margin-bottom: 4px;
+  font-family: var(--font-mono);
+}
+.lc-legend-row {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 11.5px; color: var(--text-2); padding: 1.5px 0;
+}
+.lc-legend-row i {
+  width: 16px; height: 11px; border-radius: 2px; flex: none;
+  border: 1px solid rgba(0, 0, 0, .2);
+}
+.lc-legend-note { font-size: 10.8px; color: var(--text-3); margin: 5px 0 0 26px; }
+.lc-legend .lc-legend-note { margin-left: 0; }
+.lc-ramp { height: 11px; border-radius: 2px; }
+.lc-legend-ends {
+  display: flex; justify-content: space-between;
+  font-size: 10.5px; color: var(--text-3); margin-top: 3px;
+  font-family: var(--font-mono);
+}
+.lc-mini {
+  width: 22px; height: 22px; display: grid; place-items: center; flex: none;
+  background: none; border: 1px solid transparent; border-radius: var(--radius);
+  color: var(--text-3); cursor: pointer;
+}
+.lc-mini:hover { background: var(--surface-2); color: var(--accent); border-color: var(--border); }
+.lc-mini svg { width: 13px; height: 13px; }
+
+/* ── The attribute table ─────────────────────────────────────────────── */
+
+#table-dock {
+  grid-row: 3;
+  height: 260px; min-height: 120px;
+  display: flex; flex-direction: column; min-width: 0;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  overflow: hidden;
+}
+#table-dock[hidden] { display: none; }
+
+#table-grip {
+  height: 5px; flex: none; cursor: ns-resize;
+  background: transparent;
+}
+#table-grip:hover { background: var(--accent); opacity: .5; }
+
+#table-head-bar {
+  flex: none;
+  display: flex; align-items: center; gap: 9px;
+  padding: 7px 12px 8px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-2);
+}
+#table-head-bar .table-icon { width: 16px; height: 16px; color: var(--accent); flex: none; }
+#table-head-bar strong { font-size: 13px; color: var(--text); }
+#table-count { font-size: 11.5px; color: var(--text-2); margin-right: 6px; }
+#table-filter {
+  margin-left: auto; width: 180px; height: 28px; padding: 0 10px;
+  background: var(--surface); color: var(--text);
+  border: 1px solid var(--border); border-radius: var(--radius);
+  font: inherit; font-size: 12.5px;
+}
+#table-close {
+  width: 26px; height: 26px; display: grid; place-items: center; flex: none;
+  background: none; border: 0; border-radius: var(--radius);
+  color: var(--text-3); cursor: pointer;
+}
+#table-close:hover { background: var(--surface); color: var(--text); }
+#table-close svg { width: 14px; height: 14px; }
+
+#table-selector {
+  flex: none;
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-2);
+}
+#table-selector[hidden] { display: none; }
+#table-selector select, #table-selector input {
+  height: 28px; padding: 0 8px;
+  background: var(--surface); color: var(--text);
+  border: 1px solid var(--border); border-radius: var(--radius);
+  font: inherit; font-size: 12.5px;
+}
+#table-selector .hint { font-size: 11.5px; color: var(--text-3); }
+
+#table-scroll { flex: 1; min-height: 0; overflow: auto; }
+
+#table-grid {
+  border-collapse: separate; border-spacing: 0;
+  font-size: 12.3px; width: max-content; min-width: 100%;
+}
+#table-grid th, #table-grid td {
+  padding: 5px 11px; text-align: left; white-space: nowrap;
+  border-bottom: 1px solid var(--border);
+  max-width: 320px; overflow: hidden; text-overflow: ellipsis;
+}
+#table-grid thead th {
+  position: sticky; top: 0; z-index: 2;
+  background: var(--surface-2); color: var(--text);
+  font-weight: 600; font-size: 11.5px;
+  cursor: pointer; user-select: none;
+  border-bottom: 1px solid var(--border-strong, var(--border));
+}
+#table-grid thead th:hover { color: var(--accent); }
+#table-grid th.oid, #table-grid td.oid {
+  width: 56px; color: var(--text-3);
+  font-family: var(--font-mono); font-size: 11px;
+  position: sticky; left: 0; background: var(--surface); z-index: 1;
+}
+#table-grid thead th.oid { z-index: 3; background: var(--surface-2); cursor: default; }
+#table-grid td[data-num] { font-family: var(--font-mono); font-size: 11.5px; }
+#table-grid td.null { color: var(--text-3); }
+#table-grid tbody tr:nth-child(even) { background: color-mix(in srgb, var(--surface-2) 45%, transparent); }
+#table-grid tbody tr:hover { background: var(--surface-2); }
+#table-grid tbody tr.on,
+#table-grid tbody tr.on td.oid {
+  background: color-mix(in srgb, var(--accent) 22%, var(--surface));
+}
+#table-grid tbody tr.on td { color: var(--text); }
+#table-grid tr.more td {
+  color: var(--text-3); font-style: italic; text-align: center; padding: 12px;
+  white-space: normal;
+}
+
 </style>
 </head>
 
@@ -1581,7 +1705,23 @@ td { font-family: var(--font-mono); font-size: 12.5px; font-variant-numeric: tab
       </button>
     </div>
   </div>
-  <div id="ribbon-body"></div>
+  <div id="ribbon-band">
+    <button type="button" class="rib-scroll" data-scroll="-1" hidden
+            aria-label="Scroll the ribbon left">
+      <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
+        <path d="M10 3 5 8l5 5" stroke="currentColor" stroke-width="1.6"
+              stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </button>
+    <div id="ribbon-body"></div>
+    <button type="button" class="rib-scroll right" data-scroll="1" hidden
+            aria-label="Scroll the ribbon right">
+      <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
+        <path d="M6 3l5 5-5 5" stroke="currentColor" stroke-width="1.6"
+              stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </button>
+  </div>
 </div>
 
 <!-- The old menu bar. Hidden, and kept only because the layer dock, the
@@ -1715,19 +1855,6 @@ td { font-family: var(--font-mono); font-size: 12.5px; font-variant-numeric: tab
     <span>GeoJSON · CSV · GPX · KML · zipped Shapefile</span>
   </div>
 </div>
-
-<section id="legend" class="card" data-open="true" aria-label="Legend" hidden>
-  <button id="legend-head" aria-expanded="true" aria-controls="legend-body">
-    <span>
-      <span id="legend-title">Legend</span>
-      <span id="legend-sub">Nothing drawn</span>
-    </span>
-    <svg id="legend-chev" width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden="true">
-      <path d="M3 5l3.5 3.5L10 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
-    </svg>
-  </button>
-  <div id="legend-body"></div>
-</section>
 
 <div id="header" hidden>
   <span id="wordmark">
@@ -2152,6 +2279,55 @@ ORDER BY km2 DESC;</textarea>
 </aside>
 
 </div><!-- /#workspace -->
+
+<!-- The attribute table, docked under the map. Beside the data it describes,
+     not in a window over it. -->
+<section id="table-dock" hidden aria-label="Attribute table">
+  <div id="table-grip" role="separator" aria-orientation="horizontal"
+       aria-label="Resize the attribute table"></div>
+
+  <header id="table-head-bar">
+    <svg viewBox="0 0 16 16" fill="none" aria-hidden="true" class="table-icon">
+      <rect x="2" y="3" width="12" height="10" rx="1.2" stroke="currentColor" stroke-width="1.3"/>
+      <path d="M2 6.4h12M6.2 6.4V13" stroke="currentColor" stroke-width="1.3"/>
+    </svg>
+    <strong id="table-title">Attribute table</strong>
+    <span id="table-count"></span>
+
+    <button type="button" class="btn btn-quiet" id="table-select">Select by attribute</button>
+    <button type="button" class="btn btn-quiet" id="table-zoom">Zoom to selection</button>
+    <button type="button" class="btn btn-quiet" id="table-switch">Switch</button>
+    <button type="button" class="btn btn-quiet" id="table-clear">Clear</button>
+    <button type="button" class="btn btn-quiet" id="table-csv">CSV</button>
+
+    <input id="table-filter" type="search" placeholder="Filter rows…" aria-label="Filter rows">
+    <button type="button" id="table-close" aria-label="Close the table">
+      <svg viewBox="0 0 15 15" fill="none"><path d="M4 4l7 7M11 4l-7 7" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+    </button>
+  </header>
+
+  <div id="table-selector" hidden>
+    <select id="table-sel-field" aria-label="Field"></select>
+    <select id="table-sel-op" aria-label="Comparison">
+      <option value="=">is</option>
+      <option value="!=">is not</option>
+      <option value="&gt;">is more than</option>
+      <option value="&lt;">is less than</option>
+      <option value="contains">contains</option>
+    </select>
+    <input id="table-sel-value" type="text" placeholder="Value" aria-label="Value">
+    <button type="button" class="btn" id="table-sel-run">Select</button>
+    <span class="hint">A column, a comparison and a value. For anything more,
+      the SQL workspace is a tab away.</span>
+  </div>
+
+  <div id="table-scroll">
+    <table id="table-grid">
+      <thead id="table-head"></thead>
+      <tbody id="table-body"></tbody>
+    </table>
+  </div>
+</section>
 
 <div id="statusbar">
   <span class="sb-item"><b>Coords</b><span id="sb-coords">-</span></span>
@@ -3527,120 +3703,77 @@ function legendNumber(value) {
   return value.toLocaleString(undefined, { maximumFractionDigits: digits });
 }
 
-function renderLegend() {
-  const legend = document.getElementById("legend");
-  const body = document.getElementById("legend-body");
-  const sub = document.getElementById("legend-sub");
-  if (!body) return;
+/* The symbology a layer is drawn with, for that layer's card in Contents.
 
-  const c = colours();
-  const groups = [];
+   This used to be a card floating at the bottom left of the map, which is
+   not where a GIS puts a legend: ArcGIS Pro and RustGIS both list the classes
+   under the layer in the contents tree, and for good reason. A legend beside
+   the layer list answers "what is this layer drawn by"; a legend over the map
+   covers the map and has to be read against a list somewhere else to know
+   which layer each block belongs to.
 
-  // Layers this session added: results, fetched data, Earth Engine rasters.
-  // A classified raster brings its class table with it; anything else is one
-  // swatch in a group of its own kind.
-  const drawn = [...userLayers.values()].filter((e) => e.visible !== false);
-  const plain = [];
-
-  // Anything graduated by a value comes first and says which value: that is
-  // what the map is about, and the rest is context. A layer explained here is
-  // not repeated as a swatch below.
-  const explained = new Set();
-  for (const target of styleTargets()) {
-    const st = styleState[target.key];
-    if (!st?.classified) continue;
+   The printed map still gets a proper legend - see drawLegend - because a
+   sheet of paper has no layer list to read the colours against. */
+function legendForLayer(key) {
+  const st = styleState[key];
+  if (st?.classified) {
     const { field, classes, mode, count } = st.classified;
-    explained.add(target.key);
-    for (const id of target.ids) explained.add(id);
-
-    groups.push(`
-      <div class="legend-group">
-        <h4>${escapeHtml(target.label)}</h4>
-        <div class="legend-field">${escapeHtml(field)}</div>
-        ${classes.map((cl) => `
-          <div class="legend-row">
-            <i style="background:${cl.colour}"></i>
-            <span>${legendNumber(cl.from)} – ${legendNumber(cl.to)}</span>
-          </div>`).join("")}
-        <p class="legend-note">${count} feature${count === 1 ? "" : "s"},
-          ${mode === "equal" ? "equal interval" : "equal count"}</p>
-      </div>`);
+    return `<div class="lc-legend">
+      <div class="lc-legend-field">${escapeHtml(field)}</div>
+      ${classes.map((cl) => `<div class="lc-legend-row">
+          <i style="background:${cl.colour}"></i>
+          <span>${legendNumber(cl.from)} – ${legendNumber(cl.to)}</span>
+        </div>`).join("")}
+      <p class="lc-legend-note">${count} feature${count === 1 ? "" : "s"},
+        ${mode === "equal" ? "equal interval" : "equal count"}</p>
+    </div>`;
   }
 
-  for (const entry of [...drawn].reverse()) {
-    if (explained.has(entry.id) || entry.layerIds.some((l) => explained.has(l))) continue;
-    const l = entry.legend;
-    if (l?.type === "classes" && l.names?.length) {
-      groups.push(`
-        <div class="legend-group">
-          <h4>${escapeHtml(entry.label)}</h4>
-          ${l.names.map((name, i) => `
-            <div class="legend-row">
-              <i style="background:#${escapeHtml(String(l.colours[i]).replace(/^#/, ""))}"></i>
-              <span>${escapeHtml(name)}</span>
-              ${l.values ? `<span class="legend-value">${escapeHtml(String(l.values[i]))}</span>` : ""}
-            </div>`).join("")}
-        </div>`);
-    } else if (l?.type === "ramp" && l.stops?.length) {
-      groups.push(`
-        <div class="legend-group">
-          <h4>${escapeHtml(entry.label)}</h4>
-          <div class="legend-ramp" style="background:linear-gradient(90deg,${
-            l.stops.map((s) => "#" + String(s).replace(/^#/, "")).join(",")})"></div>
-          <div class="legend-ends">
-            <span>${escapeHtml(String(l.min ?? ""))}</span>
-            <span>${escapeHtml(String(l.max ?? ""))}</span>
-          </div>
-        </div>`);
-    } else {
-      plain.push(`
-        <div class="legend-row">
-          <i style="background:${entry.colour ? escapeHtml(entry.colour) : "var(--text-3)"}${
-            entry.kind === "raster" && !entry.colour
-              ? ";background-image:linear-gradient(135deg,transparent 45%,rgba(255,255,255,.5) 45% 55%,transparent 55%)"
-              : ""}"></i>
-          <span>${escapeHtml(entry.label)}</span>
-          ${entry.kind === "raster" ? '<span class="legend-value">raster</span>' : ""}
-        </div>`);
-    }
+  const entry = userLayers.get(key);
+  const legend = entry?.legend;
+  if (!legend) return "";
+
+  if (legend.type === "classes") {
+    return `<div class="lc-legend">
+      ${legend.names.map((name, i) => `<div class="lc-legend-row">
+          <i style="background:${legend.colours[i]}"></i>
+          <span>${escapeHtml(name)}</span>
+        </div>`).join("")}
+    </div>`;
   }
-
-  if (plain.length) {
-    groups.push(`<div class="legend-group"><h4>On the map</h4>${plain.join("")}</div>`);
+  if (legend.type === "ramp") {
+    const stops = legend.stops.map((s) => s.colour ?? s).join(", ");
+    return `<div class="lc-legend">
+      <div class="lc-ramp" style="background:linear-gradient(to right, ${stops})"></div>
+      <div class="lc-legend-ends">
+        <span>${legendNumber(legend.min)}</span><span>${legendNumber(legend.max)}</span>
+      </div>
+    </div>`;
   }
+  return "";
+}
 
-  // The reference layers keep the legend they were written with.
-  const shown = LAYERS.filter((l) => state.active.has(l.id));
-  const ramp = [...shown].reverse().find((l) => l.legend?.type === "ramp");
-  const lead = ramp ?? shown[shown.length - 1];
+function renderLegend() {
+  // Kept as the one name every path already calls after it changes what is
+  // drawn - turning a layer on, styling one, removing one, swapping the
+  // basemap. What it does now is redraw the contents list, because that is
+  // where the symbology lives. The printed map builds its own legend from
+  // exportLegendModel(), which never read this DOM.
+  renderContentsSymbology();
+}
 
-  if (lead) {
-    const inner = lead.legend.type === "ramp"
-      ? `<div class="ramp" style="background:linear-gradient(90deg, ${
-           c[lead.legend.ramp].join(", ")})"></div>
-         <div class="ramp-ticks">${
-           lead.legend.ticks.map((t) => `<span>${t}</span>`).join("")}</div>`
-      : `<div class="swatches">${shown.map((l) =>
-           `<span class="swatch"><i style="background:${c[l.key]}"></i>${escapeHtml(l.name)}</span>`
-         ).join("")}</div>`;
-    groups.push(`
-      <div class="legend-group">
-        <h4>Reference</h4>${inner}
-        <p class="legend-note">${lead.legend.note}</p>
-      </div>`);
+/* Repaints the layer cards so each shows the classes it is currently drawn
+   with. Separate from renderUserLayers only to avoid the two calling each
+   other in a loop. */
+function renderContentsSymbology() {
+  if (!shellReady) return;
+  for (const card of document.querySelectorAll("[data-card]")) {
+    const key = card.dataset.card;
+    const existing = card.querySelector(".lc-legend");
+    const html = legendForLayer(key);
+    if (existing) existing.outerHTML = html;
+    else if (html) card.insertAdjacentHTML("beforeend", html);
   }
-
-  if (!groups.length) {
-    legend.hidden = true;
-    sub.textContent = "Nothing drawn";
-    body.innerHTML = "";
-    return;
-  }
-
-  legend.hidden = false;
-  const count = drawn.length + shown.length;
-  sub.textContent = count === 1 ? "1 layer drawn" : `${count} layers drawn`;
-  body.innerHTML = groups.join("");
 }
 
 /* ---------------------------------------------------------------------------
@@ -3781,14 +3914,6 @@ document.getElementById("btn-locate").addEventListener("click", () => {
     state.located = new maplibregl.Marker({ element: el }).setLngLat(at).addTo(map);
     map.flyTo({ center: at, zoom: 11, duration: 1800 });
   }, () => {}, { enableHighAccuracy: true, timeout: 8000 });
-});
-
-// Legend collapse
-const legend = document.getElementById("legend");
-document.getElementById("legend-head").addEventListener("click", (e) => {
-  const open = legend.dataset.open === "true";
-  legend.dataset.open = String(!open);
-  e.currentTarget.setAttribute("aria-expanded", String(!open));
 });
 
 // Theme
@@ -4430,6 +4555,7 @@ async function mapResult() {
     registerUserLayer({
       id: "qr", label: "Query result", kind: "result",
       layerIds: ["qr-fill", "qr-line", "qr-point"], sourceId: "qr",
+      collection: { type: "FeatureCollection", features },
       bbox: bounds.isEmpty() ? null : bounds.toArray().flat(),
       note: `${features.length.toLocaleString()} features`
             + (joinedOn ? ` · geometry from ${joinedOn}` : "") + clipNote
@@ -5596,7 +5722,7 @@ function drawLive(id, source, collection) {
   registerUserLayer({
     id: sourceId, label: `${source.label} (live)`, kind: "live",
     layerIds: ["fill", "3d", "line", "circle"].map((s) => `${sourceId}-${s}`),
-    sourceId, bbox: liveBbox,
+    sourceId, bbox: liveBbox, collection,
     note: `${collection.features.length} features from OpenStreetMap`
   });
 
@@ -5980,7 +6106,8 @@ function openClipPicker() {
    once and everything else follows, so a new kind of output gets managed for
    free rather than needing its own controls.                                */
 
-function registerUserLayer({ id, label, kind, layerIds, sourceId, bbox, note, colour, legend }) {
+function registerUserLayer({ id, label, kind, layerIds, sourceId, bbox, note,
+                             colour, legend, collection }) {
   const key = id || `layer-${++userLayerSeq}`;
   userLayers.set(key, {
     id: key,
@@ -5994,6 +6121,12 @@ function registerUserLayer({ id, label, kind, layerIds, sourceId, bbox, note, co
     // { type: "ramp", stops, min, max } - whatever the layer can explain
     // about itself. Absent means a single swatch of `colour`.
     legend: legend || null,
+    // The features themselves, when the producer has them. The toolbox and
+    // the attribute table used to dig them back out of `source._data`, which
+    // is a MapLibre private field: it is undefined for a source added from a
+    // URL, it is not part of any API, and a release is free to rename it.
+    // Whoever drew the layer already had the collection in hand.
+    collection: collection || null,
     note: note || "",
     visible: true,
     opacity: 1,
@@ -7614,6 +7747,40 @@ window.__ghLibrary = {
   filter: (what, value) => { libraryState[what] = value; renderLibrary(); }
 };
 
+window.__ghToolbox = {
+  open: (category) => openToolbox(category),
+  tools: () => Object.entries(TOOLBOX).map(([id, tool]) => ({
+    id, name: tool.name, category: tool.category,
+    params: Object.entries(tool.params).map(([k, s]) =>
+      `${k}:${s.kind}${s.required ? "!" : ""}`)
+  })),
+  layers: () => toolboxLayers().map((l) => ({ id: l.id, label: l.label, count: l.count ?? null })),
+  show: (id) => selectTool(id),
+  set: (key, value) => { toolboxState.values[key] = value; },
+  run: (id) => runToolboxTool(id),
+  status: () => document.getElementById("tb-status")?.textContent?.trim() ?? "",
+  values: () => ({ ...toolboxState.values, selected: toolboxState.selected })
+};
+
+window.__ghTable = {
+  open: (id) => openAttributeTable(id),
+  close: () => closeAttributeTable(),
+  state: () => ({ layer: tableState.layerId, label: tableState.label,
+                  rows: tableState.rows.length,
+                  fields: tableState.fields.map((f) => `${f.name}:${f.type}`),
+                  selected: [...tableState.selected],
+                  sort: tableState.sort, shown: tableVisibleRows().length }),
+  filter: (text) => { tableState.filter = text; renderAttributeTable(); },
+  sort: (column, ascending) => {
+    tableState.sort = { column, ascending }; renderAttributeTable();
+  },
+  pick: (i) => {
+    tableState.selected.add(i); renderAttributeTable(); drawTableHighlight();
+  },
+  highlighted: () => (map.getSource("attr-table-highlight") ? 1 : 0),
+  csv: () => tableToCsv()
+};
+
 window.__ghBasemap = {
   set: (id) => setBasemap(id),
   current: () => state.basemap,
@@ -7891,10 +8058,12 @@ function layerCard(entry) {
         ${action("down", "down", "Send back")}
         ${action("zoom", "zoom", "Zoom to this layer")}
         ${action("style", "style", "Style it")}
-        ${action("table", "table", "Open in the SQL workspace")}
+        ${action("table", "table", "Open its attribute table")}
         ${action("info", "info", "What is this")}
         ${action("remove", "trash", "Remove", true)}
       </div>` : ""}
+
+      ${legendForLayer(entry.id)}
 
       ${selected && entry.note ? `<p class="tb-hint" style="margin:7px 0 0">
         ${escapeHtml(entry.note)} · added ${entry.added}</p>` : ""}
@@ -7925,8 +8094,12 @@ function baseLayerToggles() {
                   aria-label="Toggle ${escapeHtml(l.name)}">${on ? ICON.eye : ICON.eyeOff}</button>
           <span class="lc-swatch" style="background:${l.key ? c[l.key] : "var(--text-3)"}"></span>
           <span class="lc-name">${escapeHtml(l.name)}</span>
+          ${on && l.file ? `<button type="button" class="lc-mini" data-base-table="${l.id}"
+             title="Open the attribute table for ${escapeHtml(l.name)}">${ICON.table}</button>` : ""}
           <span class="lc-kind">${off ? "needs database" : escapeHtml(l.meta ?? "")}</span>
         </div>
+        ${on ? legendForLayer(l.id) : ""}
+        ${on && l.legend?.note ? `<p class="lc-legend-note">${escapeHtml(l.legend.note)}</p>` : ""}
       </div>`;
     }).join("")}`).join("");
 }
@@ -7964,12 +8137,14 @@ function wireLayerCards(host) {
         setStatus(`${entry.label} - ${entry.note || KIND_LABEL[entry.kind]}, added ${entry.added}`);
         return;
       }
-      if (what === "table") {
-        document.getElementById("sql").value =
-          `-- ${entry.label}\n-- Drawn layers are queryable once written to a table.\n`
-          + `SELECT * FROM ghana.district LIMIT 20;`;
-        showPanel("query");
-      }
+      if (what === "table") openAttributeTable(entry.id);
+    });
+  }
+
+  for (const el of host.querySelectorAll("[data-base-table]")) {
+    el.addEventListener("click", (e) => {
+      e.stopPropagation();
+      openAttributeTable(`base-${el.dataset.baseTable}`);
     });
   }
 
@@ -8260,7 +8435,7 @@ function toolboxLayers() {
   const options = [];
   for (const entry of [...userLayers.values()].reverse()) {
     const source = map.getSource(entry.sourceId);
-    const data = source?._data ?? source?.serialize?.().data;
+    const data = entry.collection ?? source?._data ?? source?.serialize?.().data;
     if (!data || typeof data === "string" || !data.features?.length) continue;
     options.push({ id: entry.id, label: entry.label, collection: data,
                    count: data.features.length });
@@ -8298,11 +8473,21 @@ async function boundaryFeature(value, t) {
 
   const column = kind === "region" ? "adm1_name" : "adm2_name";
   const table = kind === "region" ? "region" : "district";
+  // Named boundaries come out of the database. Without it this threw
+  // "Cannot read properties of null" from inside the tool, which told the
+  // reader nothing at all about what was missing or what to do instead.
+  if (!conn) {
+    throw new Error(
+      `The boundaries are not loaded, so "${name}" cannot be resolved. `
+      + `Use the current view, or wait for the data to finish loading.`);
+  }
   const safe = String(name).replace(/'/g, "''");
   const result = await conn.query(
     `SELECT ${column} AS name, geom FROM ghana.${table} WHERE ${column} = '${safe}' LIMIT 1;`);
   const row = result.toArray()[0]?.toJSON();
-  if (!row?.geom) return null;
+  if (!row?.geom) {
+    throw new Error(`No boundary called "${name}" in the ${kind} table.`);
+  }
   return { label: row.name, geometry: JSON.parse(row.geom) };
 }
 
@@ -8375,10 +8560,13 @@ function renderToolboxList() {
 }
 
 function selectTool(id) {
+  // Only a different tool starts with a blank form. Re-selecting the one
+  // already open - which the list does on every repaint - must not throw away
+  // what has been filled in.
+  if (toolboxState.selected !== id) toolboxState.values = {};
   toolboxState.selected = id;
-  toolboxState.values = {};
   renderToolboxList();
-  renderToolDetail();
+  return renderToolDetail();
 }
 
 /* The parameter form, generated from the tool's own declaration. */
@@ -8446,8 +8634,18 @@ async function renderToolDetail() {
     <div class="tb-status" id="tb-status"></div>`;
 
   for (const el of host.querySelectorAll("[data-param]")) {
-    el.addEventListener("change", () => { toolboxState.values[el.dataset.param] = el.value; });
-    toolboxState.values[el.dataset.param] = el.value;
+    const key = el.dataset.param;
+    // The form follows the state, not the other way round. This read the
+    // DOM's defaults into the state instead, so anything set before the form
+    // finished rendering - and this function is async, it awaits the boundary
+    // list - was silently replaced by an empty string.
+    const held = toolboxState.values[key];
+    if (held !== undefined && held !== "") {
+      const match = [...el.options ?? []].some((o) => o.value === held);
+      if (!el.options || match) el.value = held;
+    }
+    el.addEventListener("change", () => { toolboxState.values[key] = el.value; });
+    toolboxState.values[key] = el.value;
   }
   document.getElementById("tb-go").addEventListener("click", () => runToolboxTool(id));
 }
@@ -8498,7 +8696,13 @@ async function runToolboxTool(id) {
   }
 
   say("Running…");
-  window.ghLog?.("info", `Tool: ${tool.name}`, jsonSafe(
+  // agentJson, not jsonSafe. jsonSafe was never defined anywhere in this
+  // file, so this line threw a ReferenceError on the very first statement of
+  // every run - outside the try below, which is why it surfaced as the whole
+  // toolbox being inert rather than as one tool failing. Not one
+  // geoprocessing tool had ever run. tests/toolbox.cjs now runs three of them
+  // end to end, which is how this was found.
+  window.ghLog?.("info", `Tool: ${tool.name}`, agentJson(
     Object.fromEntries(Object.entries(args).map(([k, v]) =>
       [k, v?.label ?? v]))));
 
@@ -8543,7 +8747,7 @@ function drawToolboxResult(collection, label) {
              "circle-stroke-width": 1, "circle-stroke-color": colours().ground } });
 
   registerUserLayer({
-    id, label, kind: "tool", sourceId: id,
+    id, label, kind: "tool", sourceId: id, collection,
     layerIds: [`${id}-fill`, `${id}-line`, `${id}-point`],
     bbox: bboxOfCollection(collection),
     colour,
@@ -9454,8 +9658,9 @@ const COMMANDS = {
   "table.open": {
     id: "table.open",
     label: "Open Table",
-    desc: "The selected layer's attributes.",
-    icon: "table"
+    desc: "The selected layer's attributes, in a table under the map.",
+    icon: "table",
+    run: () => openAttributeTable()
   },
   "table.addField": {
     id: "table.addField",
@@ -10326,7 +10531,8 @@ const COMMANDS = {
     id: "table.attributes",
     label: "Attributes",
     desc: "Open the attribute table of the selected layer.",
-    icon: "select"
+    icon: "table",
+    run: () => openAttributeTable()
   },
   "tool.zoomBox": {
     id: "tool.zoomBox",
@@ -11756,6 +11962,7 @@ function renderRibbon() {
     `<button type="button" class="ribbon-tab" data-tab="${escapeHtml(t.tab)}"
              aria-selected="${t.tab === ribbonTab}">${escapeHtml(t.tab)}</button>`).join("");
 
+  if (ribbonScrollSync) requestAnimationFrame(ribbonScrollSync);
   const tab = RIBBON.find((t) => t.tab === ribbonTab) ?? RIBBON[0];
   body.innerHTML = tab.groups.map((g) => {
     const big = g.controls.filter((c) => c.size === "big");
@@ -12162,15 +12369,8 @@ function removeSelectedLayer() {
   return undefined;
 }
 
-function openSelectedLayerTable() {
-  const entry = selectedLayerEntry();
-  showPanel("query");
-  if (entry) {
-    document.getElementById("sql").value =
-      `-- ${entry.label}\n-- Drawn layers are queryable once written to a table.\n`
-      + `SELECT * FROM ghana.district LIMIT 20;`;
-  }
-  return undefined;
+function openSelectedLayerTable(layerId) {
+  return openAttributeTable(layerId);
 }
 
 
@@ -12494,7 +12694,7 @@ function drawCollection(label, collection, note) {
              "circle-stroke-width": 1, "circle-stroke-color": colours().ground } });
 
   const box = bboxOfCollection(collection);
-  registerUserLayer({ id, label, kind: "vector", sourceId: id,
+  registerUserLayer({ id, label, kind: "vector", sourceId: id, collection,
     layerIds: [`${id}-fill`, `${id}-line`, `${id}-point`],
     bbox: box, colour, note });
 
@@ -12603,31 +12803,61 @@ async function ingestUrl(url) {
   }
 }
 
-/* Drop a file anywhere on the map. The first thing anyone tries. */
+/* Drop a file anywhere in the window. The first thing anyone tries.
+
+   The target used to be the map alone, and that is not what dropping a file
+   on an application means. A drop two pixels into the layer list, or onto the
+   ribbon, or onto the status bar, went to the browser instead - and the
+   browser's default for a dropped GeoJSON is to navigate to it, which throws
+   away the session and looks like the file broke the app.
+
+   So the window takes the drop, the default is prevented everywhere, and the
+   only places that handle it themselves are the ones with a reason to: the
+   Add data pane's own drop zone. */
 function wireDropTarget() {
-  const target = document.getElementById("map-wrap");
   const veil = document.getElementById("drop-veil");
-  if (!target || !veil) return;
+  const carriesFiles = (e) =>
+    [...(e.dataTransfer?.types || [])].includes("Files");
 
   let depth = 0;
-  const show = (on) => { veil.hidden = !on; };
+  const show = (on) => { if (veil) veil.hidden = !on; };
 
-  target.addEventListener("dragenter", (e) => {
-    if (![...(e.dataTransfer?.types || [])].includes("Files")) return;
-    e.preventDefault(); depth += 1; show(true);
+  window.addEventListener("dragenter", (e) => {
+    if (!carriesFiles(e)) return;
+    e.preventDefault();
+    depth += 1;
+    show(true);
   });
-  target.addEventListener("dragover", (e) => {
-    if (![...(e.dataTransfer?.types || [])].includes("Files")) return;
+
+  window.addEventListener("dragover", (e) => {
+    if (!carriesFiles(e)) return;
+    // Without this the browser refuses the drop and then opens the file
+    // itself, which replaces the page.
     e.preventDefault();
     e.dataTransfer.dropEffect = "copy";
   });
-  target.addEventListener("dragleave", () => { depth = Math.max(0, depth - 1); if (!depth) show(false); });
-  target.addEventListener("drop", (e) => {
-    if (!e.dataTransfer?.files?.length) return;
-    e.preventDefault(); depth = 0; show(false);
+
+  // dragleave fires on every boundary between child elements, so it is
+  // counted rather than trusted; a plain hide flickers the veil continuously
+  // as the pointer crosses the ribbon.
+  window.addEventListener("dragleave", (e) => {
+    if (!carriesFiles(e)) return;
+    depth = Math.max(0, depth - 1);
+    if (!depth) show(false);
+  });
+
+  window.addEventListener("drop", (e) => {
+    if (!carriesFiles(e)) return;
+    e.preventDefault();
+    depth = 0;
+    show(false);
+    if (!e.dataTransfer.files?.length) return;
     openAddData();
     ingestFiles(e.dataTransfer.files);
   });
+
+  // A file that misses the window entirely still must not navigate.
+  window.addEventListener("dragend", () => { depth = 0; show(false); });
 }
 
 function wireAddData() {
@@ -12851,6 +13081,437 @@ function showPanel(name, { toggle = false } = {}) {
 function hidePanel() {
   document.getElementById("panel").hidden = true;
   syncMapTools();
+}
+
+/* ---------------------------------------------------------------------------
+   The attribute table
+
+   Docked under the map, as it is in ArcGIS Pro and in RustGIS, because that is
+   where the rows belong: beside the map they describe, not in a window over
+   it. Sort by a column, filter the rows, click a row and the feature lights up
+   on the map, click a feature and the row scrolls into view.
+
+   What was here before opened the SQL workspace and typed a comment into it.
+   That is not an attribute table. It is also not an answer to "what is in this
+   layer", which is the question - and the one a person asks within a minute of
+   adding anything.
+--------------------------------------------------------------------------- */
+
+const tableState = {
+  layerId: null,        // the user layer or catalogue layer being shown
+  label: "",
+  fields: [],           // [{ name, type }]
+  rows: [],             // the features, in source order
+  sort: null,           // { column, ascending }
+  filter: "",
+  selected: new Set(),  // indices into rows
+  height: 260
+};
+
+const TABLE_HL_SOURCE = "attr-table-highlight";
+
+/* What a column holds, worked out from the values rather than declared. The
+   type decides how the column sorts - "10" before "9" is wrong for a number
+   and right for a name - and it is shown in the header tooltip. */
+function fieldType(rows, name) {
+  let seen = 0, numbers = 0;
+  for (const row of rows) {
+    const v = row.properties?.[name];
+    if (v === null || v === undefined || v === "") continue;
+    seen += 1;
+    if (typeof v === "number" || (typeof v === "string" && v.trim() !== ""
+        && Number.isFinite(Number(v)))) numbers += 1;
+    if (seen >= 60) break;
+  }
+  if (!seen) return "empty";
+  return numbers === seen ? "number" : "text";
+}
+
+function tableValue(feature, name) {
+  const v = feature.properties?.[name];
+  return v === null || v === undefined ? "" : v;
+}
+
+/* Opening it. The layer is whatever the toolbox would accept, so a catalogue
+   boundary and a dropped CSV open the same way. */
+async function openAttributeTable(layerId) {
+  const id = layerId || selectedLayerId
+    || [...userLayers.keys()].slice(-1)[0]
+    || (state.active.size ? `base-${[...state.active][0]}` : null);
+
+  if (!id) {
+    setStatus("No layer to open. Add one, or turn a boundary on in Contents.", true);
+    return;
+  }
+
+  const option = await resolveToolboxLayer(id).catch(() => null);
+  if (!option?.collection?.features?.length) {
+    // A raster has no rows, and saying so is more use than an empty grid.
+    const entry = userLayers.get(id);
+    setStatus(entry?.kind === "raster"
+      ? `${entry.label} is a raster - it has pixels, not rows. `
+        + `Summarise it in the Data pane to get a table.`
+      : "That layer has no features to show.", true);
+    return;
+  }
+
+  const features = option.collection.features;
+  const names = [...new Set(features.flatMap((f) => Object.keys(f.properties || {})))]
+    .filter((n) => n !== "geom" && n !== "geometry");
+
+  tableState.layerId = id;
+  tableState.label = option.label;
+  tableState.rows = features;
+  tableState.fields = names.map((name) => ({ name, type: fieldType(features, name) }));
+  tableState.sort = null;
+  tableState.filter = "";
+  tableState.selected.clear();
+
+  document.getElementById("table-dock").hidden = false;
+  document.body.dataset.table = "open";
+  renderAttributeTable();
+  document.getElementById("table-filter")?.focus();
+  window.ghLog?.("info", `Attribute table: ${option.label}`,
+                 `${features.length.toLocaleString()} rows, ${names.length} fields`);
+}
+
+function closeAttributeTable() {
+  document.getElementById("table-dock").hidden = true;
+  delete document.body.dataset.table;
+  tableState.layerId = null;
+  tableState.selected.clear();
+  clearTableHighlight();
+}
+
+/* Which rows are on screen: the filter, then the sort. Indices into
+   tableState.rows throughout, so a selection survives both. */
+function tableVisibleRows() {
+  const q = tableState.filter.trim().toLowerCase();
+  let indices = tableState.rows.map((_, i) => i);
+
+  if (q) {
+    indices = indices.filter((i) => {
+      const props = tableState.rows[i].properties || {};
+      for (const key of Object.keys(props)) {
+        const v = props[key];
+        if (v !== null && v !== undefined && String(v).toLowerCase().includes(q)) return true;
+      }
+      return false;
+    });
+  }
+
+  const sort = tableState.sort;
+  if (sort) {
+    const field = tableState.fields.find((f) => f.name === sort.column);
+    const numeric = field?.type === "number";
+    indices.sort((a, b) => {
+      const x = tableValue(tableState.rows[a], sort.column);
+      const y = tableValue(tableState.rows[b], sort.column);
+      let order;
+      if (numeric) {
+        const nx = Number(x), ny = Number(y);
+        // Blanks last whichever way the column is sorted; a blank is not a
+        // small number and sorting it as zero is a lie about the data.
+        if (!Number.isFinite(nx) && !Number.isFinite(ny)) order = 0;
+        else if (!Number.isFinite(nx)) return 1;
+        else if (!Number.isFinite(ny)) return -1;
+        else order = nx - ny;
+      } else {
+        order = String(x).localeCompare(String(y), undefined, { numeric: true });
+      }
+      return sort.ascending ? order : -order;
+    });
+  }
+  return indices;
+}
+
+function renderAttributeTable() {
+  const dock = document.getElementById("table-dock");
+  if (!dock || dock.hidden) return;
+
+  const visible = tableVisibleRows();
+  const total = tableState.rows.length;
+  const chosen = tableState.selected.size;
+
+  const title = document.getElementById("table-title");
+  if (title) title.textContent = tableState.label;
+  const count = document.getElementById("table-count");
+  if (count) {
+    count.textContent = `${chosen.toLocaleString()} of ${total.toLocaleString()} selected`
+      + (visible.length !== total ? ` · ${visible.length.toLocaleString()} shown` : "");
+  }
+
+  const head = document.getElementById("table-head");
+  const body = document.getElementById("table-body");
+  if (!head || !body) return;
+
+  const arrow = (name) => tableState.sort?.column !== name ? ""
+    : tableState.sort.ascending ? " ↑" : " ↓";
+
+  head.innerHTML = `<tr><th class="oid">OID</th>${tableState.fields.map((f) =>
+    `<th data-sort="${escapeHtml(f.name)}" title="${escapeHtml(f.name)} (${f.type}) - click to sort"
+         data-type="${f.type}">${escapeHtml(f.name)}${arrow(f.name)}</th>`).join("")}</tr>`;
+
+  // Two thousand rows is already more than anyone reads, and a hundred
+  // thousand <tr> elements is a frozen tab. The count above always says how
+  // many there really are.
+  const CAP = 2000;
+  const shown = visible.slice(0, CAP);
+
+  body.innerHTML = shown.map((i) => {
+    const feature = tableState.rows[i];
+    return `<tr data-row="${i}"${tableState.selected.has(i) ? ' class="on"' : ""}>
+      <td class="oid">${i + 1}</td>
+      ${tableState.fields.map((f) => {
+        const v = tableValue(feature, f.name);
+        const blank = v === "";
+        return `<td${blank ? ' class="null"' : ""}${f.type === "number" ? ' data-num="1"' : ""}>${
+          blank ? "-" : escapeHtml(String(v))}</td>`;
+      }).join("")}
+    </tr>`;
+  }).join("") + (visible.length > CAP
+    ? `<tr class="more"><td colspan="${tableState.fields.length + 1}">
+         ${(visible.length - CAP).toLocaleString()} more rows. Filter, or use the
+         SQL workspace for the whole table.</td></tr>` : "");
+
+  for (const th of head.querySelectorAll("[data-sort]")) {
+    th.addEventListener("click", () => {
+      const column = th.dataset.sort;
+      const current = tableState.sort;
+      // Ascending, descending, then back to the order the data came in.
+      tableState.sort = !current || current.column !== column
+        ? { column, ascending: true }
+        : current.ascending ? { column, ascending: false } : null;
+      renderAttributeTable();
+    });
+  }
+
+  for (const tr of body.querySelectorAll("[data-row]")) {
+    tr.addEventListener("click", (e) => {
+      const i = Number(tr.dataset.row);
+      if (e.metaKey || e.ctrlKey || e.shiftKey) {
+        tableState.selected.has(i) ? tableState.selected.delete(i)
+                                   : tableState.selected.add(i);
+      } else {
+        const only = tableState.selected.size === 1 && tableState.selected.has(i);
+        tableState.selected.clear();
+        if (!only) tableState.selected.add(i);
+      }
+      renderAttributeTable();
+      drawTableHighlight();
+    });
+  }
+}
+
+/* The selection, drawn on the map. Its own source rather than a filter on the
+   layer's: the layer may have no feature ids, a filter needs one, and
+   generating them means re-adding every source the session has drawn. */
+function drawTableHighlight() {
+  const features = [...tableState.selected]
+    .map((i) => tableState.rows[i])
+    .filter((f) => f && f.geometry);
+
+  const data = { type: "FeatureCollection", features };
+  const existing = map.getSource(TABLE_HL_SOURCE);
+  if (existing) {
+    existing.setData(data);
+  } else {
+    map.addSource(TABLE_HL_SOURCE, { type: "geojson", data });
+    map.addLayer({ id: `${TABLE_HL_SOURCE}-fill`, type: "fill", source: TABLE_HL_SOURCE,
+      filter: ["match", ["geometry-type"], ["Polygon", "MultiPolygon"], true, false],
+      paint: { "fill-color": "#39C0ED", "fill-opacity": 0.28 } });
+    map.addLayer({ id: `${TABLE_HL_SOURCE}-line`, type: "line", source: TABLE_HL_SOURCE,
+      filter: ["match", ["geometry-type"], ["LineString", "MultiLineString", "Polygon", "MultiPolygon"], true, false],
+      paint: { "line-color": "#39C0ED", "line-width": 2.4 } });
+    map.addLayer({ id: `${TABLE_HL_SOURCE}-point`, type: "circle", source: TABLE_HL_SOURCE,
+      filter: ["match", ["geometry-type"], ["Point", "MultiPoint"], true, false],
+      paint: { "circle-radius": 7, "circle-color": "#39C0ED", "circle-opacity": 0.55,
+               "circle-stroke-width": 2, "circle-stroke-color": "#39C0ED" } });
+  }
+}
+
+function clearTableHighlight() {
+  for (const suffix of ["fill", "line", "point"]) {
+    const id = `${TABLE_HL_SOURCE}-${suffix}`;
+    if (map.getLayer(id)) map.removeLayer(id);
+  }
+  if (map.getSource(TABLE_HL_SOURCE)) map.removeSource(TABLE_HL_SOURCE);
+}
+
+function zoomToTableSelection() {
+  const features = [...tableState.selected].map((i) => tableState.rows[i])
+    .filter((f) => f?.geometry);
+  if (!features.length) {
+    setStatus("Nothing is selected. Click a row first.", true);
+    return;
+  }
+  const box = bboxOfCollection({ type: "FeatureCollection", features });
+  if (box) map.fitBounds(box, { padding: 60, duration: 600 });
+}
+
+/* Select by attribute, in the plainest form that is still honest: a column, a
+   comparison and a value. Not SQL - the SQL workspace is a tab away and this
+   is for the common case of "show me the districts over 2000 km²". */
+function selectByTableExpression() {
+  const column = document.getElementById("table-sel-field")?.value;
+  const op = document.getElementById("table-sel-op")?.value;
+  const raw = (document.getElementById("table-sel-value")?.value ?? "").trim();
+  if (!column) return;
+
+  const field = tableState.fields.find((f) => f.name === column);
+  const numeric = field?.type === "number" && raw !== "" && Number.isFinite(Number(raw));
+  const target = numeric ? Number(raw) : raw.toLowerCase();
+
+  tableState.selected.clear();
+  tableState.rows.forEach((feature, i) => {
+    const v = tableValue(feature, column);
+    const value = numeric ? Number(v) : String(v).toLowerCase();
+    let hit = false;
+    if (numeric && !Number.isFinite(value)) hit = false;
+    else if (op === "=") hit = numeric ? value === target : value === target;
+    else if (op === "!=") hit = numeric ? value !== target : value !== target;
+    else if (op === ">") hit = numeric && value > target;
+    else if (op === "<") hit = numeric && value < target;
+    else if (op === "contains") hit = String(value).includes(String(target));
+    if (hit) tableState.selected.add(i);
+  });
+
+  renderAttributeTable();
+  drawTableHighlight();
+  setStatus(`${tableState.selected.size.toLocaleString()} of `
+    + `${tableState.rows.length.toLocaleString()} rows match.`);
+}
+
+function tableToCsv() {
+  const rows = tableVisibleRows();
+  const header = ["OID", ...tableState.fields.map((f) => f.name)];
+  const lines = [header.map(csvEscape).join(",")];
+  for (const i of rows) {
+    lines.push([i + 1, ...tableState.fields.map((f) =>
+      tableValue(tableState.rows[i], f.name))].map(csvEscape).join(","));
+  }
+  const name = tableState.label.toLowerCase().replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "") || "table";
+  download(`${name}.csv`, lines.join("\n"), "text/csv");
+}
+
+function wireAttributeTable() {
+  const dock = document.getElementById("table-dock");
+  if (!dock) return;
+
+  document.getElementById("table-close")?.addEventListener("click", closeAttributeTable);
+  document.getElementById("table-csv")?.addEventListener("click", tableToCsv);
+  document.getElementById("table-zoom")?.addEventListener("click", zoomToTableSelection);
+  document.getElementById("table-clear")?.addEventListener("click", () => {
+    tableState.selected.clear(); renderAttributeTable(); drawTableHighlight();
+  });
+  document.getElementById("table-switch")?.addEventListener("click", () => {
+    const all = new Set(tableState.rows.map((_, i) => i));
+    for (const i of tableState.selected) all.delete(i);
+    tableState.selected = all;
+    renderAttributeTable(); drawTableHighlight();
+  });
+
+  const filter = document.getElementById("table-filter");
+  filter?.addEventListener("input", () => {
+    tableState.filter = filter.value; renderAttributeTable();
+  });
+
+  document.getElementById("table-select")?.addEventListener("click", () => {
+    const panel = document.getElementById("table-selector");
+    if (!panel) return;
+    panel.hidden = !panel.hidden;
+    if (panel.hidden) return;
+    const field = document.getElementById("table-sel-field");
+    if (field) {
+      field.innerHTML = tableState.fields.map((f) =>
+        `<option value="${escapeHtml(f.name)}">${escapeHtml(f.name)}</option>`).join("");
+    }
+  });
+  document.getElementById("table-sel-run")?.addEventListener("click", selectByTableExpression);
+
+  // Dragging the header edge resizes the dock, as every docked table does.
+  const grip = document.getElementById("table-grip");
+  if (grip) {
+    let startY = 0, startH = 0;
+    const move = (e) => {
+      const y = e.touches ? e.touches[0].clientY : e.clientY;
+      tableState.height = Math.max(120, Math.min(window.innerHeight - 220, startH + (startY - y)));
+      dock.style.height = `${tableState.height}px`;
+    };
+    const stop = () => {
+      window.removeEventListener("mousemove", move);
+      window.removeEventListener("mouseup", stop);
+      document.body.style.userSelect = "";
+    };
+    grip.addEventListener("mousedown", (e) => {
+      startY = e.clientY; startH = dock.getBoundingClientRect().height;
+      document.body.style.userSelect = "none";
+      window.addEventListener("mousemove", move);
+      window.addEventListener("mouseup", stop);
+      e.preventDefault();
+    });
+  }
+}
+
+/* The chevrons at the ends of the ribbon band: shown when the band has
+   somewhere to go that way, hidden when it does not. */
+function wireRibbonScroll() {
+  const band = document.getElementById("ribbon-body");
+  if (!band) return;
+  const buttons = [...document.querySelectorAll(".rib-scroll")];
+  if (!buttons.length) return;
+
+  const sync = () => {
+    const max = band.scrollWidth - band.clientWidth;
+    for (const button of buttons) {
+      const forward = Number(button.dataset.scroll) > 0;
+      button.hidden = max < 2 || (forward ? band.scrollLeft >= max - 2
+                                          : band.scrollLeft <= 2);
+    }
+  };
+
+  for (const button of buttons) {
+    button.addEventListener("click", () => {
+      // Six tenths of a view, as a page-down does: a whole view leaves nothing
+      // in common between before and after, and a fixed step is wrong on both
+      // a laptop and a wall display.
+      const step = Math.max(140, band.clientWidth * 0.6);
+      band.scrollLeft += Number(button.dataset.scroll) * step;
+    });
+  }
+  band.addEventListener("scroll", sync, { passive: true });
+  if (typeof ResizeObserver === "function") new ResizeObserver(sync).observe(band);
+  window.addEventListener("resize", sync);
+  ribbonScrollSync = sync;
+  sync();
+}
+let ribbonScrollSync = null;
+
+/* The map is a WebGL canvas with a size baked into it, and it is now a
+   column of a grid rather than a layer over the whole window. Opening or
+   closing either dock changes that column's width, and nothing told the map.
+   The canvas kept its old size and the rest of the column was empty
+   background - which read, correctly enough, as "the map disappeared".
+
+   One observer rather than a resize call at each of the dozen places that can
+   change the layout: docks, the ribbon collapsing, the attribute table, full
+   screen, the window itself. The thirteenth would have been forgotten. */
+function watchMapSize() {
+  const wrap = document.getElementById("map-wrap");
+  if (!wrap || typeof ResizeObserver !== "function") {
+    window.addEventListener("resize", () => map.resize());
+    return;
+  }
+  let frame = 0;
+  const observer = new ResizeObserver(() => {
+    // Coalesced to one resize per frame: a CSS transition on a dock fires
+    // this on every frame of the animation, and each resize reallocates the
+    // drawing buffer.
+    if (frame) cancelAnimationFrame(frame);
+    frame = requestAnimationFrame(() => { frame = 0; map.resize(); });
+  });
+  observer.observe(wrap);
 }
 
 /* Each toolbar button is lit when the thing it opens is on screen. */
@@ -13216,6 +13877,7 @@ function turfLikeDistanceKm(lon1, lat1, lon2, lat2) {
     renderBookmarks();
     wireAddData();
     wireGhanaLibrary();
+    wireAttributeTable();
     wireDropTarget();
     renderBasemapGallery();
     document.getElementById("ribbon-search")?.addEventListener("click", openCommandSearch);
@@ -13226,6 +13888,7 @@ function turfLikeDistanceKm(lon1, lat1, lon2, lat2) {
       e.preventDefault();
       band.scrollLeft += e.deltaY;
     }, { passive: false });
+    wireRibbonScroll();
     document.getElementById("ribbon-collapse")?.addEventListener("click", () => {
       const ribbon = document.getElementById("ribbon");
       const collapsed = ribbon.dataset.collapsed === "true";
@@ -13234,6 +13897,7 @@ function turfLikeDistanceKm(lon1, lat1, lon2, lat2) {
     });
     map.on("moveend", mapHistoryPush);
     mapHistoryPush();
+    watchMapSize();
 
     // The panel toolbar on the map: one button per panel, each closing what
     // it opened.

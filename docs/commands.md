@@ -5,7 +5,7 @@ It is generated from the registry in `web/index.html` by
 `python scripts/commands_doc.py`, so it cannot drift from what the
 interface actually does.
 
-**401 commands. 83 are built. 318 are open.**
+**401 commands. 85 are built. 316 are open.**
 
 An open slot is not a bug. The ribbon, the registry and the place each
 command plugs into are finished; the function behind it is the work, and
@@ -83,7 +83,7 @@ by name.
 | `select.zoomTo` | Fit the map to what is selected. | **Open** |
 | `select.selectByAttributes` | Select features with a SQL expression. | **Open** |
 | `select.selectByLocation` | Select features that intersect another layer. | **Open** |
-| `table.attributes` | Open the attribute table of the selected layer. | **Open** |
+| `table.attributes` | Open the attribute table of the selected layer. | Built |
 
 ### Inspect
 
@@ -121,7 +121,7 @@ by name.
 
 | Command | Does | Status |
 | --- | --- | --- |
-| `table.open` | The selected layer's attributes. | **Open** |
+| `table.open` | The selected layer's attributes, in a table under the map. | Built |
 | `table.addField` | A new column. | **Open** |
 | `table.calculate` | Fill a column from an expression. | **Open** |
 | `table.statistics` | Count, sum, mean and range for a column. | **Open** |

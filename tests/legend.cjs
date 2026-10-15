@@ -2,9 +2,14 @@
  *
  * A choropleth with no legend is a picture of a country in colours. The map is
  * stubbed, but the parts under test are real: applyStyle reads the values from
- * what is rendered, works out the ramp, and renderLegend turns that into the
- * symbology. So the stub answers queryRenderedFeatures with real rows and
- * getLayer with a real layer, and the assertions are on the legend's text.
+ * what is rendered and works out the ramp, and the classes are written under
+ * the layer in Contents. So the stub answers queryRenderedFeatures with real
+ * rows and getLayer with a real layer, and the assertions are on what the
+ * layer card says.
+ *
+ * The symbology used to be a card floating over the map. It is under the
+ * layer now, where ArcGIS Pro and RustGIS put it, so this reads the layer
+ * card rather than that card - but it asks it the same questions.
  */
 const fs = require("fs");
 const http = require("http");
@@ -92,7 +97,7 @@ function serve() {
       : null;
     return {
       styled,
-      before: document.getElementById("legend-body").innerText,
+      before: document.getElementById("dock-left-body").innerText,
       result
     };
   });
@@ -101,11 +106,22 @@ function serve() {
   const styling = await page.evaluate(async () =>
     window.__ghClip.tool("style_by_column", { column: "rainfall_mm", palette: "warm" }));
 
-  const after = await page.evaluate(() => ({
-    hidden: document.getElementById("legend").hidden,
-    text: document.getElementById("legend-body").innerText.replace(/\s+/g, " ").trim(),
-    classes: document.querySelectorAll("#legend-body .legend-group .legend-row").length
-  }));
+  const after = await page.evaluate(() => {
+    // The classes are written onto the layer's own card, so Contents is what
+    // is read. There is no floating legend to be hidden any more.
+    const dock = document.getElementById("dock-left-body");
+    const card = document.querySelector('[data-card="qr"]');
+    return {
+      hidden: !card,
+      text: dock.innerText.replace(/\s+/g, " ").trim(),
+      cardText: (card?.innerText || "").replace(/\s+/g, " ").trim(),
+      classes: document.querySelectorAll(".lc-legend .lc-legend-row").length,
+      // The classes must be inside the card of the layer they describe, not
+      // in a list somewhere else that has to be matched up by eye.
+      inCard: (card?.querySelectorAll(".lc-legend-row").length) || 0,
+      floating: Boolean(document.getElementById("legend"))
+    };
+  });
 
   await page.screenshot({ path: "/tmp/legend.png", clip: { x: 330, y: 380, width: 340, height: 470 } })
     .catch(() => {});
@@ -114,32 +130,31 @@ function serve() {
 
   const bad = [];
   if (typeof styling === "object" && styling?.error) bad.push("styling failed: " + styling.error);
-  if (after.hidden) bad.push("the legend is hidden while three layers are drawn");
+  if (after.floating) bad.push("the floating legend card is back on the map");
+  if (after.hidden) bad.push("the styled layer has no card in Contents");
   if (!after.classes) bad.push("no classes were drawn for the graduated layer");
+  if (!after.inCard) bad.push("the classes are not under the layer they describe");
   // A range per class, the way a desktop GIS writes it.
   if (!/\d\s*–\s*\d/.test(after.text)) bad.push("the classes do not show their ranges");
-  if (!/rainfall_mm/.test(after.text)) bad.push("the legend does not name the column it is coloured by");
+  if (!/rainfall_mm/.test(after.cardText)) bad.push("the card does not name the column it is coloured by");
   // The real minimum and maximum of the values the map rendered.
   if (!/880/.test(after.text)) bad.push("the legend does not show the low end (880)");
   if (!/1,499/.test(after.text)) bad.push("the legend does not show the high end (1,499)");
   if (!/equal count/.test(after.text)) bad.push("the legend does not say how it classified");
-  if (!/CHIRPS/i.test(after.text)) bad.push("the raster is missing from the legend");
+  if (!/CHIRPS/i.test(after.text)) bad.push("the raster is missing from Contents");
   // The heading is uppercased in CSS, so innerText comes back shouting.
   if (!/query result/i.test(after.text)) bad.push("the styled layer is not named");
-  // Named once: as the heading of its own group, not also as a bare swatch.
+  // Once: a layer is one row in the contents list, with its classes under it.
   if ((after.text.match(/query result/gi) || []).length !== 1) {
     bad.push("the styled layer is listed twice");
-  }
-  // The ramp leads, because it is what the map is about.
-  if (after.text.indexOf("rainfall_mm") > after.text.indexOf("CHIRPS")) {
-    bad.push("the graduated layer does not come first");
   }
   if (bad.length) {
     console.error("The legend does not explain the map:");
     for (const line of bad) console.error("  " + line);
-    console.error("  legend said: " + after.text);
+    console.error("  the card said: " + after.cardText);
     if (errors.length) console.error("  page errors: " + errors.slice(0, 3).join(" | "));
     process.exit(1);
   }
-  console.log("the legend explains the map - ramp, column and range for the styled layer");
+  console.log(`the symbology explains the map - ${after.inCard} classes with `
+    + "their ranges, under the layer they describe, no card over the map");
 })();

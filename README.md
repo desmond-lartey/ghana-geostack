@@ -244,6 +244,15 @@ waste an afternoon per attempt. Adding a mixed selection reports each one:
 
 Full catalogue in [`docs/library.md`](docs/library.md).
 
+### The attribute table
+
+**Home → Inspect → Attribute Table**, or the table button on any layer. It
+opens docked under the map, as it does in ArcGIS Pro and RustGIS: sort by a
+column, filter the rows, click a row and the feature lights up on the map,
+select by a column and a comparison, zoom to the selection, download the CSV.
+Column types are inferred from the values, so a number column sorts
+`139, 214, 385, 1180` rather than putting `1180` first.
+
 ### Adding your own data
 
 Drop a file anywhere on the map, or **Home → Add Data → Add a File**. GeoJSON,
@@ -481,6 +490,16 @@ The pipeline architecture is adapted from
 The agent workflow, and the practice of validating every result in SQL before
 rendering, is adapted from
 [dekart-xyz/geosql](https://github.com/dekart-xyz/geosql) (MIT).
+
+Six faults found while making the above actually usable - rasters silently
+refused by the content policy, a `ReferenceError` that meant no geoprocessing
+tool had ever run, a grid that collapsed the map to zero pixels when a dock
+closed, a dropped file that navigated the browser away, an Attribute Table
+button that opened the SQL pane, and a null dereference where a message
+belonged - are written up in
+[`docs/what-was-broken.md`](docs/what-was-broken.md), each with the test that
+now covers it. Every one of them failed silently, which is the only thing
+they had in common and the reason they lasted.
 
 The interface owes two debts. The layer cards and the geoprocessing toolbox
 follow [GeoLibre](https://github.com/opengeos/GeoLibre), though the panels

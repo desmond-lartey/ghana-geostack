@@ -100,6 +100,66 @@ function serve() {
     return out;
   });
 
+  // Closing a panel must give its width to the map, not take the map with
+  // it. Each dock is a grid column; a hidden grid item leaves the flow, so
+  // without an explicit column the map slid into the `auto` track the dock
+  // had been in - and the map's only child is absolutely positioned, so that
+  // track is zero wide. Closing the layer list made the map 0px, which from
+  // the outside looks exactly like the map and everything on it disappearing.
+  const docks = await page.evaluate(async () => {
+    const wrap = document.getElementById("map-wrap");
+    const left = document.getElementById("dock-left");
+    const width = () => Math.round(wrap.getBoundingClientRect().width);
+    const wait = () => new Promise((r) => setTimeout(r, 250));
+    // The sweep above ran every command, so neither dock is in a known
+    // state. Put Contents where this needs it rather than assuming.
+    const setLeft = async (open) => {
+      if (left.hidden === !open) return;
+      window.__ghRibbon.run("ui.layers");
+      await wait();
+    };
+
+    await setLeft(true);
+    const open = width();
+    await setLeft(false);
+    const closed = width();
+    window.__ghRibbon.run("ui.style");           // a pane on the right
+    await wait();
+    const rightOpen = width();
+    await setLeft(true);
+    return { open, closed, rightOpen, back: width() };
+  });
+
+  // A tab wider than the window must say so. The band scrolls with the
+  // wheel, but a wheel is not an affordance - nothing on screen says the band
+  // moves, so a tab with eleven groups reads as a tab with four.
+  const chevrons = await page.evaluate(async () => {
+    const band = document.getElementById("ribbon-body");
+    const right = document.querySelector('.rib-scroll[data-scroll="1"]');
+    const left = document.querySelector('.rib-scroll[data-scroll="-1"]');
+    if (!band || !right || !left) return { missing: true };
+
+    // Publish is the widest tab by a distance.
+    document.querySelector('.ribbon-tab[data-tab="Publish"]')?.click();
+    await new Promise((r) => setTimeout(r, 120));
+    const overflows = band.scrollWidth > band.clientWidth + 2;
+    const rightShownAtStart = !right.hidden;
+    const leftHiddenAtStart = left.hidden;
+
+    right.click();
+    await new Promise((r) => setTimeout(r, 400));
+    const moved = band.scrollLeft;
+    const leftShownAfter = !left.hidden;
+
+    // A tab that fits shows neither.
+    document.querySelector('.ribbon-tab[data-tab="Settings"]')?.click();
+    await new Promise((r) => setTimeout(r, 200));
+    const quiet = right.hidden && left.hidden;
+
+    return { overflows, rightShownAtStart, leftHiddenAtStart, moved,
+             leftShownAfter, quiet };
+  });
+
   // The widest tab must not widen the window. A grid item's min-width is
   // auto, so a ribbon wider than the screen once stretched the whole shell and
   // pushed the right-hand dock thousands of pixels off the side of it.
@@ -142,6 +202,22 @@ function serve() {
   if (fits.length) bad.push("the ribbon pushes the shell off screen:\n    " + fits.join("\n    "));
   if (!slot.shown) bad.push("a slot did not open its explainer");
   if (!slot.mentionsId) bad.push("the explainer does not give the command id");
+
+  if (docks.closed <= 0 || docks.rightOpen <= 0 || docks.back <= 0) {
+    bad.push(`the map collapsed to nothing when a dock was toggled: ${JSON.stringify(docks)}`);
+  } else if (docks.closed <= docks.open) {
+    bad.push(`closing the layer list did not widen the map: ${docks.open} then ${docks.closed}`);
+  }
+
+  if (chevrons.missing) bad.push("the ribbon has no scroll buttons");
+  else {
+    if (!chevrons.overflows) bad.push("Publish no longer overflows, so this proves nothing");
+    if (!chevrons.rightShownAtStart) bad.push("an overflowing tab shows no way to scroll right");
+    if (!chevrons.leftHiddenAtStart) bad.push("the left chevron shows with nothing to its left");
+    if (!chevrons.moved) bad.push("pressing the chevron did not move the band");
+    if (!chevrons.leftShownAfter) bad.push("after scrolling, no way back");
+    if (!chevrons.quiet) bad.push("a tab that fits still shows the chevrons");
+  }
   // Uncaught page errors during the sweep mean a command broke something else.
   const real = errors.filter((e) => !/Failed to fetch|NetworkError|net::/i.test(e));
   if (real.length) bad.push("page errors: " + real.slice(0, 4).join(" | "));
@@ -153,5 +229,7 @@ function serve() {
   }
   console.log(`ribbon holds - ${shape.tabs.length} tabs, ${shape.groups} groups, `
     + `${shape.controls} controls, ${shape.commands} commands, `
-    + `${shape.built} built and all of them ran, ${shape.commands - shape.built} slots`);
+    + `${shape.built} built and all of them ran, ${shape.commands - shape.built} slots; `
+    + `a tab wider than the window offers a chevron and scrolls by it; `
+    + `closing a dock widens the map from ${docks.open}px to ${docks.closed}px`);
 })();
