@@ -33,7 +33,7 @@ INSERT INTO analysis.suitability_weight VALUES
   'Far from existing transmission means the grid is unlikely to arrive soon, '
   'which is what makes off-grid the right answer rather than a stopgap.'),
  ('terrain',      0.15, 'lower_better',
-  'Steep ground raises installation cost. Mild penalty only - most of Ghana '
+  'Steep ground raises installation cost. Mild penalty only — most of Ghana '
   'is flat enough that this rarely decides anything.'),
  ('road_access',  0.15, 'higher_better',
   'Equipment has to be trucked in and maintained. No road, no mini-grid.'),

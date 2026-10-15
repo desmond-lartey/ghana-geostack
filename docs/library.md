@@ -1,7 +1,7 @@
 # The Ghana data library
 
 **Home → Ghana Data → Ghana Data Library.** One place that answers *what is
-there for Ghana* - thirty-five layers as cards, each with a picture, a
+there for Ghana* — thirty-five layers as cards, each with a picture, a
 sentence, where it came from, what licence it carries, and whether it can be
 drawn right now.
 
@@ -39,7 +39,7 @@ card, and pressing **Add to map** on a mixed selection reports each one:
 *4 added · 2 not yet available*, with the reason for each in the Log.
 
 The nine unbuilt products are the same kind of invitation as the ribbon's open
-slots - a named job with a named method, waiting for whoever needs it first.
+slots — a named job with a named method, waiting for whoever needs it first.
 **15-minute access to health care** is cost-distance over the walking friction
 surface from every facility; **Population exposed to flooding** is the
 observed surface-water record crossed with the 100 m population grid and
@@ -58,7 +58,7 @@ hazard layers.
 
 **Region** is the clip, not a second setting that could disagree with it.
 Choosing Ashanti sets the clip to Ashanti, says so under the filters, and
-everything added from that point is cut to it - which is what anyone would
+everything added from that point is cut to it — which is what anyone would
 expect of a filter that says *Ashanti* while they press Add. See
 [Layers and clipping](layers-and-clipping.md).
 
@@ -88,7 +88,7 @@ expect of a filter that says *Ashanti* while they press Add. See
 
 | Layer | Source | Licence | State |
 | --- | --- | --- | --- |
-| Health facilities | OpenStreetMap | ODbL - share-alike | Ready |
+| Health facilities | OpenStreetMap | ODbL — share-alike | Ready |
 | 15-minute access to health care | Malaria Atlas Project friction surface, Weiss et al. 2020 | CC-BY 4.0 | Not built |
 | Travel time to the nearest hospital | Malaria Atlas Project, Ghana Health Service | CC-BY 4.0 | Not built |
 
@@ -96,14 +96,14 @@ expect of a filter that says *Ashanti* while they press Add. See
 
 | Layer | Source | Licence | State |
 | --- | --- | --- | --- |
-| Schools | OpenStreetMap | ODbL - share-alike | Ready |
+| Schools | OpenStreetMap | ODbL — share-alike | Ready |
 | Children beyond 30 minutes of a school | WorldPop, Ghana Education Service | CC-BY 4.0 | Not built |
 
 ### Water
 
 | Layer | Source | Licence | State |
 | --- | --- | --- | --- |
-| Water points | OpenStreetMap | ODbL - share-alike | Ready |
+| Water points | OpenStreetMap | ODbL — share-alike | Ready |
 | Surface water, 1984 to 2021 | JRC Global Surface Water, Pekel et al. 2016 | CC-BY 4.0 | Earth Engine |
 | Rivers and the Volta system | HydroSHEDS, OpenStreetMap | ODbL and HydroSHEDS terms | Database |
 
@@ -111,11 +111,11 @@ expect of a filter that says *Ashanti* while they press Add. See
 
 | Layer | Source | Licence | State |
 | --- | --- | --- | --- |
-| Roads | OpenStreetMap | ODbL - share-alike | Ready |
-| National road network | OpenStreetMap, Ghana Highway Authority | ODbL - share-alike | Database |
-| Markets | OpenStreetMap | ODbL - share-alike | Ready |
+| Roads | OpenStreetMap | ODbL — share-alike | Ready |
+| National road network | OpenStreetMap, Ghana Highway Authority | ODbL — share-alike | Database |
+| Markets | OpenStreetMap | ODbL — share-alike | Ready |
 | Travel time to the nearest market | Malaria Atlas Project friction surface | CC-BY 4.0 | Not built |
-| Buildings | OpenStreetMap | ODbL - share-alike | Ready |
+| Buildings | OpenStreetMap | ODbL — share-alike | Ready |
 | Open Buildings footprints | Google Open Buildings v3 | CC-BY 4.0 | Database |
 
 ### Agriculture
@@ -163,7 +163,7 @@ expect of a filter that says *Ashanti* while they press Add. See
 
 Thirty-five screenshots is three megabytes and thirty-five things to redo
 whenever the styling moves. Each thumbnail is instead a few hundred bytes of
-SVG generated from the entry - scattered points for a point layer, a branching
+SVG generated from the entry — scattered points for a point layer, a branching
 network for roads, concentric rings for a travel-time surface, a classed grid
 for a choropleth, bright points on black for night lights. Seeded from the
 layer's id, so a card looks the same on every visit rather than reshuffling as

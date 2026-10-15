@@ -122,7 +122,8 @@ test:  ## Run the test suite
 	  node tests/ee_rainfall.cjs && node tests/legend.cjs && \
 	  node tests/export.cjs && node tests/ribbon.cjs && \
 	  node tests/adddata.cjs && node tests/library.cjs && \
-	  node tests/table.cjs && node tests/toolbox.cjs; } || \
+	  node tests/table.cjs && node tests/toolbox.cjs && \
+	  node tests/fifteen.cjs && node tests/imagery.cjs; } || \
 	 echo "node not installed, skipping the browser tests"
 
 # ── Housekeeping ──────────────────────────────────────────────────────────

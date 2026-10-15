@@ -124,6 +124,8 @@ nav:
   - The ribbon: ribbon.md
   - The Ghana data library: library.md
   - Command reference: commands.md
+  - The 15-minute profile: fifteen-minute.md
+  - Searching imagery: imagery-search.md
   - Layers and clipping: layers-and-clipping.md
   - Earth observation catalogue: catalog.md
   - Earth Engine in the browser: earth-engine.md

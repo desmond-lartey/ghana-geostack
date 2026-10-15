@@ -86,8 +86,8 @@ CREATE INDEX IF NOT EXISTS admin_district_archive_vintage_idx
 
 COMMENT ON TABLE core.admin_region_archive IS
   'Superseded region boundary sets. The reason to keep them: data collected '
-  'under an older configuration - the 2010 census, older health and '
-  'agricultural surveys - cannot be placed on a current map without the '
+  'under an older configuration — the 2010 census, older health and '
+  'agricultural surveys — cannot be placed on a current map without the '
   'geometry it was collected against.';
 
 -- ── Lineage: what became what ──────────────────────────────────────────────
@@ -205,7 +205,7 @@ LEFT JOIN core.admin_region r ON r.id = d.region_id;
 
 COMMENT ON VIEW core.gazetteer IS
   'Flat searchable place list. Match user input against place_norm using '
-  'pg_trgm similarity rather than equality - Ghanaian place names are spelled '
+  'pg_trgm similarity rather than equality — Ghanaian place names are spelled '
   'several ways and users type them a fourth.';
 
 -- ── Archive helper ─────────────────────────────────────────────────────────

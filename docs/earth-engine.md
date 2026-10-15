@@ -1,7 +1,7 @@
 # Earth Engine in the browser
 
-The viewer can search the whole Earth Engine catalogue - around eleven hundred
-datasets - draw any of them over Ghana, and reduce them to a table you can
+The viewer can search the whole Earth Engine catalogue — around eleven hundred
+datasets — draw any of them over Ghana, and reduce them to a table you can
 query and style alongside everything else on the page.
 
 It runs against your own Earth Engine account. The site holds no credential of
@@ -19,14 +19,14 @@ project, and nothing else. Press *Sign in with Google*, approve the access, and
 you are in. The site carries its own sign-in registration; you do not register
 anything.
 
-The project is yours because Earth Engine runs the work against it - that is
+The project is yours because Earth Engine runs the work against it — that is
 whose quota is spent and whose terms apply. It is free for non-commercial use;
 register one at `code.earthengine.google.com`.
 
 **If you run the site yourself**, register one OAuth client for it, once. A
 client id identifies the *application* to Google, not the person, so one serves
-every visitor. It is public by design - it appears in the page source and in
-every sign-in request - and is set at build time, not typed in by users.
+every visitor. It is public by design — it appears in the page source and in
+every sign-in request — and is set at build time, not typed in by users.
 
 ### Registering the site's client
 
@@ -44,8 +44,8 @@ every sign-in request - and is set at build time, not typed in by users.
 
    Add the local one too if you run `make serve`. An origin that is not listed
    is refused, and Google's error says only `idpiframe_initialization_failed`.
-4. Set the client id as `EE_CLIENT_ID` in the build - in Vercel, Settings →
-   Environment Variables - and redeploy. The panel then asks visitors for
+4. Set the client id as `EE_CLIENT_ID` in the build — in Vercel, Settings →
+   Environment Variables — and redeploy. The panel then asks visitors for
    nothing but their project.
 
    ```bash
@@ -63,7 +63,7 @@ every sign-in request - and is set at build time, not typed in by users.
    the accounts listed under **Audience → Test users** can sign in; everyone
    else is refused with `access_denied`. To open it to the public, publish the
    consent screen. `earthengine.readonly` is a sensitive scope, so Google may
-   require verification before an unlisted user can grant it - worth starting
+   require verification before an unlisted user can grant it — worth starting
    early if the site is meant for others.
 
 If `EE_CLIENT_ID` is not set, the panel says so and offers a box to paste one
@@ -77,7 +77,7 @@ catalogue.
 **Connect** once. After that the values are remembered and the button signs
 you straight in.
 
-**Search.** Type what you are after - `elevation`, `population`, `rainfall`,
+**Search.** Type what you are after — `elevation`, `population`, `rainfall`,
 `nightlights`. Results show the real Earth Engine id, the producer, the native
 resolution and the date span. Datasets whose footprint covers Ghana are listed
 first, and one that does not is marked, because a dataset of Canadian land
@@ -86,7 +86,7 @@ cover will draw an empty rectangle rather than an error.
 **Open** a dataset and the form is already filled in:
 
 - a date range, defaulting to the last year rather than the dataset's whole
-  life - compositing twenty years to look at Ghana once is a long wait for a
+  life — compositing twenty years to look at Ghana once is a long wait for a
   worse picture
 - how to combine the images, defaulting to the median, which is the usual way
   to see through cloud
@@ -101,7 +101,7 @@ Before drawing, it counts the images in your date range and tells you if there
 are none, because an empty composite draws as blank tiles and looks identical
 to a layer that failed.
 
-The boundary it clips to is this page's own - the same admin file the vector
+The boundary it clips to is this page's own — the same admin file the vector
 tools cut with, sent to Earth Engine as coordinates. It used to be named to a
 boundary asset on Google's side instead, which works only while the two agree
 about spelling and about which regions exist. They need not: Ghana's six newest
@@ -109,7 +109,7 @@ regions were created in December 2018, so an older boundary set has no Oti to
 match, and this project's own admin1 file spells one of the six "Northern
 East". A name matching nothing gives an empty collection, whose geometry is
 empty, and an image clipped to an empty geometry is a blank layer with no error
-anywhere - which is why a region clip used to draw nothing until you set it
+anywhere — which is why a region clip used to draw nothing until you set it
 back to the whole country.
 
 ---
@@ -118,7 +118,7 @@ back to the whole country.
 
 A dataset comes with its own rendering, and which kind it is changes everything.
 
-**A classified dataset** - land cover, burn severity, crop type - ships a class
+**A classified dataset** — land cover, burn severity, crop type — ships a class
 table: this value is Tree cover and it is this green, because the producer said
 so. There is no range or palette to choose, and choosing one would be wrong.
 Class values are rarely consecutive (WorldCover runs 10, 20, 30 … 95), so they
@@ -126,7 +126,7 @@ are remapped to 0…n-1 before drawing, which is the only way a palette lines up
 with them. A legend is drawn from the same table, because a class table makes
 one possible and a colour ramp does not.
 
-**A continuous dataset** - elevation, temperature, rainfall - needs a ramp, and
+**A continuous dataset** — elevation, temperature, rainfall — needs a ramp, and
 which ramp is a real choice. Ten are offered with a note on each:
 
 | Palette | When |
@@ -149,7 +149,7 @@ legend updates as you type.
 
 For a classified dataset the summarise buttons are replaced by **Land cover
 area by region** and **by district**, because a mean or a sum of class codes is
-meaningless - the average of Tree cover and Mangroves is nothing.
+meaningless — the average of Tree cover and Mangroves is nothing.
 
 It counts pixels per class per zone and multiplies by pixel area, giving one
 row per zone per class with `area_km2` and `pct_of_zone`, in a queryable table:
@@ -162,7 +162,7 @@ ORDER BY area_km2 DESC;
 ```
 
 Two things to know about the numbers. They are pixel counts times pixel area,
-so a class thinner than one pixel is not represented at all - a hedgerow
+so a class thinner than one pixel is not represented at all — a hedgerow
 between two fields is simply absent at 10 m. And the count is of the remapped
 index, read back through the class table, so the class values in the output are
 the producer's own.
@@ -182,11 +182,11 @@ carries Ghana's *pre-2018* ten regions. The country was reorganised in December
 2018 into sixteen, so every summary was computed over the old boundaries and
 then joined to the modern ones by name: nine names matched, seven regions
 vanished from the map, and the nine that survived were measured over the wrong
-areas - the old Northern region is the modern Northern plus Savannah plus North
+areas — the old Northern region is the modern Northern plus Savannah plus North
 East. A missing row is a visible failure. A row measured over the wrong shape
 is not.
 
-The boundaries are simplified to 0.001° - about 110 m - before being sent, which
+The boundaries are simplified to 0.001° — about 110 m — before being sent, which
 takes the sixteen regions from 23,669 vertices to 10,738 and changes the largest
 area by 0.024%. That is nothing beside counting 5 km rainfall pixels, and it is
 measured rather than assumed. The result
@@ -204,8 +204,8 @@ Run that, press **Show on map**, then open the **Style** tab and graduate by
 the value column. Districts coloured and raised by whatever you just
 summarised.
 
-The reducer follows your choice on the form: **sum** if you picked sum - which
-is what population and rainfall want - and **mean** otherwise, which is what
+The reducer follows your choice on the form: **sum** if you picked sum — which
+is what population and rainfall want — and **mean** otherwise, which is what
 temperature and tree cover want. Summing a temperature is meaningless, and the
 form is where that choice belongs.
 
@@ -236,39 +236,39 @@ the right thing to paste when reporting a problem: "it did not work" and a log
 are very different messages.
 
 
-**Sign-in sits on "Checking with Google" and never moves** - if this ever
+**Sign-in sits on "Checking with Google" and never moves** — if this ever
 returns after thirty seconds with "Google did not answer", nothing came back
 from the sign-in call at all. Check that `accounts.google.com` is reachable and
 that no privacy extension is blocking it.
 
 If it hangs indefinitely on an older build, the cause was the client library
 version. Up to 0.1.387 it signed users in through `gapi.auth2`, Google's
-Sign-In JavaScript platform library, which has been shut down - the call never
+Sign-In JavaScript platform library, which has been shut down — the call never
 calls back, so the panel waits for a popup that will never open. `EE_API` must
 point at **0.1.388 or later**, the release that moved to Google Identity
 Services.
 
-**"Google hasn't verified this app"** - expected, not a fault, and the most
+**"Google hasn't verified this app"** — expected, not a fault, and the most
 likely place to get stuck because the safe-looking button is the wrong one.
 Google shows this to every test user of an app whose consent screen is still in
 testing. Choose **Continue**, the plain link on the left; *Back to safety*
 cancels the sign-in. It stops appearing once the consent screen is published
 and verified.
 
-**"Google needs you to approve access"** - expected, not a fault. A silent
+**"Google needs you to approve access"** — expected, not a fault. A silent
 sign-in only works for someone already signed in who has granted access before.
 Otherwise the sign-in must be interactive, and browsers open a popup only from
 a click, so the panel offers a button. If pressing it does nothing, allow
 popups for this site.
 
-**"Sign-in failed"** - almost always the authorised JavaScript origins. The
+**"Sign-in failed"** — almost always the authorised JavaScript origins. The
 address in the browser's URL bar must appear there exactly, including
 `https://` and any port, and without a trailing slash. If it says
 `access_denied`, the consent screen is still in testing and you are not on its
 test-user list.
 
 **"The library's own request was refused by this site's content security
-policy"**, with a host named - add that host to `connect-src` in `vercel.json`
+policy"**, with a host named — add that host to `connect-src` in `vercel.json`
 and redeploy. Google's client libraries do not use a single address: besides
 `earthengine.googleapis.com` they reach `content-*` and discovery hosts, which
 is why the policy allows `https://*.googleapis.com` rather than a list that
@@ -276,7 +276,7 @@ only has to be incomplete once. A request the policy refuses never reaches the
 network and the caller sees an empty response, which is how `Invalid JSON:`
 with nothing after it is produced.
 
-**"Could not start Earth Engine for &lt;project&gt;"** - the panel asks the
+**"Could not start Earth Engine for &lt;project&gt;"** — the panel asks the
 API directly and reports what it said, because the client library's own message
 for this is `Invalid JSON:` followed by nothing. An empty body is what a browser
 sees when a request is refused before it can be read, so the library names the
@@ -284,7 +284,7 @@ symptom and hides the cause.
 
 The most common answer is that the **Earth Engine API is not enabled on that
 particular project**. Enabling it on one project does nothing for another, and
-the project in this box is the one that matters - not the one the OAuth client
+the project in this box is the one that matters — not the one the OAuth client
 lives in, and not whichever project the Cloud console happens to have selected.
 The message links straight to the right page when that is the cause.
 
@@ -292,7 +292,7 @@ The other answers it distinguishes: a token that was never set, a project the
 signed-in account cannot use, a project that does not exist, a rejected token,
 and a request that never left the browser at all.
 
-**The layer draws nothing** - the panel counts the images before drawing, and
+**The layer draws nothing** — the panel counts the images before drawing, and
 when that count is zero it works out *why* rather than blaming the dates. Three
 filters can empty a collection and only one of them is the date range, so each
 is counted on its own and the message names the one responsible:
@@ -312,13 +312,13 @@ to the end of that day, because two dates mean both of them. And a band name
 that does not exist in the collection produces an empty image rather than an
 error, so check the band when the count is fine and the picture is not.
 
-**"Could not load the Earth Engine library"** - the client library is pinned
+**"Could not load the Earth Engine library"** — the client library is pinned
 to an exact version, because Google Hosted Libraries has no `latest` path. If
 that version is ever withdrawn the URL returns 404 and the panel cannot start.
 The error names the URL it tried; open it, and if it 404s, find a version that
 does not and change `EE_API` in `web/index.html`.
 
-**Search says the index is missing** - the catalogue index is built at deploy
+**Search says the index is missing** — the catalogue index is built at deploy
 time by `scripts/build_ee_catalog.py`. If Google was unreachable during the
 build it is skipped rather than failing the deployment, and the next deploy
 will pick it up.

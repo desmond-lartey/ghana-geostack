@@ -1,4 +1,4 @@
--- transform/roads.sql - raw.road into core.road
+-- transform/roads.sql — raw.road into core.road
 --
 -- OSM's highway tag carries about 30 values; downstream styling and analysis
 -- only care about a handful. The rest are kept but grouped, so a query for

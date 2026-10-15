@@ -6,7 +6,7 @@
  * the list was populated, that the layer dropdown had anything in it, that a
  * run reached the geometry library, or that the result came back as a layer.
  *
- * The geometry library is substituted here - tests/turf_stub.cjs says exactly
+ * The geometry library is substituted here — tests/turf_stub.cjs says exactly
  * which of its functions are exact and which are approximations, and no
  * assertion below depends on an approximation. What is being tested is the
  * toolbox: the registry, the generated form, validation, layer resolution,
@@ -113,7 +113,7 @@ const POINTS = JSON.stringify({ type: "FeatureCollection", features: [
     const added = window.__ghLayers.list().slice(-1)[0];
     result.offered = T.layers();
 
-    // 1. Centroids - exact in the substitute, so the answer is checkable.
+    // 1. Centroids — exact in the substitute, so the answer is checkable.
     await T.show("centroid");
     T.set("input", added.id);
     await T.run("centroid");
@@ -123,7 +123,7 @@ const POINTS = JSON.stringify({ type: "FeatureCollection", features: [
     result.centroidLayer = afterCentroid.slice(-1)[0]?.label || "";
     result.centroidFeatures = afterCentroid.slice(-1)[0]?.collection?.features?.length ?? 0;
 
-    // 2. Convex hull - exact. Six scattered points give a hull with fewer
+    // 2. Convex hull — exact. Six scattered points give a hull with fewer
     // vertices than inputs, and it must be a polygon.
     await T.show("convex");
     T.set("input", added.id);
@@ -133,7 +133,7 @@ const POINTS = JSON.stringify({ type: "FeatureCollection", features: [
     const hull = window.__ghLayers.list().slice(-1)[0];
     result.hullType = hull?.collection?.features?.[0]?.geometry?.type || "";
 
-    // 3. Clip to a named region - exact point-in-polygon. Four of the six
+    // 3. Clip to a named region — exact point-in-polygon. Four of the six
     // facilities are in Ashanti; the Tamale and Accra ones are not.
     await T.show("clip");
     T.set("input", added.id);
@@ -160,6 +160,44 @@ const POINTS = JSON.stringify({ type: "FeatureCollection", features: [
       await window.__ghTable.open(chainSource.id);
       result.tableRows = window.__ghTable.state().rows;
     }
+
+    // 7. Hotspots. Three tight clumps of 12, 400 m apart, plus eight
+    // scattered points that are noise — DBSCAN at 150 m must find exactly
+    // three, and the clump of cafes must report as specialising in cafes.
+    const clumps = [];
+    const centres = [[-1.62, 6.70], [-1.615, 6.70], [-1.6175, 6.705]];
+    const kinds = [["cafe", 10], ["school", 10], ["cafe", 5]];
+    centres.forEach(([cx, cy], c) => {
+      for (let i = 0; i < 12; i += 1) {
+        const a = (i / 12) * Math.PI * 2;
+        clumps.push({ type: "Feature",
+          properties: { amenity: i < kinds[c][1] ? kinds[c][0] : "pharmacy" },
+          geometry: { type: "Point",
+            coordinates: [cx + Math.cos(a) * 0.0004, cy + Math.sin(a) * 0.0004] } });
+      }
+    });
+    for (let i = 0; i < 8; i += 1) {
+      clumps.push({ type: "Feature", properties: { amenity: "bench" },
+        geometry: { type: "Point", coordinates: [-1.70 + i * 0.01, 6.75 + i * 0.01] } });
+    }
+    await window.__ghAddData.files([new File(
+      [JSON.stringify({ type: "FeatureCollection", features: clumps })],
+      "clumps.geojson", { type: "application/geo+json" })]);
+    const clumpLayer = window.__ghLayers.list().slice(-1)[0];
+
+    await T.show("hotspot");
+    T.set("input", clumpLayer.id);
+    T.set("category", "amenity");
+    T.set("eps", "150");
+    T.set("minPoints", "10");
+    await T.run("hotspot");
+    await new Promise((r) => setTimeout(r, 200));
+    result.hotspotStatus = T.status();
+    const spots = window.__ghLayers.list().slice(-1)[0];
+    result.hotspots = (spots?.collection?.features || []).map((f) => ({
+      size: f.properties.size, entropy: f.properties.entropy,
+      top: f.properties.top_category
+    }));
 
     result.finalLayers = window.__ghLayers.list().map((l) => l.label);
     return result;
@@ -208,6 +246,31 @@ const POINTS = JSON.stringify({ type: "FeatureCollection", features: [
   if (!out.chainable) bad.push("a tool's output cannot be fed to the next tool");
   if (out.tableRows !== 6) bad.push(`the result opened ${out.tableRows} rows in the table, not 6`);
 
+  // Hotspots: three clusters of 12, eight scattered points as noise.
+  if (!out.hotspots || out.hotspots.length !== 3) {
+    bad.push(`DBSCAN found ${out.hotspots?.length ?? 0} hotspots in three clumps `
+           + `— "${out.hotspotStatus}"`);
+  } else {
+    if (out.hotspots.some((h) => h.size !== 12)) {
+      bad.push(`the clusters are ${out.hotspots.map((h) => h.size).join("/")}, not 12 each`);
+    }
+    if (!/8 left as noise/.test(out.hotspotStatus)) {
+      bad.push(`the eight scattered points were not left as noise — "${out.hotspotStatus}"`);
+    }
+    // The clump of ten cafes and two pharmacies is less even than the one
+    // with five cafes and seven pharmacies, so its entropy must be lower.
+    const entropies = out.hotspots.map((h) => h.entropy);
+    if (entropies.some((e) => typeof e !== "number")) {
+      bad.push("the clusters carry no entropy");
+    } else if (Math.min(...entropies) >= Math.max(...entropies)) {
+      bad.push(`every cluster has the same entropy (${entropies.join(", ")}), `
+             + "so the measure is not reading the categories");
+    }
+    if (!out.hotspots.some((h) => /cafe|school/.test(h.top || ""))) {
+      bad.push("no cluster reported what it specialises in");
+    }
+  }
+
   const real = errors.filter((e) => !/Failed to fetch|NetworkError|net::/i.test(e));
   if (real.length) bad.push("page errors: " + real.slice(0, 3).join(" | "));
 
@@ -218,8 +281,11 @@ const POINTS = JSON.stringify({ type: "FeatureCollection", features: [
     process.exit(1);
   }
 
-  console.log(`geoprocessing works - ${out.tools.length} tools in ${categories.size} `
+  console.log(`geoprocessing works — ${out.tools.length} tools in ${categories.size} `
     + `categories; centroids and the convex hull ran on a dropped layer, a clip `
     + `to a region with no database said so in words, a missing input was `
-    + `refused, and the output chains into the next tool and opens as a table`);
+    + `refused, the output chains into the next tool and opens as a table, and `
+    + `DBSCAN found ${out.hotspots.length} hotspots of `
+    + `${out.hotspots.map((h) => h.size).join("/")} with entropy `
+    + `${out.hotspots.map((h) => h.entropy).join("/")}`);
 })();

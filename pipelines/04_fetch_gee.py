@@ -1,4 +1,4 @@
-"""Step 04 - Earth Engine, driven by the catalogue.
+"""Step 04 — Earth Engine, driven by the catalogue.
 
 Exports a Ghana-clipped raster for any dataset in `config/catalog.yml` that
 carries a `gee` block. The collection id, bands, reducer and scale all come
@@ -147,7 +147,7 @@ def fetch_vector(ee, entry: dict, region, scope: str) -> None:
 
     Boundaries, catchments and urban extents are vectors, and forcing them
     through a raster export would throw away exactly the attributes that make
-    them useful - HYBAS_ID and NEXT_DOWN carry the river topology.
+    them useful — HYBAS_ID and NEXT_DOWN carry the river topology.
     """
     collection = ee.FeatureCollection(entry["gee"]["collection"]).filterBounds(region)
 
@@ -166,7 +166,7 @@ def fetch_vector(ee, entry: dict, region, scope: str) -> None:
     # Direct download works for a few hundred features; past that the payload
     # exceeds what getDownloadURL will serve, so Drive takes over.
     if count > 3000:
-        log.info("%d features is past the direct-download limit - exporting to Drive", count)
+        log.info("%d features is past the direct-download limit — exporting to Drive", count)
         task = ee.batch.Export.table.toDrive(
             collection=collection,
             description=name,
@@ -232,7 +232,7 @@ def build_image(ee, entry: dict, region, start: str | None, end: str | None):
         # into the export doubles the file for no benefit.
         if "QA_PIXEL" in bands:
             image = image.select([b for b in bands if b != "QA_PIXEL"])
-            log.info("thermal band exported as raw DN - convert with "
+            log.info("thermal band exported as raw DN — convert with "
                      "--scale 0.00341802 --offset -124.15 for Celsius")
     except SystemExit:
         raise
@@ -316,7 +316,7 @@ def main() -> None:
             f"'{args.dataset}' has no Earth Engine entry. Use {route} instead."
         )
 
-    step("04", f"Earth Engine - {entry['title']}")
+    step("04", f"Earth Engine — {entry['title']}")
     log.info("licence: %s", entry["licence"])
     log.info("credit: %s", entry["attribution"])
 
@@ -338,7 +338,7 @@ def main() -> None:
     name = f"{entry['id']}_{scope}"
 
     if args.drive or pixels > DIRECT_DOWNLOAD_PIXEL_LIMIT:
-        log.info("too large for a direct download - exporting to Drive")
+        log.info("too large for a direct download — exporting to Drive")
         task = ee.batch.Export.image.toDrive(
             image=image,
             description=name,

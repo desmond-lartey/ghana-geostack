@@ -6,8 +6,8 @@ from the same COD boundary the rest of the platform uses, so the mark and the
 data agree.
 
 Around it is a surveyor's reticle: a ring, a north mark at the top and ticks
-at east, south and west. That says what the country is doing there - this is a
-mapping tool, not a page about Ghana - and it is what survives at 16 px, where
+at east, south and west. That says what the country is doing there — this is a
+mapping tool, not a page about Ghana — and it is what survives at 16 px, where
 the outline alone is an orange smudge.
 
 The compass was tried *through* the outline first, which is the obvious reading

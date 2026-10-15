@@ -1,6 +1,6 @@
 /* Can you open a table of the data you have open?
  *
- * "Why can't I open a table of a dataset I have opened like RustGIS" - and
+ * "Why can't I open a table of a dataset I have opened like RustGIS" — and
  * the answer was that Attribute Table opened the SQL workspace and typed a
  * comment into it. A button that names a thing and does something adjacent to
  * it is worse than one that does nothing, because nothing at least reads as
@@ -37,7 +37,7 @@ function serve() {
   });
 }
 
-// Six districts with a name, a region and an area - enough to sort a number,
+// Six districts with a name, a region and an area — enough to sort a number,
 // sort a string, filter, and have a blank cell that must not sort as zero.
 const CSV = "name,region,area_sqkm,capital\n"
   + "Bolgatanga,Upper East,729,Bolgatanga\n"
@@ -160,7 +160,7 @@ const GEOJSON = JSON.stringify({ type: "FeatureCollection", features:
   }
   if (!out.opened.fields.includes("name:text")) bad.push("name was not typed as text");
 
-  // 139, 214, 385, 646, 729, 1180 - numeric order, not "1180" first.
+  // 139, 214, 385, 646, 729, 1180 — numeric order, not "1180" first.
   const want = ["139", "214", "385", "646", "729", "1180"];
   if (JSON.stringify(out.ascending) !== JSON.stringify(want)) {
     bad.push(`a number column sorted as text: ${out.ascending.join(", ")}`);
@@ -187,7 +187,7 @@ const GEOJSON = JSON.stringify({ type: "FeatureCollection", features:
     process.exit(1);
   }
 
-  console.log(`the attribute table works - ${out.rows} rows, `
+  console.log(`the attribute table works — ${out.rows} rows, `
     + `${out.headers.length - 1} fields typed, numbers sort as numbers, `
     + `the filter cut 6 to ${out.filtered}, a clicked row lights up on the map`);
 })();

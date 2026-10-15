@@ -1,4 +1,4 @@
-"""Step 05 - zonal statistics.
+"""Step 05 — zonal statistics.
 
 Summarises any raster onto any boundary set. This is the single operation
 behind most of what this platform is for:

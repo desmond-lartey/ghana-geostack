@@ -39,7 +39,7 @@ in the area I am looking at".
 
 ## Using it
 
-Ask needs your own API key - **Map** tab, under the model settings. Without one
+Ask needs your own API key — **Map** tab, under the model settings. Without one
 the tab falls back to the old behaviour: it asks the shared endpoint for a
 query, or matches one of the built-in question patterns, and you run it
 yourself. Nothing that worked before stopped working.
@@ -56,7 +56,7 @@ That last one is four tools in sequence: it searches the catalogue, draws the
 layer with the producer's colours and a legend, counts pixels per class per
 region on Google's machines, and queries the resulting table.
 
-It reports each step as it goes - which tool, which turn - and the **Log** tab
+It reports each step as it goes — which tool, which turn — and the **Log** tab
 keeps every call and its arguments.
 
 The query it ran is left in the Query tab, visible and editable. That is
@@ -71,7 +71,7 @@ no bound is a way to spend your money while you watch a spinner. It was eight,
 which was too few for the chain this is for: finding a dataset, drawing it,
 reducing it, querying the result, mapping it and colouring it is six tool calls
 before a word is said, and the limit was cutting the answer off at the
-colouring - the step that makes the map worth looking at.
+colouring — the step that makes the map worth looking at.
 
 **Read-only SQL.** `run_sql` refuses anything that is not a `SELECT` or `WITH`,
 by the same check the Query tab uses.
@@ -90,15 +90,15 @@ for the map, but the model is sent the row count and the attributes only.
 Coordinates are megabytes and tell a language model nothing.
 
 **A named dataset is used.** Saying "use CHIRPS" or "ESA WorldCover" used to
-send the model through a search, which returns a list - from which it picked
+send the model through a search, which returns a list — from which it picked
 one and then described another. That is how a layer labelled v100 arrived with
 a sentence about v200. The Earth Engine tools now resolve a name themselves,
 and the rules are the boring ones: an exact id wins outright; one match is used
 and reported; several matches are handed back as a list, newest first, to be
 chosen between by exact id rather than guessed at.
 
-**Two reducers, not one.** `summarise_earth_engine` takes `over_time` - how the
-images in the date range become one image - and `statistic` - how the pixels
+**Two reducers, not one.** `summarise_earth_engine` takes `over_time` — how the
+images in the date range become one image — and `statistic` — how the pixels
 inside a zone become one number. They are independent and getting either wrong
 produces a number in no unit. Annual rainfall is `over_time=sum` with
 `statistic=mean`: the year's total at each pixel, averaged over the region, in
@@ -120,14 +120,14 @@ dataset it had been asked for whether or not anything was drawn, so a layer
 that failed came back as a confident sentence about a map with nothing new on
 it. Every exit now carries the outcome, and the result names the dataset id
 actually used, the boundary it was clipped to and how many images went into it.
-The model is told to report those rather than its intention - the person is
+The model is told to report those rather than its intention — the person is
 looking at a layer labelled with that id, so naming a different one is a
 mistake they can see.
 
 `summarise_earth_engine` had the same shape and one extra problem: it replied
 "the table name is in the Data tab and the Log", which the model cannot read.
 The name is built from the last segment of the dataset id, so
-`UCSB-CHG/CHIRPS/DAILY` becomes `ghana.ee_daily_region` - not guessable, and a
+`UCSB-CHG/CHIRPS/DAILY` becomes `ghana.ee_daily_region` — not guessable, and a
 guess is a query against a table that does not exist. It now returns the table,
 its columns, the number of zones, the range of values, and the query to run
 next.
@@ -161,7 +161,7 @@ One entry in `AGENT_TOOLS` in `web/index.html`:
 
 The same entry produces the schema sent to the model, the gate that asks before
 running, and the row in the table above. Adding a capability is one declaration
-rather than three that drift apart - which is the whole point of GeoAgent's
+rather than three that drift apart — which is the whole point of GeoAgent's
 registry, and of the `ModuleSpec` registry in the Savana plugin. Two projects
 arriving at the same shape is a good sign it is the right one.
 

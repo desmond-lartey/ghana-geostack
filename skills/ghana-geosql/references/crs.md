@@ -1,4 +1,4 @@
-# Coordinate Systems - Ghana
+# Coordinate Systems — Ghana
 
 Ghana sits on both sides of the prime meridian, which means no single UTM zone
 covers it cleanly. That one fact causes most of the CRS confusion in Ghanaian
@@ -20,10 +20,10 @@ GIS work, so it is worth being explicit about the rules this project follows.
 
 | Option | Verdict |
 | --- | --- |
-| **EPSG:32630** - WGS 84 / UTM 30N | **The default here.** Covers Ghana west of 0°, which is most of it. The eastern strip (Volta, Oti, out to ~1.25°E) sits past the nominal half-zone, giving scale error up to roughly 0.1%. On a 1 km measurement that is a metre. Fine for buffers, densities, accessibility and areas. |
-| EPSG:32631 - UTM 31N | Correct for analysis confined to east of 0°. Splitting the country across two zones to gain 0.1% is not worth the join complexity. |
-| EPSG:2136 - Accra / Ghana National Grid | The legacy national grid, in Gold Coast feet on the Accra datum. Still what a lot of cadastral and survey material is in. |
-| EPSG:2137 - Accra / TM 1 NW | Metres, central meridian 1°W, which is close to Ghana's centre - the best national metric fit on paper. Accra datum, so a datum shift is needed to reconcile it with WGS 84. |
+| **EPSG:32630** — WGS 84 / UTM 30N | **The default here.** Covers Ghana west of 0°, which is most of it. The eastern strip (Volta, Oti, out to ~1.25°E) sits past the nominal half-zone, giving scale error up to roughly 0.1%. On a 1 km measurement that is a metre. Fine for buffers, densities, accessibility and areas. |
+| EPSG:32631 — UTM 31N | Correct for analysis confined to east of 0°. Splitting the country across two zones to gain 0.1% is not worth the join complexity. |
+| EPSG:2136 — Accra / Ghana National Grid | The legacy national grid, in Gold Coast feet on the Accra datum. Still what a lot of cadastral and survey material is in. |
+| EPSG:2137 — Accra / TM 1 NW | Metres, central meridian 1°W, which is close to Ghana's centre — the best national metric fit on paper. Accra datum, so a datum shift is needed to reconcile it with WGS 84. |
 | A custom Albers or Lambert | Overkill for a country this size. |
 
 **If your work is legal, cadastral or survey-grade**, do not take the national
@@ -61,7 +61,7 @@ gdf = gdf.to_crs(4326)          # always store back in 4326
 | Areas around 0.0001 | Measured in square degrees |
 | Areas around 10⁹ too large | Measured in a projected CRS and reported as if 4326, or a unit mix-up |
 | Two layers that should overlap do not | Different SRIDs; check `geometry_columns` |
-| Coordinates in the hundreds of thousands | Already projected - do not transform again |
+| Coordinates in the hundreds of thousands | Already projected — do not transform again |
 
 `db/qc/checks.sql` tests for the first two automatically on every build.
 
@@ -70,5 +70,5 @@ gdf = gdf.to_crs(4326)          # always store back in 4326
 OSM's `height` tag is free text and inconsistent: `12`, `12 m`, `40 ft`,
 `3 floors`. The transform in `db/transform/buildings.sql` keeps only clean
 numbers and discards the rest rather than guessing. A building height of 40 in
-Ghana is usually feet parsed as metres - the QC suite flags anything above
+Ghana is usually feet parsed as metres — the QC suite flags anything above
 120 m for that reason.

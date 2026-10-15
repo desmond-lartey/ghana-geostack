@@ -2,8 +2,8 @@
 
 This exists because of one bug that cost an afternoon and looked like
 something else entirely. ``gibs.earthdata.nasa.gov`` was in the policy's
-``img-src`` and not in its ``connect-src``. That reads as correct - tiles are
-images - but MapLibre GL does not load raster tiles with an ``<img>`` tag. It
+``img-src`` and not in its ``connect-src``. That reads as correct — tiles are
+images — but MapLibre GL does not load raster tiles with an ``<img>`` tag. It
 fetches them, so ``connect-src`` is the directive that governs, and every NASA
 tile was refused before it left the browser.
 

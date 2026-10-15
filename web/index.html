@@ -26,7 +26,7 @@
 
 <style>
 /* ---------------------------------------------------------------------------
-   Ghana GeoStack - viewer
+   Ghana GeoStack — viewer
 
    Typography is the Source superfamily: Source Serif 4 for headings, Source
    Sans 3 for interface text, JetBrains Mono for figures and SQL. The serif
@@ -670,7 +670,7 @@ td { font-family: var(--font-mono); font-size: 12.5px; font-variant-numeric: tab
      auto, so it takes nothing at all while it is closed. */
   grid-template-rows: auto minmax(0, 1fr) auto 26px;
   /* minmax(0, 1fr), not 1fr. A grid item's min-width is auto, so a track of
-     1fr is still at least as wide as its widest content - and the ribbon on
+     1fr is still at least as wide as its widest content — and the ribbon on
      the Publish tab is far wider than any screen. That widened the whole
      shell, which put the right-hand dock and the map toolbar several
      thousand pixels off the side of the window. */
@@ -678,7 +678,7 @@ td { font-family: var(--font-mono); font-size: 12.5px; font-variant-numeric: tab
   background: var(--ground);
 }
 
-/* - Menu bar - */
+/* — Menu bar — */
 
 #menubar {
   display: flex; align-items: center; gap: 2px;
@@ -741,7 +741,7 @@ td { font-family: var(--font-mono); font-size: 12.5px; font-variant-numeric: tab
 #menubar .spacer { flex: 1; }
 #menubar .project-name { opacity: .6; font-size: 13px; padding-right: 6px; }
 
-/* - Workspace: rail, dock, map, dock, rail - */
+/* — Workspace: rail, dock, map, dock, rail — */
 
 /* The map has the whole workspace; the panels float on top of it. Two things
    follow that a strip of docks either side could not do: closing a panel gives
@@ -749,7 +749,7 @@ td { font-family: var(--font-mono); font-size: 12.5px; font-variant-numeric: tab
    is continuous, so panning does not stop at a panel's edge. */
 /* Three columns: Contents, the map, and whichever pane is open. ArcGIS Pro's
    arrangement, and the reason for it is that a panel floating over the map
-   hides the part of the map you were looking at - which is always the part
+   hides the part of the map you were looking at — which is always the part
    under the panel, because that is where you had centred it. Docked panes
    take width from the map instead of covering it, and closing one gives the
    width back. minmax(0, 1fr) on the middle track, because a grid item's
@@ -762,7 +762,7 @@ td { font-family: var(--font-mono); font-size: 12.5px; font-variant-numeric: tab
 
 /* Each panel owns a column by name. Without this, hiding one was enough to
    lose the map: a hidden grid item is out of the flow, so auto-placement slid
-   the map from the 1fr track into the `auto` track the dock had been in - and
+   the map from the 1fr track into the `auto` track the dock had been in — and
    the map's only child is absolutely positioned, so an auto track around it
    is zero wide. Closing the layer list made the map 0px and everything on it
    went with it, which is exactly what it looked like. */
@@ -811,7 +811,7 @@ td { font-family: var(--font-mono); font-size: 12.5px; font-variant-numeric: tab
 
 .dock-body { flex: 1; overflow-y: auto; padding: 12px; min-height: 0; }
 
-/* - The search box at the foot of the layers dock - */
+/* — The search box at the foot of the layers dock — */
 
 #dock-search {
   display: flex; align-items: center; gap: 8px; flex: none;
@@ -851,7 +851,7 @@ td { font-family: var(--font-mono); font-size: 12.5px; font-variant-numeric: tab
 #map-wrap { position: relative; min-width: 0; }
 #map { position: absolute; inset: 0; transition: none; }
 
-/* - Status bar - */
+/* — Status bar — */
 
 #statusbar {
   display: flex; align-items: center; gap: 18px;
@@ -922,7 +922,7 @@ td { font-family: var(--font-mono); font-size: 12.5px; font-variant-numeric: tab
 }
 #export-dialog .clip-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 12px; }
 
-/* - Layer cards - */
+/* — Layer cards — */
 
 .layer-card {
   border: 1px solid var(--border); border-radius: 9px;
@@ -985,7 +985,7 @@ td { font-family: var(--font-mono); font-size: 12.5px; font-variant-numeric: tab
 .layer-card .lc-actions button.danger:hover { color: var(--clay); }
 .layer-card .lc-actions svg { width: 15px; height: 15px; }
 
-/* - The toolbox, a floating window - */
+/* — The toolbox, a floating window — */
 
 #toolbox {
   position: fixed; z-index: 80;
@@ -1490,7 +1490,7 @@ td { font-family: var(--font-mono); font-size: 12.5px; font-variant-numeric: tab
   grid-template-columns: repeat(auto-fill, minmax(248px, 1fr));
   /* max-content, not the default auto. The grid has a definite height, and
      implicit `auto` rows in a definite-height grid were being divided into
-     equal shares of it - nine rows of 45.9px, every card clipped to a strip
+     equal shares of it — nine rows of 45.9px, every card clipped to a strip
      with its thumbnail or its title showing and the rest cut off. Saying
      max-content says what was meant: a row is as tall as the cards in it. */
   grid-auto-rows: max-content;
@@ -1500,7 +1500,7 @@ td { font-family: var(--font-mono); font-size: 12.5px; font-variant-numeric: tab
 
 /* A plain block, not a flex column. As a flex column every band of the card
    was shrinkable, so whichever one had a definite height won and the rest
-   collapsed to nothing - thumbnails with no text, then text with no
+   collapsed to nothing — thumbnails with no text, then text with no
    thumbnail. A card is a stack of blocks and wants no cleverness. */
 .lib-card {
   display: block; align-self: start; min-width: 0;
@@ -1513,7 +1513,7 @@ td { font-family: var(--font-mono); font-size: 12.5px; font-variant-numeric: tab
 .lib-card.on { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
 
 /* flex: none on every band of the card. A flex item shrinks by default, so
-   `height: 132px` on the thumbnail is a suggestion the layout may ignore -
+   `height: 132px` on the thumbnail is a suggestion the layout may ignore —
    and it did, collapsing every thumbnail to nothing and spilling the text
    out of the card it was supposed to be inside. */
 .lib-thumb { height: 132px; background: var(--surface-2); overflow: hidden; }
@@ -1685,6 +1685,123 @@ td { font-family: var(--font-mono); font-size: 12.5px; font-variant-numeric: tab
   white-space: normal;
 }
 
+/* ── The 15-minute profile ───────────────────────────────────────────── */
+
+.fm-head { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.fm-head strong { font-family: var(--font-mono); font-size: 12.5px; color: var(--text); }
+.fm-head .btn { margin-left: auto; }
+
+.fm-status { font-size: 12px; color: var(--text-2); min-height: 16px; margin: 8px 0; }
+.fm-status:empty { display: none; }
+
+.fm-bands { display: flex; gap: 8px; margin: 12px 0; }
+.fm-band {
+  flex: 1; min-width: 0;
+  display: flex; flex-direction: column; gap: 2px;
+  padding: 8px 9px; border: 1px solid var(--border); border-radius: var(--radius);
+  background: var(--surface-2);
+}
+.fm-band i { width: 18px; height: 5px; border-radius: 3px; }
+.fm-band span { font-size: 11px; color: var(--text-3); }
+.fm-band strong { font-size: 12.5px; font-family: var(--font-mono); color: var(--text); }
+
+.fm-h {
+  font-size: 10.5px; letter-spacing: .07em; text-transform: uppercase;
+  color: var(--text-3); margin: 18px 0 8px; font-weight: 600;
+}
+
+.fm-rows { display: flex; flex-direction: column; gap: 1px; }
+.fm-row {
+  display: flex; align-items: center; gap: 9px;
+  font-size: 12.3px; padding: 4px 0;
+}
+.fm-row.off { opacity: .42; }
+.fm-row i { width: 9px; height: 9px; border-radius: 50%; flex: none; }
+.fm-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis;
+           white-space: nowrap; color: var(--text-2); }
+.fm-n { font-family: var(--font-mono); font-size: 12px; color: var(--text); }
+.fm-share { font-family: var(--font-mono); font-size: 11px; color: var(--text-3);
+            width: 44px; text-align: right; }
+.fm-total { font-size: 11.5px; color: var(--text-3); margin: 8px 0 0; }
+
+.fm-radar { display: grid; place-items: center; color: var(--text-2); margin: 4px 0 6px; }
+.radar { width: 100%; max-width: 290px; height: auto; }
+
+.fm-axes { margin: 10px 0 0; padding-left: 0; list-style: none; }
+.fm-axes li {
+  font-size: 11.5px; line-height: 1.5; color: var(--text-3);
+  padding: 3px 0; border-top: 1px solid var(--border);
+}
+.fm-axes strong { color: var(--text-2); }
+
+.fm-read { font-size: 12.6px; line-height: 1.6; color: var(--text-2); margin: 0 0 9px; }
+.fm-actions { display: flex; gap: 7px; flex-wrap: wrap; margin: 16px 0 12px; }
+
+/* ── The radar lens, on the map ──────────────────────────────────────── */
+
+#lens {
+  position: absolute; top: 14px; right: 14px; z-index: 30;
+  width: 290px;
+  background: var(--surface);
+  border: 1px solid var(--border); border-radius: var(--radius-lg);
+  box-shadow: 0 14px 38px rgba(0, 0, 0, .34);
+  padding: 12px 13px 13px;
+  color: var(--text-2);
+}
+#lens[hidden] { display: none; }
+#lens header { display: flex; align-items: center; margin-bottom: 6px; }
+#lens header strong { font-size: 12.5px; color: var(--text); }
+#lens-close {
+  margin-left: auto; width: 24px; height: 24px; display: grid; place-items: center;
+  background: none; border: 0; border-radius: var(--radius);
+  color: var(--text-3); cursor: pointer;
+}
+#lens-close:hover { background: var(--surface-2); color: var(--text); }
+#lens-close svg { width: 13px; height: 13px; }
+#lens-chart { display: grid; place-items: center; }
+#lens-detail { font-size: 11.3px; color: var(--text-3); margin: 2px 0 10px; text-align: center; }
+#lens-detail:empty { display: none; }
+
+.lens-field {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 11.5px; color: var(--text-3); margin-bottom: 7px;
+}
+.lens-field > span { width: 52px; flex: none; }
+.lens-field select {
+  flex: 1; min-width: 0; height: 26px; padding: 0 6px;
+  background: var(--surface-2); color: var(--text);
+  border: 1px solid var(--border); border-radius: var(--radius);
+  font: inherit; font-size: 11.5px;
+}
+.lens-field input[type="range"] { flex: 1; min-width: 0; }
+.lens-field output { font-family: var(--font-mono); font-size: 11px; width: 44px; text-align: right; }
+
+#lens-where { font-family: var(--font-mono); font-size: 10.5px; color: var(--text-3);
+              margin: 6px 0 0; }
+.lens-hint { font-size: 11px; line-height: 1.5; color: var(--text-3); margin: 7px 0 0; }
+
+/* ── Imagery search ──────────────────────────────────────────────────── */
+.es-field {
+  display: flex; align-items: center; gap: 9px;
+  font-size: 11.5px; color: var(--text-3); margin: 9px 0;
+}
+.es-field > span { width: 86px; flex: none; }
+.es-field input[type="url"], .es-field input[type="search"] {
+  flex: 1; min-width: 0; height: 30px; padding: 0 9px;
+  background: var(--surface-2); color: var(--text);
+  border: 1px solid var(--border); border-radius: var(--radius);
+  font: inherit; font-size: 12.5px;
+}
+.es-field input[type="range"] { flex: 1; min-width: 0; }
+.es-field output { font-family: var(--font-mono); font-size: 11px; width: 34px; text-align: right; }
+.es-examples { display: flex; flex-wrap: wrap; gap: 5px; margin: 8px 0 4px; }
+.es-chip {
+  font: inherit; font-size: 11px; padding: 3px 9px;
+  background: var(--surface-2); color: var(--text-2);
+  border: 1px solid var(--border); border-radius: 11px; cursor: pointer;
+}
+.es-chip:hover { border-color: var(--accent); color: var(--accent); }
+
 </style>
 </head>
 
@@ -1849,6 +1966,31 @@ td { font-family: var(--font-mono); font-size: 12.5px; font-variant-numeric: tab
 <div id="map-wrap">
     <div id="map"></div>
 
+<!-- The radar lens. On the map rather than in a dock, because it is an
+     instrument you move over the thing it measures. -->
+<section id="lens" hidden aria-label="Radar lens">
+  <header>
+    <strong>Radar lens</strong>
+    <button type="button" id="lens-close" aria-label="Close the lens">
+      <svg viewBox="0 0 15 15" fill="none"><path d="M4 4l7 7M11 4l-7 7" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+    </button>
+  </header>
+  <div id="lens-chart"></div>
+  <p id="lens-detail"></p>
+  <label class="lens-field">
+    <span>Reading</span>
+    <select id="lens-source" aria-label="What the lens reads"></select>
+  </label>
+  <label class="lens-field">
+    <span>Radius</span>
+    <input id="lens-radius" type="range" min="150" max="1500" step="50" value="600">
+    <output id="lens-radius-out">600 m</output>
+  </label>
+  <p id="lens-where"></p>
+  <p class="lens-hint">Drag the circle on the map, or shift-click to put it
+    somewhere. The spokes recompute from whatever is inside it.</p>
+</section>
+
 <div id="drop-veil" hidden aria-hidden="true">
   <div>
     <strong>Drop to add it to the map</strong>
@@ -1987,6 +2129,8 @@ td { font-family: var(--font-mono); font-size: 12.5px; font-variant-numeric: tab
   <div class="tabpanel" id="pane-bookmarks" role="tabpanel"></div>
   <div class="tabpanel" id="pane-identify" role="tabpanel"></div>
   <div class="tabpanel" id="pane-basemap" role="tabpanel"></div>
+  <div class="tabpanel" id="pane-fifteen" role="tabpanel"></div>
+  <div class="tabpanel" id="pane-imagery" role="tabpanel"></div>
   <div class="tabpanel" id="pane-adddata" role="tabpanel">
     <h3>Add data</h3>
 
@@ -2013,7 +2157,7 @@ td { font-family: var(--font-mono); font-size: 12.5px; font-variant-numeric: tab
   <p class="legend-note">Nothing is uploaded. The file is read in this browser,
     drawn on the map and registered as a table, so the SQL workspace, the
     toolbox and the assistant can all reach it. A CSV needs a longitude and a
-    latitude column - lon/lat, x/y or easting/northing - or a WKT geometry
+    latitude column — lon/lat, x/y or easting/northing — or a WKT geometry
     column.</p>
 
   <div class="actions" style="margin-top:12px">
@@ -2330,13 +2474,13 @@ ORDER BY km2 DESC;</textarea>
 </section>
 
 <div id="statusbar">
-  <span class="sb-item"><b>Coords</b><span id="sb-coords">-</span></span>
-  <span class="sb-item"><b>Zoom</b><span id="sb-zoom">-</span></span>
-  <span class="sb-item"><b>Scale</b><span id="sb-scale">-</span></span>
-  <span class="sb-item"><b>BBox</b><span id="sb-bbox">-</span></span>
-  <span class="sb-item"><b>Eye alt</b><span id="sb-alt">-</span></span>
-  <span class="sb-item"><b>Bearing</b><span id="sb-bearing">-</span></span>
-  <span class="sb-item"><b>Pitch</b><span id="sb-pitch">-</span></span>
+  <span class="sb-item"><b>Coords</b><span id="sb-coords">—</span></span>
+  <span class="sb-item"><b>Zoom</b><span id="sb-zoom">—</span></span>
+  <span class="sb-item"><b>Scale</b><span id="sb-scale">—</span></span>
+  <span class="sb-item"><b>BBox</b><span id="sb-bbox">—</span></span>
+  <span class="sb-item"><b>Eye alt</b><span id="sb-alt">—</span></span>
+  <span class="sb-item"><b>Bearing</b><span id="sb-bearing">—</span></span>
+  <span class="sb-item"><b>Pitch</b><span id="sb-pitch">—</span></span>
   <span class="sb-right">
     <span class="sb-item"><b>CRS</b><span id="sb-crs">EPSG:4326</span></span>
     <span class="sb-item"><b>Clip</b><button type="button" id="sb-clip"
@@ -2379,7 +2523,7 @@ ORDER BY km2 DESC;</textarea>
   <div class="cs-head">
     <svg viewBox="0 0 20 20" fill="none"><path d="M9 3.6a5.4 5.4 0 1 0 0 10.8A5.4 5.4 0 0 0 9 3.6zM12.9 12.9l4 4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
     <input id="command-search-input" type="search" autocomplete="off"
-           placeholder="Find a command - buffer, rainfall, export, clip…">
+           placeholder="Find a command — buffer, rainfall, export, clip…">
     <button type="button" class="btn btn-quiet" id="command-search-close">Close</button>
   </div>
   <div id="command-search-results"></div>
@@ -2401,10 +2545,10 @@ ORDER BY km2 DESC;</textarea>
   <div class="field">
     <label for="export-size">Size</label>
     <select id="export-size">
-      <option value="wide">Landscape - 1600 × 1100</option>
-      <option value="tall">Portrait - 1100 × 1600</option>
-      <option value="square">Square - 1400 × 1400</option>
-      <option value="slide">Slide - 1920 × 1080</option>
+      <option value="wide">Landscape — 1600 × 1100</option>
+      <option value="tall">Portrait — 1100 × 1600</option>
+      <option value="square">Square — 1400 × 1400</option>
+      <option value="slide">Slide — 1920 × 1080</option>
     </select>
   </div>
 
@@ -2417,7 +2561,7 @@ ORDER BY km2 DESC;</textarea>
 
   <p class="legend-note" style="margin:10px 0 0">The frame takes the middle of
     the current view, at the shape you choose. Pan and zoom until the map looks
-    right, then export - what you see is what is drawn.</p>
+    right, then export — what you see is what is drawn.</p>
 
   <div id="export-status" class="legend-note" style="margin-top:8px"></div>
 
@@ -2489,7 +2633,7 @@ ORDER BY km2 DESC;</textarea>
    Three things this page does at load are the newest and least settled parts
    of the map library: globe projection, a terrain mesh, and hillshade from a
    remote DEM. When the map dies during rendering there is no way to catch it
-   from inside - the throw happens in a render frame, not in our call stack.
+   from inside — the throw happens in a render frame, not in our call stack.
 
    So the page notices it died, turns those three off, and reloads once. If the
    map then works, the cause is one of the three and the page says so. That is
@@ -2508,7 +2652,7 @@ ORDER BY km2 DESC;</textarea>
 /* Content-security-policy violations, recorded.
 
    A request the policy refuses never reaches the network, and the code that
-   made it sees an empty response rather than an error - which is exactly how
+   made it sees an empty response rather than an error — which is exactly how
    "Invalid JSON: " with nothing after it is produced. The browser does fire an
    event naming the blocked address and the directive that blocked it, and
    nothing was listening for it.
@@ -2682,7 +2826,7 @@ const store = {
 /* Basemaps.
 
    The default is no basemap at all. The boundaries are the map, they are
-   served from this site, and nothing is requested from a third party - which
+   served from this site, and nothing is requested from a third party — which
    is faster, works offline, and cannot break when somebody else changes their
    terms. The alternatives below are open endpoints that need no API key;
    confirm the terms of whichever you deploy. */
@@ -2736,7 +2880,7 @@ const BASEMAPS = {
     } }]
   },
   none: {
-    label: "None - data only",
+    label: "None — data only",
     note: "No third-party requests, and nothing but Ghana on screen. Fastest and most private, but the country floats with no world around it.",
     sources: {},
     layers: []
@@ -2943,7 +3087,7 @@ const STORY = [
    State and map
 --------------------------------------------------------------------------- */
 
-const fmt = (v) => (v === null || v === undefined || v === "" ? "-"
+const fmt = (v) => (v === null || v === undefined || v === "" ? "—"
   : typeof v === "number" ? Math.round(v).toLocaleString() : v);
 
 const state = {
@@ -2972,7 +3116,7 @@ if (window.__ghSafeMode) {
 /* State that other parts of the module reach for while setting themselves up.
 
    A `const` is not hoisted: touching one before its declaration line throws
-   and takes the page with it, which has now happened twice - once for a
+   and takes the page with it, which has now happened twice — once for a
    palette table, once for this registry, both reached through a render call
    during start-up. Declaring the containers here, next to `state`, and leaving
    the behaviour where it belongs is what stops it happening a third time. */
@@ -2983,7 +3127,7 @@ const clipState = { kind: "none", name: "", geometry: null };
 /* Start-up runs in the middle of this module: setTheme calls renderLayerList,
    which wants to draw the layer cards, whose icons are declared hundreds of
    lines further down. A `const` is not hoisted, so reaching one early throws
-   and takes the page down - three separate times now, each a different
+   and takes the page down — three separate times now, each a different
    constant reached through a different render call.
 
    A flag is the general answer rather than a third careful reordering. The
@@ -3160,7 +3304,7 @@ async function addLayer(layer) {
    Binding a click handler per layer meant a point sitting inside a district
    inside a region opened three popups stacked on top of each other. A single
    handler queries everything under the cursor at once and shows one card,
-   with the smallest feature first - which is almost always the one the reader
+   with the smallest feature first — which is almost always the one the reader
    meant to click. */
 
 let popup = null;
@@ -3174,7 +3318,7 @@ function bindPopup(layerId, layer) {
 
 function popupSection(title, rows) {
   const body = Object.entries(rows)
-    .filter(([, v]) => v !== undefined && v !== null && v !== "" && v !== "-")
+    .filter(([, v]) => v !== undefined && v !== null && v !== "" && v !== "—")
     .map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join("");
   return `<b>${title}</b><dl>${body}</dl>`;
 }
@@ -3290,7 +3434,7 @@ async function rebuildStyle() {
 }
 
 /* The session's own layers are not in the catalogue, so buildLayers() cannot
-   put them back - and setStyle has already removed every source and layer on
+   put them back — and setStyle has already removed every source and layer on
    the map. Each one is lifted out of the live style as its source and layer
    definitions, which is how MapLibre describes them anyway, and re-added on
    top of the new basemap in the order it had.
@@ -3555,7 +3699,7 @@ renderCatalog();
 /* ---------------------------------------------------------------------------
    Terrain
 
-   Elevation comes from the Terrarium tiles on AWS Open Data - SRTM and other
+   Elevation comes from the Terrarium tiles on AWS Open Data — SRTM and other
    public sources encoded into RGB, free, keyless and CORS-enabled. That gives
    three things at once: hillshade under the data, real 3D relief, and an
    elevation reading anywhere the reader clicks.
@@ -3613,7 +3757,7 @@ function applyTerrain() {
 }
 
 /* Elevation under a point, in metres. Returns null when terrain is off or the
-   tile for that spot has not loaded - which is honest, rather than reporting a
+   tile for that spot has not loaded — which is honest, rather than reporting a
    confident zero. */
 function terrainElevationAt(lngLat) {
   if (!state.terrain) return null;
@@ -3641,7 +3785,7 @@ function terrainElevationAt(lngLat) {
    QGIS calls quantile and what most choropleths want: it uses the whole
    palette even when the data is skewed, and Ghana's rainfall is skewed.
    Equal interval cuts the range into equal widths, which is right when the
-   number itself has meaning - a percentage, a temperature.
+   number itself has meaning — a percentage, a temperature.
 
    Breaks are rounded to something a person would write down. An unrounded
    break is honest to five decimal places and unreadable, and rounding moves a
@@ -3697,7 +3841,7 @@ function pickStops(stops, n) {
    the size of the number warrants. A legend reading 1499.0599999 is worse than
    no legend. */
 function legendNumber(value) {
-  if (!Number.isFinite(value)) return "-";
+  if (!Number.isFinite(value)) return "—";
   const abs = Math.abs(value);
   const digits = abs >= 100 ? 0 : abs >= 1 ? 1 : 3;
   return value.toLocaleString(undefined, { maximumFractionDigits: digits });
@@ -3712,7 +3856,7 @@ function legendNumber(value) {
    covers the map and has to be read against a list somewhere else to know
    which layer each block belongs to.
 
-   The printed map still gets a proper legend - see drawLegend - because a
+   The printed map still gets a proper legend — see drawLegend — because a
    sheet of paper has no layer list to read the colours against. */
 function legendForLayer(key) {
   const st = styleState[key];
@@ -3755,7 +3899,7 @@ function legendForLayer(key) {
 
 function renderLegend() {
   // Kept as the one name every path already calls after it changes what is
-  // drawn - turning a layer on, styling one, removing one, swapping the
+  // drawn — turning a layer on, styling one, removing one, swapping the
   // basemap. What it does now is redraw the contents list, because that is
   // where the symbology lives. The printed map builds its own legend from
   // exportLegendModel(), which never read this DOM.
@@ -3864,8 +4008,8 @@ hamburger.addEventListener("click", () =>
   panel.dataset.open === "true" ? closePanel() : openPanel("layers"));
 
 /* Which pane the right dock shows. Driven from the panes rather than from the
-   tab buttons: the tab strip is hidden now, and panes the ribbon added -
-   Identify, Bookmarks, the slot explainer - have no button to be driven from.
+   tab buttons: the tab strip is hidden now, and panes the ribbon added —
+   Identify, Bookmarks, the slot explainer — have no button to be driven from.
    Reading the panes means adding one is adding one thing. */
 function selectTab(name) {
   for (const pane of document.querySelectorAll(".tabpanel")) {
@@ -4153,7 +4297,7 @@ function setStatus(text, isError = false) {
    DuckDB compiled to WebAssembly has no spatial extension, so the page
    computes a small set of spatial attributes for every feature as it loads.
    Those columns plus the SQL macros below cover the spatial questions people
-   actually ask - distance, nearest, within a radius, bounding-box overlap -
+   actually ask — distance, nearest, within a radius, bounding-box overlap —
    without needing a server, an extension, or a local install. */
 
 function flatten(coordinates, out = []) {
@@ -4222,7 +4366,7 @@ function centroidOf(geometry) {
 
    Data is handed over as CSV, not JSON. read_csv_auto is part of the core
    engine, while read_json_auto needs the json extension, which is not
-   guaranteed to be present in every WebAssembly build - and when it is
+   guaranteed to be present in every WebAssembly build — and when it is
    missing, every view fails to create and the console reports only that no
    table exists.
 
@@ -4370,7 +4514,7 @@ async function initDuckDB() {
       throw new Error(failures.join(" · ") || "no tables could be loaded");
     }
     if (failures.length) console.warn("Some layers did not load:", failures);
-    setStatus(`Ready - ${loaded.join(", ")}`
+    setStatus(`Ready — ${loaded.join(", ")}`
       + (state.spatial ? " · spatial functions available on shape"
                        : " · spatial macros only"));
   } catch (err) {
@@ -4419,7 +4563,7 @@ function renderInto(host, rows) {
 }
 
 function cell(v) {
-  if (v === null || v === undefined) return "-";
+  if (v === null || v === undefined) return "—";
   if (typeof v === "bigint") return v.toLocaleString();
   if (typeof v === "number") return Number.isInteger(v) ? v.toLocaleString() : v.toFixed(2);
   return String(v).slice(0, 48);
@@ -4699,7 +4843,7 @@ async function askProvider(question, { provider, key, model, baseUrl }) {
    Adapted from GeoLibre's assistant guard: mask string and comment literals
    first so a keyword inside a quoted value does not trip the test, then require
    the statement to open with SELECT or WITH and hold no side-effecting keyword
-   anywhere - which is what catches a data-modifying CTE such as
+   anywhere — which is what catches a data-modifying CTE such as
    WITH x AS (DELETE ...) SELECT ...
 
    SQL typed by hand in the Query tab is not checked. That database lives in the
@@ -4938,7 +5082,7 @@ async function askExecute(toMap = false) {
 }
 
 /* Provider settings. The key lives in this browser and is sent only to the
-   provider the reader picked - never to this site. */
+   provider the reader picked — never to this site. */
 
 const keyInput = document.getElementById("api-key");
 const keyStatus = document.getElementById("key-status");
@@ -5066,7 +5210,7 @@ document.getElementById("download-geojson").addEventListener("click", () => {
    Every drawn layer, published or produced in this session, gets the same set
    of controls: colour, opacity, stroke width, height, and a graduated ramp
    over any numeric column it carries. A result that cannot be restyled is
-   only half an answer - the reader has to be able to make the map say what
+   only half an answer — the reader has to be able to make the map say what
    they found.
 --------------------------------------------------------------------------- */
 
@@ -5222,7 +5366,7 @@ function renderStylePane() {
         ${fields.length ? `
           <label class="legend-note" style="display:block;margin-bottom:4px">Graduate by</label>
           <select data-style="field" data-key="${target.key}" style="width:100%;height:32px;margin-bottom:11px">
-            <option value="">Nothing - one colour</option>
+            <option value="">Nothing — one colour</option>
             ${fields.map((f) => `<option value="${f}"${st.field === f ? " selected" : ""}>${f}</option>`).join("")}
           </select>` : ""}
 
@@ -5506,7 +5650,7 @@ async function fetchLive(id) {
   }
 
   const b = map.getBounds();
-  // Overpass wants south,west,north,east - the opposite order to almost
+  // Overpass wants south,west,north,east — the opposite order to almost
   // everything else, and the commonest mistake when querying it.
   const bbox = [b.getSouth(), b.getWest(), b.getNorth(), b.getEast()]
     .map((v) => v.toFixed(5)).join(",");
@@ -5552,7 +5696,7 @@ async function fetchLive(id) {
       const label = response.status === 429 ? "rate limited"
                   : response.status === 504 ? "overloaded"
                   : `HTTP ${response.status}`;
-      throw new Error(detail ? `${label} - ${detail}` : label);
+      throw new Error(detail ? `${label} — ${detail}` : label);
     }
 
     return response.json();
@@ -5574,7 +5718,7 @@ async function fetchLive(id) {
           ? `no answer in ${TIMEOUT_MS / 1000}s`
           : err.name === "TypeError"
             // A bare TypeError from fetch is the browser refusing to make or
-            // complete the request at all. The page never learns why - the
+            // complete the request at all. The page never learns why — the
             // reason is in the console, not in the exception.
             ? "blocked by the browser (CORS, an extension, or the network)"
             : (err.message || String(err));
@@ -5598,7 +5742,7 @@ async function fetchLive(id) {
       `border:1px solid var(--line);background:none;color:var(--accent);` +
       `border-radius:4px;cursor:pointer">Copy this report</button>` +
       `<div style="margin-top:6px;font-size:11px;opacity:.75">If every line says ` +
-      `<em>blocked by the browser</em>, the request is being stopped before it leaves - ` +
+      `<em>blocked by the browser</em>, the request is being stopped before it leaves — ` +
       `an extension or the network, not OpenStreetMap.</div>`;
 
     host.querySelector(`[data-live-copy="${id}"]`)?.addEventListener("click", (ev) => {
@@ -5641,11 +5785,11 @@ async function fetchLive(id) {
       const withHeight = collection.features.filter((f) => f.properties.height_m != null).length;
       const share = Math.round(withHeight / collection.features.length * 100);
       summary += ` · ${share}% have a height in OSM`;
-      if (share < 20) summary += " - a 3D view here will be mostly flat";
+      if (share < 20) summary += " — a 3D view here will be mostly flat";
     }
 
     /* Say where the data went. It is on the map, it is a table, and it can be
-       downloaded - none of which is obvious from a layer quietly appearing
+       downloaded — none of which is obvious from a layer quietly appearing
        behind a panel. */
     host.innerHTML = `${summary}${registered ? ` · queryable as <code style="font-family:var(--font-mono);color:var(--accent)">ghana.${source.table}</code>` : ""}
       <span style="display:flex;gap:6px;margin-top:7px">
@@ -5794,7 +5938,7 @@ function refreshLiveAreas() {
     button.title = ok ? "" : "Zoom in further";
 
     line.textContent = ok
-      ? `View covers ${Math.round(area).toLocaleString()} km² - ready.`
+      ? `View covers ${Math.round(area).toLocaleString()} km² — ready.`
       : `View covers ${Math.round(area).toLocaleString()} km². ` +
         `Zoom in below ${source.maxAreaKm2.toLocaleString()} km².`;
     line.style.color = ok ? "var(--teal, #3E8E7E)" : "var(--text-3)";
@@ -5860,8 +6004,8 @@ initDuckDB();
 
 /* ── Clipping ──────────────────────────────────────────────────────────────
 
-   The hotspots notebook clips its points to the city boundary with one line -
-   gpd.overlay(gdf_poi, admin[['geometry']]) - before it clusters anything, and
+   The hotspots notebook clips its points to the city boundary with one line —
+   gpd.overlay(gdf_poi, admin[['geometry']]) — before it clusters anything, and
    that line is doing real work. An analysis that runs over whatever happened
    to be fetched answers a question about the fetch, not about the place.
 
@@ -5906,8 +6050,8 @@ async function clipGeometry() {
 
    Earth Engine needs the same shape the local tools cut with, and the way it
    used to get it was to name the place to a boundary asset on Google's side
-   and hope the two agreed. They do not have to. Ghana's six newest regions -
-   Ahafo, Bono East, North East, Oti, Savannah and Western North - were created
+   and hope the two agreed. They do not have to. Ghana's six newest regions —
+   Ahafo, Bono East, North East, Oti, Savannah and Western North — were created
    in December 2018, so a boundary set older than that has no Oti to match, and
    this project's own admin1 file spells one of them "Northern East". A name
    that matches nothing returns an empty collection, whose geometry is empty,
@@ -6094,15 +6238,15 @@ function openClipPicker() {
 
 /* ── The layer stack ───────────────────────────────────────────────────────
 
-   Everything this session puts on the map - an Earth Engine raster, a live
-   OpenStreetMap fetch, a query result, the output of a tool - is registered
+   Everything this session puts on the map — an Earth Engine raster, a live
+   OpenStreetMap fetch, a query result, the output of a tool — is registered
    here. Before, each of those drew into its own fixed layer ids and could only
    be replaced, never managed: there was no way to see what was on the map, let
    alone turn one thing off or take it away.
 
    The panel is GeoLibre's, because GeoLibre's is right: a row per layer with
    its visibility, its opacity, somewhere to go and a way to remove it, newest
-   at the top. What differs is the registry - a producer declares its layer
+   at the top. What differs is the registry — a producer declares its layer
    once and everything else follows, so a new kind of output gets managed for
    free rather than needing its own controls.                                */
 
@@ -6118,7 +6262,7 @@ function registerUserLayer({ id, label, kind, layerIds, sourceId, bbox, note,
     bbox: bbox || null,
     colour: colour || null,
     // { type: "classes", names, colours, values } or
-    // { type: "ramp", stops, min, max } - whatever the layer can explain
+    // { type: "ramp", stops, min, max } — whatever the layer can explain
     // about itself. Absent means a single swatch of `colour`.
     legend: legend || null,
     // The features themselves, when the producer has them. The toolbox and
@@ -6251,7 +6395,7 @@ function moveUserLayer(id, direction) {
 /* ── The agent's tools ─────────────────────────────────────────────────────
 
    Modelled on GeoAgent's @geo_tool: every action the model can take is
-   declared once, with the metadata that decides how it is treated - its
+   declared once, with the metadata that decides how it is treated — its
    category, whether it must be confirmed, whether it is destructive, whether
    it spends someone's quota.
 
@@ -6262,12 +6406,12 @@ function moveUserLayer(id, direction) {
 
    The Ask tab previously wrote SQL and stopped. These let it act: move the
    map, show a layer, query the database, style the answer. Reading tools come
-   first deliberately - an agent that can see the map before changing it makes
+   first deliberately — an agent that can see the map before changing it makes
    far better decisions than one working blind.                              */
 
 const AGENT_TOOLS = {
 
-  /* - Reading. Free, instant, never confirmed. - */
+  /* — Reading. Free, instant, never confirmed. — */
 
   get_map_state: {
     category: "map",
@@ -6319,7 +6463,7 @@ const AGENT_TOOLS = {
     }
   },
 
-  /* - Acting on the map. Instant and reversible, so not confirmed. - */
+  /* — Acting on the map. Instant and reversible, so not confirmed. — */
 
   fly_to: {
     category: "map",
@@ -6345,7 +6489,7 @@ const AGENT_TOOLS = {
   zoom_to_place: {
     category: "map",
     description: "Move the map to a named region or district in Ghana. Use " +
-                 "this rather than guessing coordinates - it looks the place " +
+                 "this rather than guessing coordinates — it looks the place " +
                  "up in the boundaries and fits the map to its true extent.",
     schema: {
       type: "object",
@@ -6398,7 +6542,7 @@ const AGENT_TOOLS = {
     }
   },
 
-  /* - Earth Engine. These spend the person's own quota, so they are gated. - */
+  /* — Earth Engine. These spend the person's own quota, so they are gated. — */
 
   search_earth_engine: {
     category: "earth_engine",
@@ -6433,7 +6577,7 @@ const AGENT_TOOLS = {
 
       // The description is searched too. A person asking for rainfall should
       // find CHIRPS, whose title and keywords say precipitation and never say
-      // rainfall - the word is in its description, and leaving that out made
+      // rainfall — the word is in its description, and leaving that out made
       // the obvious search for the obvious dataset return nothing.
       const hay = (d) =>
         `${d.title} ${d.id} ${(d.keywords || []).join(" ")} ${d.description || ""}`
@@ -6447,7 +6591,7 @@ const AGENT_TOOLS = {
         return {
           error: `Nothing in the catalogue matches "${query}". ${catalog.length} `
                + `datasets were searched by title, id, keywords and description. `
-               + `Try a different word - the catalogue uses the producer's own `
+               + `Try a different word — the catalogue uses the producer's own `
                + `vocabulary, so precipitation rather than rain, land cover `
                + `rather than landuse, LST rather than temperature.`
         };
@@ -6473,7 +6617,7 @@ const AGENT_TOOLS = {
       properties: {
         dataset_id: { type: "string",
                       description: "The Earth Engine id, or the name the person "
-                                 + "used - CHIRPS, ESA WorldCover. An exact id "
+                                 + "used — CHIRPS, ESA WorldCover. An exact id "
                                  + "is used as given; a name that matches "
                                  + "several comes back as a list to choose "
                                  + "from rather than a guess." },
@@ -6491,7 +6635,7 @@ const AGENT_TOOLS = {
     run: async ({ dataset_id, start, end, band, min, max, palette, reducer }) => {
       if (!eeState.ready) {
         return { error: "Earth Engine is not connected. The person must sign in " +
-                        "on the Data tab first - you cannot do it for them." };
+                        "on the Data tab first — you cannot do it for them." };
       }
       const found = await eeDatasetFor(dataset_id);
       if (!found.dataset) return found;
@@ -6581,15 +6725,15 @@ const AGENT_TOOLS = {
 
   summarise_earth_engine: {
     category: "earth_engine",
-    description: "For an UNCLASSIFIED dataset - elevation, temperature, " +
-                 "rainfall, population - reduce it onto regions or districts " +
+    description: "For an UNCLASSIFIED dataset — elevation, temperature, " +
+                 "rainfall, population — reduce it onto regions or districts " +
                  "and return a queryable table. There are two separate " +
                  "choices and getting either wrong produces a number in no " +
                  "unit: over_time combines the images in the date range into " +
                  "one, and statistic combines the pixels inside each zone. " +
                  "Annual rainfall is over_time=sum (the year's total at each " +
                  "pixel) with statistic=mean (that total averaged over the " +
-                 "region, in millimetres) - summing millimetres across pixels " +
+                 "region, in millimetres) — summing millimetres across pixels " +
                  "measures nothing. Population is over_time=mosaic with " +
                  "statistic=sum, because people add up and a count per zone is " +
                  "the point. Temperature is mean and mean.",
@@ -6643,7 +6787,7 @@ const AGENT_TOOLS = {
       }
 
       // The name is built from the last path segment of the dataset id, so it
-      // is not guessable - UCSB-CHG/CHIRPS/DAILY becomes ee_daily_region. It
+      // is not guessable — UCSB-CHG/CHIRPS/DAILY becomes ee_daily_region. It
       // is returned, and the query to run next is written out.
       lastAgentSql =
         `SELECT t.${outcome.name_column}, t.${outcome.statistic}, b.geom\n` +
@@ -6691,7 +6835,7 @@ const AGENT_TOOLS = {
     category: "map",
     description: "Confine every subsequent analysis to a region, a district, " +
                  "the current view, or the whole country. Set this before " +
-                 "fetching or computing rather than filtering afterwards - an " +
+                 "fetching or computing rather than filtering afterwards — an " +
                  "Earth Engine layer clipped to one district is a hundredth of " +
                  "the work of one clipped to Ghana.",
     schema: {
@@ -6704,7 +6848,7 @@ const AGENT_TOOLS = {
     },
     run: async ({ kind, name }) => {
       if (!["none", "view", "region", "district"].includes(kind)) {
-        return { error: `kind must be none, view, region or district - not "${kind}".` };
+        return { error: `kind must be none, view, region or district — not "${kind}".` };
       }
       if ((kind === "region" || kind === "district") && !name) {
         return { error: `A ${kind} name is required.` };
@@ -6749,7 +6893,7 @@ const AGENT_TOOLS = {
     })
   },
 
-  /* - Querying. Read-only, checked before it runs. - */
+  /* — Querying. Read-only, checked before it runs. — */
 
   run_sql: {
     category: "data",
@@ -6871,7 +7015,7 @@ let lastAgentSql = null;
 // Eight was too few for the chain this is for. Finding a dataset, drawing it,
 // reducing it, querying the result, mapping it and styling it is six tool
 // calls before a word is said, and the limit was cutting the answer off at the
-// styling - the step that makes the map worth looking at.
+// styling — the step that makes the map worth looking at.
 /* What people call things, against what the catalogue calls them. Earth
    Engine's vocabulary is the producer's: CHIRPS is precipitation, never
    rainfall; land surface temperature is LST; night lights are radiance. A
@@ -6902,7 +7046,7 @@ const EE_SYNONYM_WORDS = new Set(Object.keys(EE_SYNONYMS));
 
    Every tool used to require an exact catalogue id and refuse anything else,
    so a person saying "use CHIRPS" or "ESA WorldCover" sent the model through a
-   search, and a search returns a list - from which it picked one and then
+   search, and a search returns a list — from which it picked one and then
    described a different one. That is how a layer labelled v100 came with a
    sentence about v200.
 
@@ -6910,7 +7054,7 @@ const EE_SYNONYM_WORDS = new Set(Object.keys(EE_SYNONYMS));
 
      an exact id wins outright;
      one match is used, and the tool reports which;
-     several matches are not guessed between - they are handed back so the
+     several matches are not guessed between — they are handed back so the
        choice is made deliberately, in the open, by exact id.
 
    Ranking puts a dataset covering Ghana first, then the later one, so among
@@ -6953,7 +7097,7 @@ function resolveEeDataset(catalog, query) {
           classified: Boolean(d.classes), covers_ghana: d.covers_ghana
         })),
         error: `"${wanted}" matches ${hits.length} datasets. Call this again `
-             + `with one of these exact ids - and name that id in your answer, `
+             + `with one of these exact ids — and name that id in your answer, `
              + `because the layer will be labelled with it.`
       };
     }
@@ -6995,7 +7139,7 @@ window.__ghClip = {
   breakLookup: () => { conn = null; },
   addLayer: (dataset, form) => addEeLayer(dataset, form),
   summarise: (dataset, level) => summariseEe(dataset, level),
-  // The tool body, without the confirmation gate - the gate is a question put
+  // The tool body, without the confirmation gate — the gate is a question put
   // to a person, and a headless run has nobody to answer it.
   tool: (name, args) => AGENT_TOOLS[name].run(args ?? {}),
   catalog: (rows) => { eeState.catalog = rows; },
@@ -7051,7 +7195,7 @@ window.__ghLayers = {
    knowing that Ghana has a 1 km friction surface or what it would be good for.
 
    What is deliberately not hidden: whether a layer can actually be drawn right
-   now. Four states - it can; it needs the database deployment; it needs an
+   now. Four states — it can; it needs the database deployment; it needs an
    Earth Engine account; it needs the pipeline to be run. A catalogue that
    lists only what works looks small and tells you nothing about where the
    platform is going. One that pretends everything works wastes an afternoon.
@@ -7098,7 +7242,7 @@ const LIBRARY = [
   {
     id: "lib.districts", title: "Districts", theme: "Administrative",
     thumb: "admin", tint: "#3E8E7E", status: "ready",
-    blurb: "The 260 metropolitan, municipal and district assemblies - the unit "
+    blurb: "The 260 metropolitan, municipal and district assemblies — the unit "
          + "almost every national programme is budgeted and reported on.",
     source: "geoBoundaries CGAZ", licence: "CC-BY 4.0",
     add: () => {
@@ -7163,7 +7307,7 @@ const LIBRARY = [
     thumb: "points", tint: "#D2694A", status: "ready",
     blurb: "Hospitals, clinics, doctors, pharmacies and health posts, fetched "
          + "live from OpenStreetMap for whatever is in view.",
-    source: "OpenStreetMap", licence: "ODbL - share-alike",
+    source: "OpenStreetMap", licence: "ODbL — share-alike",
     add: async () => { await fetchLive("health"); return "live from OpenStreetMap"; }
   },
   {
@@ -7171,7 +7315,7 @@ const LIBRARY = [
     thumb: "isochrone", tint: "#C2603C", status: "planned",
     blurb: "Where a clinic is within a quarter of an hour on foot, and where "
          + "it is not. Cost-distance over the 1 km walking friction surface "
-         + "from every facility - the Weiss method, run against Ghana's own "
+         + "from every facility — the Weiss method, run against Ghana's own "
          + "facility list rather than what OpenStreetMap happens to hold.",
     source: "Malaria Atlas Project friction surface, Weiss et al. 2020",
     licence: "CC-BY 4.0"
@@ -7192,7 +7336,7 @@ const LIBRARY = [
     thumb: "points", tint: "#3E8E7E", status: "ready",
     blurb: "Schools, colleges, universities and kindergartens, live from "
          + "OpenStreetMap.",
-    source: "OpenStreetMap", licence: "ODbL - share-alike",
+    source: "OpenStreetMap", licence: "ODbL — share-alike",
     add: async () => { await fetchLive("education"); return "live from OpenStreetMap"; }
   },
   {
@@ -7209,7 +7353,7 @@ const LIBRARY = [
     id: "lib.water", title: "Water points", theme: "Water",
     thumb: "points", tint: "#3C7FB1", status: "ready",
     blurb: "Boreholes, wells, springs and standpipes, live from OpenStreetMap.",
-    source: "OpenStreetMap", licence: "ODbL - share-alike",
+    source: "OpenStreetMap", licence: "ODbL — share-alike",
     add: async () => { await fetchLive("water"); return "live from OpenStreetMap"; }
   },
   {
@@ -7217,7 +7361,7 @@ const LIBRARY = [
     thumb: "flood", tint: "#3C7FB1", status: "earthengine",
     blurb: "How often water was seen at each pixel across 37 years of Landsat. "
          + "Observed history, which is the closest thing to a flood-prone map "
-         + "available without a hydraulic model - and must be described that "
+         + "available without a hydraulic model — and must be described that "
          + "way rather than as risk.",
     source: "JRC Global Surface Water, Pekel et al. 2016", licence: "CC-BY 4.0",
     ee: "JRC/GSW1_4/GlobalSurfaceWater"
@@ -7237,7 +7381,7 @@ const LIBRARY = [
     thumb: "lines", tint: "#8A8578", status: "ready",
     blurb: "Trunk, primary, secondary and tertiary roads, live from "
          + "OpenStreetMap for whatever is in view.",
-    source: "OpenStreetMap", licence: "ODbL - share-alike",
+    source: "OpenStreetMap", licence: "ODbL — share-alike",
     add: async () => { await fetchLive("road"); return "live from OpenStreetMap"; }
   },
   {
@@ -7246,13 +7390,13 @@ const LIBRARY = [
     blurb: "The whole country's roads as one topological network, classified "
          + "and routable. Too large to fetch live; this is the version the "
          + "accessibility work runs on.",
-    source: "OpenStreetMap, Ghana Highway Authority", licence: "ODbL - share-alike"
+    source: "OpenStreetMap, Ghana Highway Authority", licence: "ODbL — share-alike"
   },
   {
     id: "lib.markets", title: "Markets", theme: "Transport",
     thumb: "points", tint: "#C9A227", status: "ready",
     blurb: "Marketplaces and trading centres, live from OpenStreetMap.",
-    source: "OpenStreetMap", licence: "ODbL - share-alike",
+    source: "OpenStreetMap", licence: "ODbL — share-alike",
     add: async () => { await fetchLive("market"); return "live from OpenStreetMap"; }
   },
   {
@@ -7268,7 +7412,7 @@ const LIBRARY = [
     thumb: "mesh", tint: "#A89880", status: "ready",
     blurb: "Building footprints, live from OpenStreetMap. Dense in Accra and "
          + "Kumasi, thin in much of the north.",
-    source: "OpenStreetMap", licence: "ODbL - share-alike",
+    source: "OpenStreetMap", licence: "ODbL — share-alike",
     add: async () => { await fetchLive("building"); return "live from OpenStreetMap"; }
   },
   {
@@ -7311,7 +7455,7 @@ const LIBRARY = [
     id: "lib.cropland", title: "Agricultural landscape", theme: "Agriculture",
     thumb: "mesh", tint: "#7E9A5C", status: "planned",
     blurb: "Field boundaries, tree cover and irrigation structures segmented "
-         + "from imagery - the farm-scale picture the national land cover is "
+         + "from imagery — the farm-scale picture the national land cover is "
          + "too coarse to carry.",
     source: "Sentinel-2, to be segmented", licence: "Copernicus open licence"
   },
@@ -7387,7 +7531,7 @@ const LIBRARY = [
     thumb: "raster", tint: "#5E7A8C", status: "ready",
     blurb: "Daily true-colour imagery, cloud included. Ghana's rainy season "
          + "runs roughly April to October in the south, and cloud in those "
-         + "months makes single dates often unusable - step back a few days.",
+         + "months makes single dates often unusable — step back a few days.",
     source: "NASA EOSDIS GIBS, MODIS Terra", licence: "public domain",
     catalog: "modis_truecolor"
   },
@@ -7414,8 +7558,8 @@ const LIBRARY = [
    Drawn rather than shipped. Thirty screenshots is three megabytes and thirty
    things to re-make whenever the styling moves; these are a few hundred bytes
    of SVG each, they follow the theme, and they cannot go stale. What each one
-   has to do is say at a glance what kind of thing the layer is - scattered
-   points, a road network, a classed surface - not depict Ghana.
+   has to do is say at a glance what kind of thing the layer is — scattered
+   points, a road network, a classed surface — not depict Ghana.
 
    Seeded from the entry id so a card looks the same on every visit. An
    unseeded random would reshuffle the whole wall on every scroll. */
@@ -7642,32 +7786,32 @@ async function addLibrarySelection() {
     try {
       if (entry.add) {
         const note = await entry.add();
-        added.push(`${entry.title}${note ? ` - ${note}` : ""}`);
+        added.push(`${entry.title}${note ? ` — ${note}` : ""}`);
       } else if (entry.catalog) {
         if (!catalogState.loaded.has(entry.catalog)) toggleCatalogLayer(entry.catalog);
         added.push(entry.title);
       } else if (entry.ee) {
         if (!eeState.ready) {
-          blocked.push(`${entry.title} - connect Earth Engine on the Data tab first`);
+          blocked.push(`${entry.title} — connect Earth Engine on the Data tab first`);
           continue;
         }
         const found = await eeDatasetFor(entry.ee);
         if (!found.dataset) {
-          blocked.push(`${entry.title} - ${found.error || "not in the Earth Engine index"}`);
+          blocked.push(`${entry.title} — ${found.error || "not in the Earth Engine index"}`);
           continue;
         }
         showEeDataset(found.dataset.id);
         await new Promise((r) => setTimeout(r, 60));
         const outcome = await addEeLayer(found.dataset);
-        if (outcome?.ok) added.push(`${entry.title} - ${outcome.title}`);
-        else blocked.push(`${entry.title} - ${outcome?.error || "Earth Engine would not draw it"}`);
+        if (outcome?.ok) added.push(`${entry.title} — ${outcome.title}`);
+        else blocked.push(`${entry.title} — ${outcome?.error || "Earth Engine would not draw it"}`);
       } else if (entry.status === "database") {
-        blocked.push(`${entry.title} - needs the database deployment`);
+        blocked.push(`${entry.title} — needs the database deployment`);
       } else {
-        blocked.push(`${entry.title} - the analysis is not built yet`);
+        blocked.push(`${entry.title} — the analysis is not built yet`);
       }
     } catch (err) {
-      blocked.push(`${entry.title} - ${err?.message ?? err}`);
+      blocked.push(`${entry.title} — ${err?.message ?? err}`);
     }
   }
 
@@ -7747,6 +7891,62 @@ window.__ghLibrary = {
   filter: (what, value) => { libraryState[what] = value; renderLibrary(); }
 };
 
+window.__ghImagery = {
+  load: (url) => loadEmbeddingScene(url),
+  search: (prompt) => runImagerySearch(prompt),
+  scene: () => embedState.scene && {
+    name: embedState.scene.manifest.name,
+    patches: embedState.scene.manifest.width * embedState.scene.manifest.height,
+    dim: embedState.scene.manifest.dim,
+    prompts: [...embedState.scene.prompts.keys()]
+  },
+  scores: () => embedState.scores ? [...embedState.scores] : null,
+  set: (key, value) => { embedState[key] = value; },
+  status: () => document.getElementById("es-status")?.textContent?.trim() ?? "",
+  drawn: () => Boolean(map.getSource("imagery-search"))
+};
+
+window.__ghFifteen = {
+  run: (lat, lon, options) => runFifteenMinute(lat, lon, options),
+  result: () => {
+    const r = fifteenState.result;
+    if (!r) return null;
+    return {
+      lat: r.lat, lon: r.lon, radar: r.radar, counts: r.counts, counts10: r.counts10,
+      bands: r.bands.map((b) => ({ minutes: b.minutes, areaKm2: b.areaKm2,
+        streetKm: b.streetKm, intersections: b.intersections,
+        polygons: b.polygon ? b.polygon.coordinates.length : 0 })),
+      within: r.within.length, places: r.places.length,
+      present: r.present.map((f) => f.id), thin: r.thin.map((f) => f.id),
+      nodes: r.nodes, ways: r.ways, reading: fifteenReading(r)
+    };
+  },
+  axes: () => RADAR_AXES.map((a) => a.id),
+  functions: () => URBAN_FUNCTIONS.map((f) => f.id),
+  classify: (tags) => classifyOsm(tags),
+  status: () => document.getElementById("fm-status")?.textContent?.trim() ?? "",
+  // The graph machinery, so the walking maths can be tested without a map.
+  graph: (payload, lat, lon) => {
+    const plane = localPlane(lat, lon);
+    const g = buildWalkGraph(payload, plane);
+    return { nodes: g.adjacency.size, ways: g.ways, plane, graph: g };
+  },
+  costs: (g, startId, limit) => [...walkCosts(g, startId, limit)]
+};
+
+window.__ghLens = {
+  open: () => openRadarLens(),
+  close: () => closeRadarLens(),
+  move: (lat, lon) => moveLens(lat, lon),
+  source: (id) => { lensState.source = id; computeLens(); renderLens(); },
+  radius: (m) => { lensState.radiusM = m; drawLensDisc(); computeLens(); renderLens(); },
+  state: () => ({ open: lensState.open, source: lensState.source,
+                  radius: lensState.radiusM, centre: lensState.centre,
+                  values: lensState.values, error: lensState.error || null,
+                  axes: lensState.axes.map((a) => a.id), detail: lensState.detail }),
+  disc: () => Boolean(map.getSource("radar-lens-disc"))
+};
+
 window.__ghToolbox = {
   open: (category) => openToolbox(category),
   tools: () => Object.entries(TOOLBOX).map(([id, tool]) => ({
@@ -7790,7 +7990,7 @@ window.__ghBasemap = {
 };
 
 /* JSON.stringify refuses a BigInt outright, and DuckDB returns every BIGINT
-   column as one - a count, a population, an OSM id. The whole tool result was
+   column as one — a count, a population, an OSM id. The whole tool result was
    therefore lost to a TypeError the moment a query touched an integer column,
    which is most of them.
 
@@ -7878,7 +8078,7 @@ How to work:
   p-code column, then show_result_on_map, then style_by_column if the answer
   is a quantity rather than a place.
 - Prefer zoom_to_place over guessing coordinates.
-- If the person names a dataset - CHIRPS, ESA WorldCover, ERA5, or a full id -
+- If the person names a dataset — CHIRPS, ESA WorldCover, ERA5, or a full id —
   pass that name straight to the Earth Engine tool. Do not search first and do
   not substitute something similar. The tools resolve a name themselves and
   hand back a list when it is ambiguous, so choosing is done in the open.
@@ -7892,7 +8092,7 @@ How to work:
   so do not call them speculatively.
 - Check get_map_state before moving the map if the person said "here" or "this
   area".
-- Clipping confines EVERYTHING - queries, tools, fetches, Earth Engine layers
+- Clipping confines EVERYTHING — queries, tools, fetches, Earth Engine layers
   and summaries. Call get_clip before reading any result, because a number
   means something different depending on what it covers, and set_clip before
   computing rather than filtering afterwards. If the person names one place,
@@ -7903,7 +8103,7 @@ not what you clicked. If a tool returns an error, read it and try a different
 approach rather than repeating the same call.
 
 Report what the tools returned, never what you intended. Name the dataset id
-and the version in the tool's own result - the person is looking at a layer
+and the version in the tool's own result — the person is looking at a layer
 labelled with it, so claiming a different one is a mistake they can see. If a
 tool returns an error, say plainly that it did not work and why, rather than
 describing the result it would have had.`;
@@ -7977,8 +8177,8 @@ async function runAgent(question, { key, model, baseUrl }, onStep) {
 
 /* ── Layer cards ───────────────────────────────────────────────────────────
    The card GeoLibre draws: a grip, an eye, a colour, the name, what kind of
-   thing it is, an opacity slider showing its value, and - once the card is
-   selected - a row of actions. Selection is what keeps the row of icons from
+   thing it is, an opacity slider showing its value, and — once the card is
+   selected — a row of actions. Selection is what keeps the row of icons from
    appearing eight times at once. */
 
 const ICON = {
@@ -8075,7 +8275,7 @@ function layerCard(entry) {
    them is listed, including those that need the database: a layer that is
    missing from the list looks like a layer that does not exist, whereas one
    marked "needs database" says what to do about it. Districts and Regions are
-   drawn by default and were the conspicuous absence - on the map, nowhere in
+   drawn by default and were the conspicuous absence — on the map, nowhere in
    the list, and so impossible to turn off. */
 function baseLayerToggles() {
   const groups = [...new Set(LAYERS.map((l) => l.group))];
@@ -8134,7 +8334,7 @@ function wireLayerCards(host) {
       }
       if (what === "style") { showPanel("style"); return; }
       if (what === "info") {
-        setStatus(`${entry.label} - ${entry.note || KIND_LABEL[entry.kind]}, added ${entry.added}`);
+        setStatus(`${entry.label} — ${entry.note || KIND_LABEL[entry.kind]}, added ${entry.added}`);
         return;
       }
       if (what === "table") openAttributeTable(entry.id);
@@ -8162,7 +8362,7 @@ function wireLayerCards(host) {
    GeoLibre puts processing behind a Processing menu that opens a searchable
    toolbox: a filter, a list of tools by category, and the selected tool's
    parameters as a form with a Run button. Clip is one of those tools, in
-   Vector - Overlay Analysis, taking an input and a clip layer.
+   Vector — Overlay Analysis, taking an input and a clip layer.
 
    That is the right shape and this adopts it rather than approximating it.
    The previous arrangement had clipping as a dropdown in a tab that silently
@@ -8173,14 +8373,294 @@ function wireLayerCards(host) {
    are generated from that declaration. Adding a tool is one entry.          */
 
 const TOOLBOX = {
+  /* ── Hotspots ─────────────────────────────────────────────────────── */
+  hotspot: {
+    name: "Hotspots",
+    category: "Statistics",
+    summary: "Cluster a point layer, and say what each cluster is for.",
+    description:
+      "DBSCAN in metres, then Shannon entropy per cluster and the categories " +
+      "each cluster has more of than the layer as a whole. A cluster's entropy " +
+      "says whether it is a mixed quarter or a specialised one; the top " +
+      "categories say what it specialises in. The method is from the hotspots " +
+      "notebook; what differs is that it runs on whatever is on the map.",
+    params: {
+      input: { kind: "layer", label: "Point layer", required: true,
+               hint: "Live OpenStreetMap results work well — fetch one first." },
+      category: { kind: "field", label: "Category column", required: false,
+                  hint: "Optional. Without it the clusters are counted but not characterised." },
+      eps: { kind: "number", label: "Cluster distance", unit: "m",
+             value: 200, min: 20, max: 5000, required: true,
+             hint: "Two points this far apart or closer are in the same cluster." },
+      minPoints: { kind: "number", label: "Smallest cluster", unit: "points",
+                   value: 10, min: 2, max: 500, required: true,
+                   hint: "Below this, a group is noise rather than a hotspot." }
+    },
+    run: async ({ input, category, eps, minPoints }) => {
+      const features = input.collection.features.filter((f) => f.geometry);
+      if (features.length < minPoints) {
+        return { error: `Only ${features.length} features — fewer than the smallest cluster.` };
+      }
+
+      const first = centroidOf(features[0].geometry);
+      const plane = localPlane(first[1], first[0]);
+      const points = features.map((f) => {
+        const c = centroidOf(f.geometry);
+        const [x, y] = plane.toXY(c[1], c[0]);
+        return { x, y, props: f.properties || {} };
+      });
+
+      const { labels, clusters } = dbscan(points, eps, minPoints);
+      if (!clusters) {
+        return { error: `Nothing clustered at ${eps} m with at least ${minPoints} points. `
+                      + "Widen the distance, or lower the smallest cluster." };
+      }
+
+      // The layer's overall category mix, which each cluster is compared to.
+      const overall = new Map();
+      if (category) {
+        for (const p of points) {
+          const v = String(p.props[category] ?? "").trim() || "(blank)";
+          overall.set(v, (overall.get(v) ?? 0) + 1);
+        }
+      }
+      const overallTotal = points.length;
+
+      const out = [];
+      for (let c = 0; c < clusters; c += 1) {
+        const members = points.filter((_, i) => labels[i] === c);
+        if (members.length < minPoints) continue;
+        const hull = hullOf(members);
+        if (!hull) continue;
+
+        const ring = hull.map(([x, y]) => {
+          const [lat, lon] = plane.toLatLon(x, y);
+          return [lon, lat];
+        });
+        ring.push(ring[0]);
+
+        const properties = { cluster: c, size: members.length };
+
+        if (category) {
+          const values = members.map((p) => String(p.props[category] ?? "").trim() || "(blank)");
+          properties.entropy = Number(entropyOf(values).toFixed(3));
+
+          // Above-average categories, strongest first — the notebook's
+          // "what is this cluster for" step.
+          const mine = new Map();
+          for (const v of values) mine.set(v, (mine.get(v) ?? 0) + 1);
+          const lift = [...mine.entries()].map(([value, n]) => {
+            const share = n / values.length;
+            const base = (overall.get(value) ?? 0) / overallTotal;
+            return { value, n, lift: base > 0 ? share / base : 0 };
+          }).filter((e) => e.lift > 1).sort((a, b) => b.lift - a.lift).slice(0, 3);
+
+          properties.specialises_in = lift.map((e) => `${e.value} (×${e.lift.toFixed(1)})`).join(", ");
+          properties.top_category = lift[0]?.value ?? "";
+        }
+
+        out.push({ type: "Feature", properties,
+                   geometry: { type: "Polygon", coordinates: [ring] } });
+      }
+
+      if (!out.length) {
+        return { error: `Every cluster was smaller than ${minPoints} points.` };
+      }
+
+      out.sort((a, b) => b.properties.size - a.properties.size);
+      const noise = labels.reduce((n, l) => n + (l === -1 ? 1 : 0), 0);
+      const entropies = out.map((f) => f.properties.entropy).filter((e) => e !== undefined);
+
+      return {
+        collection: { type: "FeatureCollection", features: out },
+        label: `${input.label} hotspots`,
+        message: `${out.length} hotspot${out.length === 1 ? "" : "s"} from `
+          + `${features.length.toLocaleString()} points at ${eps} m; `
+          + `${noise.toLocaleString()} left as noise.`
+          + (entropies.length
+              ? ` Entropy ${Math.min(...entropies).toFixed(2)}–${Math.max(...entropies).toFixed(2)}: `
+                + "the low ones are specialised, the high ones mixed."
+              : " Choose a category column to see what each one is for.")
+      };
+    }
+  },
+
+  /* ── Intersection density ─────────────────────────────────────────── */
+  intersections: {
+    name: "Intersection Density",
+    category: "Statistics",
+    summary: "How finely the street network is cut, around a point.",
+    description:
+      "Counts real intersections — nodes where three or more street ends meet — " +
+      "in the walking network around a point, and reports them per square " +
+      "kilometre. Nodes that merely describe a curve and dead ends are not " +
+      "intersections, and counting them is why a raw node count says nothing " +
+      "about the street pattern. This is what osmnx's consolidate_intersections " +
+      "is for, and the measure the intersection-counts notebook maps.",
+    params: {
+      lat: { kind: "number", label: "Latitude", value: 6.6885,
+             min: 4.5, max: 11.5, step: 0.0001, required: true },
+      lon: { kind: "number", label: "Longitude", value: -1.6163,
+             min: -3.4, max: 1.4, step: 0.0001, required: true },
+      radius: { kind: "number", label: "Radius", unit: "m", value: 1000,
+                min: 200, max: 3000, required: true }
+    },
+    run: async ({ lat, lon, radius }) => {
+      const plane = localPlane(lat, lon);
+      const payload = await overpassQuery(
+        `[out:json][timeout:60];
+way["highway"~"^(${WALKABLE.join("|")})$"](around:${radius},${lat},${lon});
+out body;
+>;
+out skel qt;`, { label: "Street network" });
+
+      const graph = buildWalkGraph(payload, plane);
+      if (!graph.adjacency.size) {
+        return { error: `No walkable streets are mapped within ${radius} m of there.` };
+      }
+
+      const features = [];
+      let streetMetres = 0;
+      const seen = new Set();
+      for (const [id, edges] of graph.adjacency) {
+        const p = graph.coords.get(id);
+        if (!p) continue;
+        if (Math.hypot(p[0], p[1]) > radius) continue;
+        const ends = new Set(edges.map(([o]) => o));
+        for (const [other, length] of edges) {
+          const pair = id < other ? `${id}-${other}` : `${other}-${id}`;
+          if (!seen.has(pair)) { seen.add(pair); streetMetres += length; }
+        }
+        if (ends.size < 3) continue;
+        const [plat, plon] = plane.toLatLon(p[0], p[1]);
+        features.push({ type: "Feature",
+          properties: { osm_id: id, degree: ends.size,
+                        kind: ends.size === 3 ? "T junction" : "crossroads or more" },
+          geometry: { type: "Point", coordinates: [plon, plat] } });
+      }
+
+      if (!features.length) {
+        return { error: "Streets are mapped there, but none of them meet: every node "
+                      + "has one or two ends, so there are no intersections to count." };
+      }
+
+      const areaKm2 = (Math.PI * radius * radius) / 1e6;
+      const perKm2 = features.length / areaKm2;
+      return {
+        collection: { type: "FeatureCollection", features },
+        label: `Intersections near ${lat.toFixed(3)}, ${lon.toFixed(3)}`,
+        message: `${features.length} intersections in ${areaKm2.toFixed(2)} km² — `
+          + `${perKm2.toFixed(0)} per km². ${(streetMetres / 1000).toFixed(1)} km of street. `
+          + (perKm2 > 100 ? "A fine-grained pattern, which is what makes short walks possible."
+             : perKm2 > 40 ? "A moderate pattern."
+             : "Coarse: few ways through, so walking distances are longer than they look.")
+      };
+    }
+  },
+
+  /* ── Travel time to the nearest places ────────────────────────────── */
+  nearestTime: {
+    name: "Walking Time to the Nearest",
+    category: "Statistics",
+    summary: "How long it takes to walk to the first, third and fifth nearest place.",
+    description:
+      "Walks the street network from a point and reports the time to the " +
+      "nearest, third-nearest and fifth-nearest of each urban function. " +
+      "The third and fifth are the point: the time to the nearest shop says " +
+      "whether a shop exists, and the time to the fifth says whether there " +
+      "is a choice of shop — which is what pandana's nearest_pois is for, " +
+      "and the distinction the routing notebook maps.",
+    params: {
+      lat: { kind: "number", label: "Latitude", value: 5.6037,
+             min: 4.5, max: 11.5, step: 0.0001, required: true },
+      lon: { kind: "number", label: "Longitude", value: -0.1870,
+             min: -3.4, max: 1.4, step: 0.0001, required: true },
+      minutes: { kind: "number", label: "Look up to", unit: "min", value: 20,
+                 min: 5, max: 45, required: true }
+    },
+    run: async ({ lat, lon, minutes }) => {
+      const budget = minutes * WALK_METRES_PER_MIN;
+      const radius = Math.round(budget * 1.3);
+      const plane = localPlane(lat, lon);
+
+      const netPayload = await overpassQuery(
+        `[out:json][timeout:60];
+way["highway"~"^(${WALKABLE.join("|")})$"](around:${radius},${lat},${lon});
+out body;
+>;
+out skel qt;`, { label: "Street network" });
+      const graph = buildWalkGraph(netPayload, plane);
+      if (!graph.adjacency.size) return { error: "No walkable streets are mapped there." };
+
+      const start = nearestGraphNode(graph, 0, 0);
+      const cost = walkCosts(graph, start.id, budget);
+
+      const poiPayload = await overpassQuery(placesQuery(lat, lon, radius),
+        { label: "Places" });
+
+      // A place's walking time is the time to the street node nearest it,
+      // plus the short walk off the street. Approximating the last leg as a
+      // straight line is what pandana does too.
+      const reachable = [];
+      for (const [id, d] of cost) {
+        const p = graph.coords.get(id);
+        if (p) reachable.push({ x: p[0], y: p[1], d });
+      }
+
+      const byFunction = new Map();
+      const features = [];
+      for (const el of poiPayload.elements) {
+        const fn = classifyOsm(el.tags);
+        if (!fn) continue;
+        const plat = el.lat ?? el.center?.lat, plon = el.lon ?? el.center?.lon;
+        if (plat === undefined) continue;
+        const [x, y] = plane.toXY(plat, plon);
+
+        let best = Infinity;
+        for (const node of reachable) {
+          const off = Math.hypot(node.x - x, node.y - y);
+          if (off > 250) continue;
+          const total = node.d + off;
+          if (total < best) best = total;
+        }
+        if (!Number.isFinite(best) || best > budget) continue;
+
+        const mins = best / WALK_METRES_PER_MIN;
+        if (!byFunction.has(fn)) byFunction.set(fn, []);
+        byFunction.get(fn).push(mins);
+        features.push({ type: "Feature",
+          properties: { function: fn, name: el.tags?.name ?? "",
+                        walk_minutes: Number(mins.toFixed(1)) },
+          geometry: { type: "Point", coordinates: [plon, plat] } });
+      }
+
+      if (!features.length) {
+        return { error: `Nothing of any function is within ${minutes} minutes' walk.` };
+      }
+
+      const lines = [];
+      for (const fn of URBAN_FUNCTIONS) {
+        const times = (byFunction.get(fn.id) ?? []).sort((a, b) => a - b);
+        if (!times.length) { lines.push(`${fn.label}: none`); continue; }
+        const nth = (n) => times.length >= n ? `${times[n - 1].toFixed(0)} min` : "—";
+        lines.push(`${fn.label}: 1st ${nth(1)}, 3rd ${nth(3)}, 5th ${nth(5)}`);
+      }
+
+      return {
+        collection: { type: "FeatureCollection", features },
+        label: `Walking times from ${lat.toFixed(3)}, ${lon.toFixed(3)}`,
+        message: `${features.length} places within ${minutes} minutes. ` + lines.join(" · ")
+      };
+    }
+  },
   clip: {
     name: "Clip",
-    category: "Vector - Overlay Analysis",
+    category: "Vector — Overlay Analysis",
     summary: "Keep only the parts of a layer that fall inside a boundary.",
     description:
       "Cuts an input layer to a clip boundary. Points are kept or dropped by " +
       "a point-in-polygon test, polygons are cut at the edge and keep their " +
-      "attributes, and lines that cross the boundary are kept whole - Turf has " +
+      "attributes, and lines that cross the boundary are kept whole — Turf has " +
       "no line-polygon clip, so that last one is an approximation rather than " +
       "a silent truncation.",
     params: {
@@ -8205,7 +8685,7 @@ const TOOLBOX = {
 
   buffer: {
     name: "Buffer",
-    category: "Vector - Proximity",
+    category: "Vector — Proximity",
     summary: "A zone of a given distance around each feature.",
     description:
       "Buffers in kilometres on the WGS84 ellipsoid. Ghana straddles the " +
@@ -8233,7 +8713,7 @@ const TOOLBOX = {
 
   centroid: {
     name: "Centroids",
-    category: "Vector - Geometry",
+    category: "Vector — Geometry",
     summary: "One point at the middle of each feature.",
     description: "The centroid of a concave shape can fall outside it. For a " +
                  "point guaranteed to be inside, use Point on feature instead.",
@@ -8247,7 +8727,7 @@ const TOOLBOX = {
 
   pointon: {
     name: "Point on feature",
-    category: "Vector - Geometry",
+    category: "Vector — Geometry",
     summary: "One point guaranteed to lie inside each feature.",
     description: "Unlike a centroid this is always within the shape, which " +
                  "matters for labelling a crescent-shaped district.",
@@ -8261,7 +8741,7 @@ const TOOLBOX = {
 
   dissolve: {
     name: "Dissolve",
-    category: "Vector - Overlay Analysis",
+    category: "Vector — Overlay Analysis",
     summary: "Merge every feature into one shape.",
     description: "Attributes are not carried over, because there is no honest " +
                  "way to combine them. Use zonal statistics if you want totals.",
@@ -8279,7 +8759,7 @@ const TOOLBOX = {
 
   convex: {
     name: "Convex hull",
-    category: "Vector - Geometry",
+    category: "Vector — Geometry",
     summary: "The tightest convex shape containing every feature.",
     description: "A rubber band stretched around the whole layer. It says " +
                  "where things reach, not where they are.",
@@ -8293,7 +8773,7 @@ const TOOLBOX = {
 
   envelope: {
     name: "Bounding box",
-    category: "Vector - Geometry",
+    category: "Vector — Geometry",
     summary: "The rectangle containing every feature.",
     description: "Useful as a clip boundary or to see a layer's true reach.",
     params: { input: { kind: "layer", label: "Input layer", required: true } },
@@ -8305,7 +8785,7 @@ const TOOLBOX = {
 
   simplify: {
     name: "Simplify",
-    category: "Vector - Geometry",
+    category: "Vector — Geometry",
     summary: "Fewer vertices, roughly the same shape.",
     description: "Tolerance is in degrees. 0.001 is about 110 m at Ghana's " +
                  "latitude. Simplifying adjacent polygons independently opens " +
@@ -8323,7 +8803,7 @@ const TOOLBOX = {
 
   voronoi: {
     name: "Voronoi catchments",
-    category: "Vector - Proximity",
+    category: "Vector — Proximity",
     summary: "The area closest to each point.",
     description: "Straight-line catchments. They ignore roads, rivers and " +
                  "administrative boundaries, so they are a first approximation " +
@@ -8352,7 +8832,7 @@ const TOOLBOX = {
 
   nearest: {
     name: "Distance to nearest",
-    category: "Vector - Proximity",
+    category: "Vector — Proximity",
     summary: "How far each feature is from the closest feature in another layer.",
     description: "Great-circle distance in kilometres, written onto each input " +
                  "feature as nearest_km. Straight-line, not travel distance.",
@@ -8383,11 +8863,11 @@ const TOOLBOX = {
 
   elevation: {
     name: "Sample elevation",
-    category: "Raster - Terrain",
+    category: "Raster — Terrain",
     summary: "Read the terrain height under each point.",
     description: "Samples the Terrarium elevation tiles already loaded for the " +
                  "relief. Requires terrain to be on, and returns nothing where " +
-                 "its tiles have not loaded - honest about a gap rather than " +
+                 "its tiles have not loaded — honest about a gap rather than " +
                  "reporting a confident zero.",
     params: { input: { kind: "layer", label: "Input points", required: true } },
     run: async ({ input }, t) => {
@@ -8408,10 +8888,10 @@ const TOOLBOX = {
 
   measure: {
     name: "Measure",
-    category: "Vector - Geometry",
+    category: "Vector — Geometry",
     summary: "Area and length for every feature.",
     description: "Area in square kilometres, length in kilometres, computed on " +
-                 "the ellipsoid rather than in a projection - which is the right " +
+                 "the ellipsoid rather than in a projection — which is the right " +
                  "choice for a country that straddles the prime meridian.",
     params: { input: { kind: "layer", label: "Input layer", required: true } },
     run: async ({ input }, t) => ({
@@ -8561,7 +9041,7 @@ function renderToolboxList() {
 
 function selectTool(id) {
   // Only a different tool starts with a blank form. Re-selecting the one
-  // already open - which the list does on every repaint - must not throw away
+  // already open — which the list does on every repaint — must not throw away
   // what has been filled in.
   if (toolboxState.selected !== id) toolboxState.values = {};
   toolboxState.selected = id;
@@ -8589,18 +9069,36 @@ async function renderToolDetail() {
         <select id="tb-${key}" data-param="${key}">
           <option value="">Choose a layer…</option>
           ${layers.map((l) => `<option value="${escapeHtml(l.id)}">${escapeHtml(l.label)}${
-            l.count ? ` - ${l.count.toLocaleString()} features` : ""}</option>`).join("")}
+            l.count ? ` — ${l.count.toLocaleString()} features` : ""}</option>`).join("")}
         </select>${hint}
         ${layers.length ? "" : `<p class="tb-hint" style="color:var(--clay)">${
           [...userLayers.values()].some((e) => e.kind === "raster")
             ? `These tools work on features, and the only layer drawn is a
-               raster - a picture rendered on Google's machines, with no
+               raster — a picture rendered on Google's machines, with no
                geometry in this browser to cut or measure. Set the clip from
                Processing → Clip results to… and the raster is cut where it is
                made; <em>Summarise</em> in the Data panel turns it into rows
                these tools can take.`
             : `Nothing is drawn yet. Run a query, fetch a live layer, or turn on
                a boundary layer first.`}</p>`}</div>`;
+    }
+
+    if (spec.kind === "field") {
+      // The columns of whichever layer is chosen above. Which means the form
+      // has to be rebuilt when that choice changes — see the change handler
+      // at the end of this function.
+      const chosen = layers.find((l) => l.id === toolboxState.values.input);
+      const names = chosen?.collection
+        ? [...new Set(chosen.collection.features
+            .flatMap((f) => Object.keys(f.properties || {})))]
+            .filter((c) => c !== "geom" && c !== "geometry").slice(0, 60)
+        : [];
+      return `<div class="tb-param">${meta}
+        <label for="tb-${key}">${escapeHtml(spec.label)}</label>
+        <select id="tb-${key}" data-param="${key}">
+          <option value="">${names.length ? "None" : "Choose a layer first"}</option>
+          ${names.map((n) => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join("")}
+        </select>${hint}</div>`;
     }
 
     if (spec.kind === "boundary") {
@@ -8637,14 +9135,22 @@ async function renderToolDetail() {
     const key = el.dataset.param;
     // The form follows the state, not the other way round. This read the
     // DOM's defaults into the state instead, so anything set before the form
-    // finished rendering - and this function is async, it awaits the boundary
-    // list - was silently replaced by an empty string.
+    // finished rendering — and this function is async, it awaits the boundary
+    // list — was silently replaced by an empty string.
     const held = toolboxState.values[key];
     if (held !== undefined && held !== "") {
       const match = [...el.options ?? []].some((o) => o.value === held);
       if (!el.options || match) el.value = held;
     }
-    el.addEventListener("change", () => { toolboxState.values[key] = el.value; });
+    el.addEventListener("change", () => {
+      toolboxState.values[key] = el.value;
+      // A field list is built from the chosen layer's columns, so choosing a
+      // layer has to rebuild the form. Without this the column dropdown
+      // stays on "choose a layer first" after one has been chosen.
+      if (key === "input" && Object.values(tool.params).some((s) => s.kind === "field")) {
+        renderToolDetail();
+      }
+    });
     toolboxState.values[key] = el.value;
   }
   document.getElementById("tb-go").addEventListener("click", () => runToolboxTool(id));
@@ -8698,7 +9204,7 @@ async function runToolboxTool(id) {
   say("Running…");
   // agentJson, not jsonSafe. jsonSafe was never defined anywhere in this
   // file, so this line threw a ReferenceError on the very first statement of
-  // every run - outside the try below, which is why it surfaced as the whole
+  // every run — outside the try below, which is why it surfaced as the whole
   // toolbox being inert rather than as one tool failing. Not one
   // geoprocessing tool had ever run. tests/toolbox.cjs now runs three of them
   // end to end, which is how this was found.
@@ -8727,7 +9233,7 @@ async function runToolboxTool(id) {
 }
 
 /* Each run makes its own layer, so results stack rather than replacing one
-   another - which is what makes chaining tools possible at all. */
+   another — which is what makes chaining tools possible at all. */
 let toolboxRunSeq = 0;
 
 function drawToolboxResult(collection, label) {
@@ -8778,10 +9284,10 @@ const TOOLBOX_COLOURS = ["#C2603C", "#3E8E7E", "#B58A3B", "#5B7FA6", "#8E6BA8", 
 let lastExportDataUrl = null;
 
 const EXPORT_SIZES = {
-  wide:     { label: "Landscape - 1600 × 1100", width: 1600, height: 1100 },
-  tall:     { label: "Portrait - 1100 × 1600",  width: 1100, height: 1600 },
-  square:   { label: "Square - 1400 × 1400",    width: 1400, height: 1400 },
-  slide:    { label: "Slide - 1920 × 1080",     width: 1920, height: 1080 }
+  wide:     { label: "Landscape — 1600 × 1100", width: 1600, height: 1100 },
+  tall:     { label: "Portrait — 1100 × 1600",  width: 1100, height: 1600 },
+  square:   { label: "Square — 1400 × 1400",    width: 1400, height: 1400 },
+  slide:    { label: "Slide — 1920 × 1080",     width: 1920, height: 1080 }
 };
 
 function openMapExport() {
@@ -8995,7 +9501,7 @@ async function runMapExport() {
     link.click();
     setTimeout(() => URL.revokeObjectURL(url), 10000);
 
-    say(`Saved ${name}.png - ${size.width} × ${size.height}, drawn at ${scale}×.`);
+    say(`Saved ${name}.png — ${size.width} × ${size.height}, drawn at ${scale}×.`);
     window.ghLog?.("ok", `Map image exported: ${name}.png`);
   } catch (err) {
     console.error("Map export:", err);
@@ -10130,6 +10636,30 @@ const COMMANDS = {
     desc: "Map pixel values onto new ones.",
     icon: "reclass"
   },
+  "gp.fifteenMinute": {
+    id: "gp.fifteenMinute",
+    label: "15-Minute Profile",
+    desc: "Click anywhere in Ghana and walk the street network out at 5, 10 and "
+        + "15 minutes: what is reachable, how varied it is, and what is missing.",
+    icon: "clock",
+    run: () => { showPanel("fifteen"); startFifteenPick(); }
+  },
+  "data.imagerySearch": {
+    id: "data.imagerySearch",
+    label: "Search Imagery",
+    desc: "Describe what you are looking for — rooftops, bare ground, water — "
+        + "and the places in the imagery that look like it light up.",
+    icon: "satellite",
+    run: () => showPanel("imagery")
+  },
+  "gp.radarLens": {
+    id: "gp.radarLens",
+    label: "Radar Lens",
+    desc: "A radar chart you drag across the map. The disc under it is "
+        + "highlighted and the spokes recompute from what is inside it.",
+    icon: "target",
+    run: () => openRadarLens()
+  },
   "gp.sql": {
     id: "gp.sql",
     label: "SQL Workspace",
@@ -10146,8 +10676,24 @@ const COMMANDS = {
   "stats.hotspot": {
     id: "stats.hotspot",
     label: "Hot Spots",
-    desc: "Clusters, after the hotspots notebook: DBSCAN and Shannon entropy.",
-    icon: "hotspot"
+    desc: "DBSCAN clusters of a point layer, with Shannon entropy and the "
+        + "categories each cluster has more of than the layer as a whole.",
+    icon: "hotspot",
+    run: () => { openToolbox("Statistics"); return selectTool("hotspot"); }
+  },
+  "stats.intersections": {
+    id: "stats.intersections",
+    label: "Intersection Density",
+    desc: "Real intersections per square kilometre around a point — how finely the street network is cut.",
+    icon: "hash",
+    run: () => { openToolbox("Statistics"); return selectTool("intersections"); }
+  },
+  "stats.walkTime": {
+    id: "stats.walkTime",
+    label: "Walking Times",
+    desc: "Time on foot to the first, third and fifth nearest of each urban function.",
+    icon: "clock",
+    run: () => { openToolbox("Statistics"); return selectTool("nearestTime"); }
   },
   "stats.correlation": {
     id: "stats.correlation",
@@ -10492,7 +11038,7 @@ const COMMANDS = {
   /* ── The rest of the ArcGIS Pro arrangement ──────────────────────────
      Slots, every one of them: the tab, the group and the name are here and
      the function is the work. Kept because an arrangement people already
-     know is only useful if the whole of it is there - a tool missing from
+     know is only useful if the whole of it is there — a tool missing from
      where it belongs reads as "this cannot do that", and the answer is
      "not yet". Ids follow RustGIS where it names one control, so its
      source reads as a reference implementation. */
@@ -11834,7 +12380,7 @@ const COMMANDS = {
 
 const RIBBON = [
   { tab: "Home", groups: [
-    { group: "Ghana Data", controls: [{ cmd: "data.ghanaLibrary", size: "big" }, { cmd: "data.ghanaAdmin", size: "small" }, { cmd: "data.ghanaPopulation", size: "small" }, { cmd: "data.ghanaHealth", size: "small" }, { cmd: "data.ghanaEducation", size: "small" }, { cmd: "data.ghanaWater", size: "small" }, { cmd: "data.ghanaTransport", size: "small" }, { cmd: "data.ghanaAgriculture", size: "small" }, { cmd: "data.ghanaClimate", size: "small" }, { cmd: "data.ghanaHazard", size: "small" }, { cmd: "data.ghanaEnergy", size: "small" }] },
+    { group: "Ghana Data", controls: [{ cmd: "data.ghanaLibrary", size: "big" }, { cmd: "data.ghanaAdmin", size: "small" }, { cmd: "data.ghanaPopulation", size: "small" }, { cmd: "data.ghanaHealth", size: "small" }, { cmd: "data.ghanaEducation", size: "small" }, { cmd: "data.ghanaWater", size: "small" }, { cmd: "data.ghanaTransport", size: "small" }, { cmd: "data.ghanaAgriculture", size: "small" }, { cmd: "data.ghanaClimate", size: "small" }, { cmd: "data.ghanaHazard", size: "small" }, { cmd: "data.ghanaEnergy", size: "small" }, { cmd: "data.imagerySearch", size: "small" }] },
     { group: "Navigate", controls: [{ cmd: "map.pan", size: "big" }, { cmd: "map.bookmarkList", size: "small" }, { cmd: "map.zoomIn", size: "small" }, { cmd: "map.zoomOut", size: "small" }, { cmd: "map.fullExtent", size: "small" }, { cmd: "map.previous", size: "small" }, { cmd: "map.next", size: "small" }, { cmd: "map.north", size: "small" }, { cmd: "map.goToXY", size: "small" }, { cmd: "map.bookmarkNew", size: "small" }] },
     { group: "Add Data", controls: [{ cmd: "data.eeSearch", size: "big" }, { cmd: "data.liveHealth", size: "small" }, { cmd: "data.liveEducation", size: "small" }, { cmd: "data.liveWater", size: "small" }, { cmd: "data.liveMarket", size: "small" }, { cmd: "data.liveRoad", size: "small" }, { cmd: "data.liveBuilding", size: "small" }, { cmd: "data.addFile", size: "small" }, { cmd: "data.addUrl", size: "small" }, { cmd: "data.addWms", size: "small" }, { cmd: "layer.addSample", size: "small" }, { cmd: "ui.addDelimited", size: "small" }, { cmd: "graphics.newLayer", size: "small" }] },
     { group: "Selection", controls: [{ cmd: "select.clip", size: "small" }, { cmd: "select.byRectangle", size: "big" }, { cmd: "select.byAttributes", size: "small" }, { cmd: "select.byLocation", size: "small" }, { cmd: "select.clear", size: "small" }, { cmd: "select.zoomTo", size: "small" }, { cmd: "select.selectByAttributes", size: "small" }, { cmd: "select.selectByLocation", size: "small" }, { cmd: "table.attributes", size: "small" }] },
@@ -11878,7 +12424,7 @@ const RIBBON = [
     { group: "Geoprocessing", controls: [{ cmd: "gp.toolbox", size: "big" }, { cmd: "gp.clip", size: "small" }, { cmd: "gp.buffer", size: "small" }, { cmd: "gp.dissolve", size: "small" }, { cmd: "gp.overlay", size: "small" }, { cmd: "gp.history", size: "small" }, { cmd: "gp.tools", size: "small" }, { cmd: "gp.modelBuilder", size: "small" }, { cmd: "ui.pane.script", size: "small" }, { cmd: "gp.environments", size: "small" }, { cmd: "gp.readyToUse", size: "small" }] },
     { group: "Vector", controls: [{ cmd: "gp.centroid", size: "big" }, { cmd: "gp.convex", size: "small" }, { cmd: "gp.envelope", size: "small" }, { cmd: "gp.simplify", size: "small" }, { cmd: "gp.voronoi", size: "small" }, { cmd: "gp.nearest", size: "small" }] },
     { group: "Raster", controls: [{ cmd: "ee.summarise", size: "big" }, { cmd: "ee.classAreas", size: "small" }, { cmd: "gp.elevation", size: "small" }, { cmd: "raster.calculator", size: "small" }, { cmd: "raster.reclassify", size: "small" }, { cmd: "gp.rasterFunctions", size: "small" }, { cmd: "gp.functionEditor", size: "small" }] },
-    { group: "Statistics", controls: [{ cmd: "gp.sql", size: "big" }, { cmd: "stats.summary", size: "small" }, { cmd: "stats.hotspot", size: "small" }, { cmd: "stats.correlation", size: "small" }] },
+    { group: "Statistics", controls: [{ cmd: "gp.fifteenMinute", size: "big" }, { cmd: "gp.radarLens", size: "small" }, { cmd: "gp.sql", size: "small" }, { cmd: "stats.hotspot", size: "small" }, { cmd: "stats.intersections", size: "small" }, { cmd: "stats.walkTime", size: "small" }, { cmd: "stats.summary", size: "small" }, { cmd: "stats.correlation", size: "small" }] },
     { group: "Assistant", controls: [{ cmd: "ui.assistant", size: "big" }, { cmd: "ai.explainLayer", size: "small" }, { cmd: "ai.suggest", size: "small" }] },
     { group: "Notebook", controls: [{ cmd: "ui.newNotebook", size: "big" }, { cmd: "notebook.addAndOpen", size: "small" }, { cmd: "ui.pane.notebook", size: "small" }] },
     { group: "Portal", controls: [{ cmd: "gp.uiPaneWorkflows", size: "big" }] },
@@ -11947,7 +12493,7 @@ const RIBBON = [
 
    A command with no `run` is a slot, not a bug. The frame is here and the
    function is not: pressing one says what it would do, gives its id, and says
-   where to write it. That is deliberate - this platform is meant to be
+   where to write it. That is deliberate — this platform is meant to be
    finished by the Ghanaian GIS community, and an empty slot with a name and an
    address is an invitation where a hidden one is nothing at all.           */
 
@@ -12003,7 +12549,7 @@ function ribControl(control, isBig) {
   const label = escapeHtml(cmd.label);
   return `<button type="button" class="rib-btn ${isBig ? "big" : "small"}"
     data-cmd="${escapeHtml(cmd.id)}" data-planned="${planned}"
-    title="${escapeHtml(cmd.label)} - ${escapeHtml(cmd.desc)}${planned ? "  (not built yet)" : ""}">
+    title="${escapeHtml(cmd.label)} — ${escapeHtml(cmd.desc)}${planned ? "  (not built yet)" : ""}">
     ${ribIcon(cmd.icon)}<span>${label}</span>
   </button>`;
 }
@@ -12030,7 +12576,7 @@ function runCommand(id) {
 }
 
 /* A slot, explained. What it is for, what it is called, and where it would be
-   written - which is the difference between a dead button and a job. */
+   written — which is the difference between a dead button and a job. */
 function showPlanned(cmd) {
   const host = document.getElementById("pane-planned");
   if (!host) return;
@@ -12046,14 +12592,14 @@ function showPlanned(cmd) {
         <dt>To implement it</dt>
         <dd>Add a <code>run</code> to <code>${escapeHtml(cmd.id)}</code> in the
             <code>COMMANDS</code> registry in <code>web/index.html</code>. The
-            ribbon picks it up with no other change - the button, its icon, its
+            ribbon picks it up with no other change — the button, its icon, its
             tooltip and its place on the tab are already declared.</dd>
       </dl>
       <div class="planned-actions">
         <button class="btn btn-quiet" data-planned-copy="${escapeHtml(cmd.id)}">Copy the id</button>
         <a class="btn btn-quiet" target="_blank" rel="noopener"
            href="https://github.com/desmond-lartey/ghana-geostack/issues/new?title=${
-             encodeURIComponent("Implement " + cmd.id + " - " + cmd.label)}&body=${
+             encodeURIComponent("Implement " + cmd.id + " — " + cmd.label)}&body=${
              encodeURIComponent(cmd.desc + "\n\nCommand id: " + cmd.id)}">Open an issue</a>
       </div>
     </div>
@@ -12266,7 +12812,7 @@ function setClassificationMode(mode) {
   const targets = styleTargets().filter((x) => styleState[x.key]?.field);
   if (!targets.length) {
     showPanel("style");
-    setStatus("Colour a layer by a column first - a classification needs a number to cut.", true);
+    setStatus("Colour a layer by a column first — a classification needs a number to cut.", true);
     return;
   }
   for (const target of targets) {
@@ -12287,7 +12833,7 @@ async function eeZonalFromRibbon(which) {
   const dataset = eeState.selected;
   if (!dataset) {
     showPanel("data");
-    setStatus("Open a dataset in the Data panel first - a summary needs a raster.", true);
+    setStatus("Open a dataset in the Data panel first — a summary needs a raster.", true);
     return;
   }
   if (which === "classAreas" && !dataset.classes) {
@@ -12378,7 +12924,7 @@ function openSelectedLayerTable(layerId) {
 
    A GIS that cannot open your file is not a GIS. This takes GeoJSON, CSV,
    GPX, KML and a zipped Shapefile, from a file picker, from a drop onto the
-   map, or from a URL - and whatever comes in becomes a layer like any other:
+   map, or from a URL — and whatever comes in becomes a layer like any other:
    it draws, it appears in the layer list with its own card, the toolbox can
    clip and buffer it, and it is registered as a table so SQL can query it.
 
@@ -12460,7 +13006,7 @@ function csvToGeoJson(text, name) {
     if (wkt === -1) {
       throw new Error(
         `No coordinates in ${name}. A CSV needs a longitude and a latitude `
-        + `column - lon/lat, x/y, longitude/latitude or easting/northing - or `
+        + `column — lon/lat, x/y, longitude/latitude or easting/northing — or `
         + `a WKT geometry column. Its columns are: ${header.slice(0, 12).join(", ")}.`);
     }
   }
@@ -12474,7 +13020,7 @@ function csvToGeoJson(text, name) {
     let geometry = null;
     if (lon !== -1 && lat !== -1) {
       // An empty cell must not become a coordinate. Number("") is 0, so a row
-      // with no position would land at 0°N 0°E - in the Gulf of Guinea, about
+      // with no position would land at 0°N 0°E — in the Gulf of Guinea, about
       // 600 km south of Accra, which looks plausible enough on a map of Ghana
       // to be believed.
       const rawX = (row[lon] ?? "").trim(), rawY = (row[lat] ?? "").trim();
@@ -12667,12 +13213,12 @@ async function toCollection(name, buffer, text) {
     return { collection: { type: "FeatureCollection",
       features: [{ type: "Feature", geometry: data, properties: {} }] }, note: "1 geometry" };
   }
-  throw new Error(`${name} is JSON, but not GeoJSON - no FeatureCollection, Feature or geometry in it.`);
+  throw new Error(`${name} is JSON, but not GeoJSON — no FeatureCollection, Feature or geometry in it.`);
 }
 
 /* ── Drawing it ────────────────────────────────────────────────────────── */
 
-/* One source, three layers - polygons, lines and points - so a file holding a
+/* One source, three layers — polygons, lines and points — so a file holding a
    mixture draws all of it. The layer registers like everything else, which is
    what puts it in the layer list, the legend, the toolbox and the Style pane
    without any of them being told about it. */
@@ -12704,7 +13250,7 @@ function drawCollection(label, collection, note) {
 
 /* Queryable as well as drawable. The attributes go into DuckDB under a name
    made from the file's, so the SQL workspace and the assistant can reach what
-   was just added - which is the difference between a picture of your data and
+   was just added — which is the difference between a picture of your data and
    your data. */
 async function registerCollectionTable(label, collection) {
   if (!conn || !duckDb) return null;
@@ -12759,13 +13305,13 @@ async function ingestFiles(files) {
       window.ghLog?.("ok", `Added ${file.name}`, note);
     } catch (err) {
       console.error("Add data:", err);
-      addDataStatus(`<strong>${escapeHtml(file.name)}</strong> - ${escapeHtml(err.message || String(err))}`, "error");
+      addDataStatus(`<strong>${escapeHtml(file.name)}</strong> — ${escapeHtml(err.message || String(err))}`, "error");
       return;
     }
   }
 
   addDataStatus(done.map((d) =>
-    `<strong>${escapeHtml(d.label)}</strong> - ${escapeHtml(d.note)}`
+    `<strong>${escapeHtml(d.label)}</strong> — ${escapeHtml(d.note)}`
     + (d.table ? `, queryable as <code>${escapeHtml(d.table)}</code>` : "")).join("<br>"), "ok");
   renderUserLayers();
   renderStylePane();
@@ -12787,7 +13333,7 @@ async function ingestUrl(url) {
     const label = name.replace(/\.[^.]+$/, "");
     drawCollection(label, collection, note);
     const table = await registerCollectionTable(label, collection);
-    addDataStatus(`<strong>${escapeHtml(label)}</strong> - ${escapeHtml(note)}`
+    addDataStatus(`<strong>${escapeHtml(label)}</strong> — ${escapeHtml(note)}`
       + (table ? `, queryable as <code>${escapeHtml(table)}</code>` : ""), "ok");
     renderUserLayers();
   } catch (err) {
@@ -12807,7 +13353,7 @@ async function ingestUrl(url) {
 
    The target used to be the map alone, and that is not what dropping a file
    on an application means. A drop two pixels into the layer list, or onto the
-   ribbon, or onto the status bar, went to the browser instead - and the
+   ribbon, or onto the status bar, went to the browser instead — and the
    browser's default for a dropped GeoJSON is to navigate to it, which throws
    away the session and looks like the file broke the app.
 
@@ -12893,7 +13439,7 @@ function wireAddData() {
    a basemap for is "show me what is actually on the ground".
 
    Each one names what it is for and who must be credited. The attribution is
-   not decoration - Esri and OpenStreetMap both require it, and the map export
+   not decoration — Esri and OpenStreetMap both require it, and the map export
    carries it into the image for the same reason.                           */
 
 const BASEMAP_GALLERY = [
@@ -12913,7 +13459,7 @@ const BASEMAP_GALLERY = [
   { id: "osm", group: "Street",
     name: "OpenStreetMap", for: "Full detail: streets, names, buildings." },
   { id: "osm_hot", group: "Street",
-    name: "Humanitarian", for: "The HOT style - clinics, water points and tracks drawn prominently. Built for exactly this kind of work.",
+    name: "Humanitarian", for: "The HOT style — clinics, water points and tracks drawn prominently. Built for exactly this kind of work.",
     tiles: ["https://a.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png",
             "https://b.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png"],
     maxzoom: 19, attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, tiles by HOT' },
@@ -12936,7 +13482,7 @@ const BASEMAP_GALLERY = [
     name: "OpenTopoMap", for: "Contours and relief. For anything that follows the land.",
     tiles: ["https://a.tile.opentopomap.org/{z}/{x}/{y}.png",
             "https://b.tile.opentopomap.org/{z}/{x}/{y}.png"],
-    maxzoom: 17, attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, SRTM - © <a href="https://opentopomap.org">OpenTopoMap</a> (CC-BY-SA)' },
+    maxzoom: 17, attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, SRTM — © <a href="https://opentopomap.org">OpenTopoMap</a> (CC-BY-SA)' },
   { id: "esri_topo", group: "Terrain",
     name: "Topographic", for: "Esri's topographic map: relief, roads and place names together.",
     tiles: ["https://services.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}"],
@@ -12950,8 +13496,8 @@ const BASEMAP_GALLERY = [
 ];
 
 /* The gallery's own entries become basemaps the moment they are needed, so
-   BASEMAPS keeps one shape and everything that reads it - the style builder,
-   the settings select, the export - needs no special case. */
+   BASEMAPS keeps one shape and everything that reads it — the style builder,
+   the settings select, the export — needs no special case. */
 function ensureGalleryBasemap(id) {
   if (BASEMAPS[id]) return BASEMAPS[id];
   const entry = BASEMAP_GALLERY.find((b) => b.id === id);
@@ -13033,7 +13579,7 @@ function renderBasemapGallery() {
       <input id="basemap-xyz" type="text" spellcheck="false"
              placeholder="https://your-server/tiles/{z}/{x}/{y}.png">
       <p class="legend-note">An XYZ template. A tile server you run, or any
-        public one - it is added to the gallery for this session.</p>
+        public one — it is added to the gallery for this session.</p>
     </div>
     <div class="actions"><button class="btn btn-quiet" id="basemap-xyz-add">Add these tiles</button></div>`;
 
@@ -13057,12 +13603,12 @@ const PANEL_TITLES = {
   style: "Style", data: "Data", query: "SQL workspace", ask: "AI Assistant",
   log: "Log", sources: "About the data", settings: "Map", layers: "Layers",
   planned: "Not built yet", bookmarks: "Bookmarks", identify: "Identify",
-  basemap: "Basemap", adddata: "Add data"
+  basemap: "Basemap", adddata: "Add data", fifteen: "15-minute profile", imagery: "Imagery search"
 };
 
 /* One pane shows in the right-hand panel at a time. Asking for the pane that
    is already showing closes the panel, which is what a toggle button that
-   stays lit has to mean - the alternative is a button that looks pressed and
+   stays lit has to mean — the alternative is a button that looks pressed and
    does nothing when pressed again. */
 function showPanel(name, { toggle = false } = {}) {
   const panel = document.getElementById("panel");
@@ -13084,6 +13630,1719 @@ function hidePanel() {
 }
 
 /* ---------------------------------------------------------------------------
+   Walking networks, from OpenStreetMap, in the browser
+
+   What osmnx and pandana do on a laptop, done here against Overpass: fetch the
+   walkable streets around a point, assemble them into a graph, run Dijkstra
+   out from the nearest node, and turn the reachable set into catchments.
+
+   Why in the browser rather than in the pipeline. A 15-minute catchment is
+   only interesting where someone points, and nobody can pre-compute every
+   point in Ghana. The whole value is that it answers for *this* corner, now.
+   The cost is one Overpass request of about a square kilometre, which is
+   small, and a Dijkstra over a few thousand nodes, which is milliseconds.
+--------------------------------------------------------------------------- */
+
+/* One Overpass request, tried against each configured endpoint in turn.
+   fetchLive had this logic inside it and nothing else could use it. */
+async function overpassQuery(ql, { label = "OpenStreetMap", onStatus, timeout = 90000 } = {}) {
+  if (!OVERPASS.length) {
+    throw new Error("No Overpass endpoint is configured for this deployment.");
+  }
+  const problems = [];
+  for (const [index, endpoint] of OVERPASS.entries()) {
+    const host = new URL(endpoint).hostname;
+    onStatus?.(`${label}: asking ${host}`
+      + (OVERPASS.length > 1 ? ` (${index + 1} of ${OVERPASS.length})` : "") + "…");
+
+    for (const method of ["POST", "GET"]) {
+      try {
+        const response = method === "POST"
+          ? await fetch(endpoint, {
+              method: "POST",
+              headers: { "content-type": "application/x-www-form-urlencoded" },
+              body: new URLSearchParams({ data: ql }),
+              signal: AbortSignal.timeout(timeout)
+            })
+          : await fetch(`${endpoint}?data=${encodeURIComponent(ql)}`,
+                        { signal: AbortSignal.timeout(timeout) });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        return await response.json();
+      } catch (err) {
+        const why = err.name === "TimeoutError" ? `no answer in ${timeout / 1000}s`
+          : err.name === "TypeError" ? "blocked by the browser (CORS, an extension, or the network)"
+          : (err.message || String(err));
+        problems.push(`${host} ${method}: ${why}`);
+      }
+    }
+  }
+  throw new Error("Could not reach OpenStreetMap. " + problems.join("; "));
+}
+
+/* What counts as walkable. Motorway and trunk are left out because walking
+   along one is not a thing a plan should assume, and anything tagged foot=no
+   is dropped below whatever its class. */
+const WALKABLE = [
+  "footway", "path", "pedestrian", "living_street", "residential", "service",
+  "unclassified", "tertiary", "tertiary_link", "secondary", "secondary_link",
+  "primary", "primary_link", "track", "steps", "cycleway", "road"
+];
+
+/* 4.8 km/h — 80 metres a minute. The figure the 15-minute-city literature
+   uses, and close enough to the 4.5 km/h osmnx defaults to that the
+   difference is smaller than the error in the street data. */
+const WALK_METRES_PER_MIN = 80;
+
+/* The seven urban functions, and the OSM tags that stand for each.
+
+   The grouping is a judgement, not a standard, and it is the judgement that
+   decides what the radar says. A pharmacy counted as retail rather than
+   healthcare changes whether a neighbourhood looks served. Listed here in
+   full so the judgement can be argued with and changed. */
+const URBAN_FUNCTIONS = [
+  {
+    id: "retail", label: "Daily Retail & Local Services", colour: "#D9A63C",
+    essential: true,
+    tags: {
+      shop: "*",
+      amenity: ["marketplace", "bank", "atm", "post_office", "fuel", "cafe",
+                "restaurant", "fast_food", "bar", "pub"]
+    }
+  },
+  {
+    id: "education", label: "Education", colour: "#3E8E7E", essential: true,
+    tags: {
+      amenity: ["school", "kindergarten", "college", "university", "library",
+                "childcare", "driving_school", "language_school"]
+    }
+  },
+  {
+    id: "health", label: "Healthcare", colour: "#C2603C", essential: true,
+    tags: {
+      amenity: ["hospital", "clinic", "doctors", "pharmacy", "dentist",
+                "health_post", "nursing_home"],
+      healthcare: "*"
+    }
+  },
+  {
+    id: "green", label: "Green & Recreation", colour: "#6F8F5E",
+    tags: {
+      leisure: ["park", "garden", "playground", "pitch", "nature_reserve",
+                "recreation_ground", "dog_park"],
+      landuse: ["recreation_ground", "village_green", "forest", "grass"]
+    }
+  },
+  {
+    id: "transport", label: "Public Transport Access", colour: "#5B7FA6",
+    essential: true,
+    tags: {
+      highway: ["bus_stop"],
+      amenity: ["bus_station", "taxi", "ferry_terminal"],
+      public_transport: ["platform", "station", "stop_position"],
+      railway: ["station", "halt", "tram_stop"]
+    }
+  },
+  {
+    id: "culture", label: "Culture, Sport & Community", colour: "#8E6BA8",
+    tags: {
+      amenity: ["place_of_worship", "community_centre", "theatre", "cinema",
+                "arts_centre", "social_facility", "social_centre", "townhall"],
+      leisure: ["sports_centre", "fitness_centre", "stadium", "swimming_pool"],
+      tourism: ["museum", "gallery", "attraction"]
+    }
+  },
+  {
+    id: "employment", label: "Employment & Economic", colour: "#B5523A",
+    tags: {
+      office: "*",
+      craft: "*",
+      amenity: ["courthouse", "police", "fire_station", "prison"],
+      landuse: ["industrial", "commercial", "retail"]
+    }
+  }
+];
+
+const ESSENTIAL_FUNCTIONS = URBAN_FUNCTIONS.filter((f) => f.essential);
+
+/* Which function a tagged thing belongs to. First match wins, and the order
+   above is the order of precedence — healthcare before retail, so a pharmacy
+   is healthcare. */
+function classifyOsm(tags) {
+  if (!tags) return null;
+  for (const fn of URBAN_FUNCTIONS) {
+    for (const [key, values] of Object.entries(fn.tags)) {
+      const value = tags[key];
+      if (value === undefined) continue;
+      if (values === "*") return fn.id;
+      if (Array.isArray(values) && values.includes(value)) return fn.id;
+    }
+  }
+  return null;
+}
+
+/* ── Geometry in metres ───────────────────────────────────────────────────
+   Everything below works in metres on a local plane centred on the clicked
+   point. Over a kilometre and a half the distortion is under a metre, and
+   the alternative is choosing a UTM zone — which Ghana straddles two of. */
+function localPlane(lat0, lon0) {
+  const mPerLat = 111132.92 - 559.82 * Math.cos(2 * lat0 * Math.PI / 180);
+  const mPerLon = 111412.84 * Math.cos(lat0 * Math.PI / 180)
+                 - 93.5 * Math.cos(3 * lat0 * Math.PI / 180);
+  return {
+    toXY: (lat, lon) => [(lon - lon0) * mPerLon, (lat - lat0) * mPerLat],
+    toLatLon: (x, y) => [lat0 + y / mPerLat, lon0 + x / mPerLon],
+    mPerLat, mPerLon
+  };
+}
+
+/* ── The graph ──────────────────────────────────────────────────────────── */
+
+function buildWalkGraph(payload, plane) {
+  const coords = new Map();          // node id -> [x, y] in metres
+  for (const el of payload.elements) {
+    if (el.type === "node") coords.set(el.id, plane.toXY(el.lat, el.lon));
+  }
+
+  const adjacency = new Map();       // node id -> [[other, metres], …]
+  const link = (a, b, d) => {
+    if (!adjacency.has(a)) adjacency.set(a, []);
+    adjacency.get(a).push([b, d]);
+  };
+
+  let ways = 0;
+  for (const el of payload.elements) {
+    if (el.type !== "way" || !Array.isArray(el.nodes)) continue;
+    const tags = el.tags || {};
+    if (tags.foot === "no" || tags.access === "private") continue;
+    if (!WALKABLE.includes(tags.highway)) continue;
+    ways += 1;
+
+    for (let i = 0; i < el.nodes.length - 1; i += 1) {
+      const a = el.nodes[i], b = el.nodes[i + 1];
+      const pa = coords.get(a), pb = coords.get(b);
+      if (!pa || !pb) continue;
+      const d = Math.hypot(pb[0] - pa[0], pb[1] - pa[1]);
+      if (!(d > 0)) continue;
+      // Undirected: on foot every street is two-way, whatever the tagging
+      // says about cars.
+      link(a, b, d);
+      link(b, a, d);
+    }
+  }
+  return { coords, adjacency, ways };
+}
+
+function nearestGraphNode(graph, x, y) {
+  let best = null, bestD = Infinity;
+  for (const [id] of graph.adjacency) {
+    const p = graph.coords.get(id);
+    if (!p) continue;
+    const d = (p[0] - x) ** 2 + (p[1] - y) ** 2;
+    if (d < bestD) { bestD = d; best = id; }
+  }
+  return { id: best, metres: Math.sqrt(bestD) };
+}
+
+/* Dijkstra with a binary heap. A few thousand nodes, so this is instant; the
+   heap is here because the naive scan is quadratic and the graph grows with
+   the square of the radius. */
+function walkCosts(graph, startId, limitMetres) {
+  const cost = new Map([[startId, 0]]);
+  const heap = [[0, startId]];
+  const swap = (i, j) => { const t = heap[i]; heap[i] = heap[j]; heap[j] = t; };
+
+  const push = (item) => {
+    heap.push(item);
+    let i = heap.length - 1;
+    while (i > 0) {
+      const parent = (i - 1) >> 1;
+      if (heap[parent][0] <= heap[i][0]) break;
+      swap(parent, i); i = parent;
+    }
+  };
+  const pop = () => {
+    const top = heap[0];
+    const last = heap.pop();
+    if (heap.length) {
+      heap[0] = last;
+      let i = 0;
+      for (;;) {
+        const l = 2 * i + 1, r = l + 1;
+        let small = i;
+        if (l < heap.length && heap[l][0] < heap[small][0]) small = l;
+        if (r < heap.length && heap[r][0] < heap[small][0]) small = r;
+        if (small === i) break;
+        swap(i, small); i = small;
+      }
+    }
+    return top;
+  };
+
+  while (heap.length) {
+    const [d, id] = pop();
+    if (d > (cost.get(id) ?? Infinity)) continue;
+    if (d > limitMetres) continue;
+    for (const [other, length] of graph.adjacency.get(id) ?? []) {
+      const next = d + length;
+      if (next > limitMetres) continue;
+      if (next < (cost.get(other) ?? Infinity)) {
+        cost.set(other, next);
+        push([next, other]);
+      }
+    }
+  }
+  return cost;
+}
+
+/* ── Catchments ───────────────────────────────────────────────────────────
+   The reachable nodes are a scatter of points; what a catchment means is the
+   land those streets serve. So each reachable node claims the cells within
+   one cell of it — about 70 metres, a reasonable walk off the street — and
+   the claimed cells are merged into rectangles row by row.
+
+   Cells rather than a concave hull because a hull bridges two streets that
+   do not connect, which is the one thing a catchment must never do. The
+   blocky edge is honest: it is the resolution of the claim, not a smoothed
+   guess about it. */
+const CELL_METRES = 45;
+
+function catchmentPolygon(graph, cost, budget, plane) {
+  const reachable = [];
+  for (const [id, d] of cost) {
+    if (d <= budget) {
+      const p = graph.coords.get(id);
+      if (p) reachable.push(p);
+    }
+  }
+  if (!reachable.length) return { polygon: null, areaKm2: 0, nodes: 0 };
+
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  for (const [x, y] of reachable) {
+    if (x < minX) minX = x; if (x > maxX) maxX = x;
+    if (y < minY) minY = y; if (y > maxY) maxY = y;
+  }
+  const pad = CELL_METRES * 2;
+  minX -= pad; minY -= pad; maxX += pad; maxY += pad;
+
+  const cols = Math.max(1, Math.ceil((maxX - minX) / CELL_METRES));
+  const rows = Math.max(1, Math.ceil((maxY - minY) / CELL_METRES));
+  const grid = new Uint8Array(cols * rows);
+
+  for (const [x, y] of reachable) {
+    const cx = Math.floor((x - minX) / CELL_METRES);
+    const cy = Math.floor((y - minY) / CELL_METRES);
+    for (let dy = -1; dy <= 1; dy += 1) {
+      for (let dx = -1; dx <= 1; dx += 1) {
+        const gx = cx + dx, gy = cy + dy;
+        if (gx < 0 || gy < 0 || gx >= cols || gy >= rows) continue;
+        grid[gy * cols + gx] = 1;
+      }
+    }
+  }
+
+  // Row-by-row runs become rectangles: far fewer polygons than one per cell,
+  // and the same shape.
+  const rings = [];
+  let filled = 0;
+  for (let gy = 0; gy < rows; gy += 1) {
+    let runStart = -1;
+    for (let gx = 0; gx <= cols; gx += 1) {
+      const on = gx < cols && grid[gy * cols + gx] === 1;
+      if (on && runStart < 0) runStart = gx;
+      if (!on && runStart >= 0) {
+        filled += gx - runStart;
+        const x0 = minX + runStart * CELL_METRES, x1 = minX + gx * CELL_METRES;
+        const y0 = minY + gy * CELL_METRES, y1 = y0 + CELL_METRES;
+        rings.push([[
+          plane.toLatLon(x0, y0), plane.toLatLon(x1, y0),
+          plane.toLatLon(x1, y1), plane.toLatLon(x0, y1), plane.toLatLon(x0, y0)
+        ].map(([lat, lon]) => [lon, lat])]);
+        runStart = -1;
+      }
+    }
+  }
+
+  return {
+    polygon: rings.length ? { type: "MultiPolygon", coordinates: rings } : null,
+    areaKm2: (filled * CELL_METRES * CELL_METRES) / 1e6,
+    nodes: reachable.length,
+    // Kept so a point can be tested against the catchment without Turf.
+    grid: { minX, minY, cols, rows, data: grid, cell: CELL_METRES }
+  };
+}
+
+function inCatchmentGrid(grid, x, y) {
+  if (!grid) return false;
+  const gx = Math.floor((x - grid.minX) / grid.cell);
+  const gy = Math.floor((y - grid.minY) / grid.cell);
+  if (gx < 0 || gy < 0 || gx >= grid.cols || gy >= grid.rows) return false;
+  return grid.data[gy * grid.cols + gx] === 1;
+}
+
+/* Street length reachable inside a budget: each edge counted once, and only
+   when both of its ends are reachable. An edge with one end outside is a
+   street you can start down and not finish, which is not reach. */
+function reachableStreetKm(graph, cost, budget) {
+  let metres = 0;
+  for (const [id, d] of cost) {
+    if (d > budget) continue;
+    for (const [other, length] of graph.adjacency.get(id) ?? []) {
+      const otherCost = cost.get(other);
+      if (otherCost === undefined || otherCost > budget) continue;
+      if (id < other) metres += length;      // once per undirected pair
+    }
+  }
+  return metres / 1000;
+}
+
+/* Intersections: nodes where three or more street ends meet. Dead ends and
+   the points that merely describe a curve are not intersections, and
+   counting them is why a naive node count says nothing about the street
+   pattern. This is what osmnx's consolidate_intersections is for. */
+function countIntersections(graph, cost, budget) {
+  let n = 0;
+  for (const [id, d] of cost) {
+    if (d > budget) continue;
+    const degree = new Set((graph.adjacency.get(id) ?? []).map(([o]) => o)).size;
+    if (degree >= 3) n += 1;
+  }
+  return n;
+}
+
+/* ---------------------------------------------------------------------------
+   Hotspots, and what each one is for
+
+   DBSCAN over a point layer, then Shannon entropy per cluster and the
+   categories each cluster has more of than the city average. The method is
+   hotspots.ipynb, done here so it runs on whatever is on the map rather than
+   on a notebook's hard-coded city.
+
+   Two things the notebook is right about and that are easy to get wrong:
+
+   DBSCAN is run in metres, not degrees. eps = 0.002 means nothing; eps =
+   200 m means a two-minute walk. A degree of longitude in Ghana is 110 km
+   and a degree of latitude is 111, so clustering in degrees stretches every
+   cluster east-west by a few per cent — small here, and wrong everywhere.
+
+   A cluster of two is not a hotspot. The notebook picks its threshold off a
+   histogram; this takes it as a parameter and says what the choice did.
+--------------------------------------------------------------------------- */
+
+/* DBSCAN. min_samples of 1 in the notebook makes every stray point its own
+   cluster, which is why it then has to filter by size; taking minPoints
+   properly means noise is labelled as noise. */
+function dbscan(points, eps, minPoints) {
+  const n = points.length;
+  const labels = new Int32Array(n).fill(-2);     // -2 unvisited, -1 noise
+  const cell = eps;
+  const buckets = new Map();
+  const key = (gx, gy) => `${gx},${gy}`;
+
+  points.forEach((p, i) => {
+    const gx = Math.floor(p.x / cell), gy = Math.floor(p.y / cell);
+    const k = key(gx, gy);
+    if (!buckets.has(k)) buckets.set(k, []);
+    buckets.get(k).push(i);
+  });
+
+  // The grid makes this linear in practice rather than quadratic; a national
+  // point layer is tens of thousands of points and the naive version is
+  // minutes.
+  const neighbours = (i) => {
+    const p = points[i];
+    const gx = Math.floor(p.x / cell), gy = Math.floor(p.y / cell);
+    const out = [];
+    for (let dy = -1; dy <= 1; dy += 1) {
+      for (let dx = -1; dx <= 1; dx += 1) {
+        for (const j of buckets.get(key(gx + dx, gy + dy)) ?? []) {
+          const q = points[j];
+          if ((p.x - q.x) ** 2 + (p.y - q.y) ** 2 <= eps * eps) out.push(j);
+        }
+      }
+    }
+    return out;
+  };
+
+  let cluster = 0;
+  for (let i = 0; i < n; i += 1) {
+    if (labels[i] !== -2) continue;
+    const seeds = neighbours(i);
+    if (seeds.length < minPoints) { labels[i] = -1; continue; }
+    labels[i] = cluster;
+    const queue = seeds.filter((j) => j !== i);
+    for (let q = 0; q < queue.length; q += 1) {
+      const j = queue[q];
+      if (labels[j] === -1) labels[j] = cluster;
+      if (labels[j] !== -2) continue;
+      labels[j] = cluster;
+      const more = neighbours(j);
+      if (more.length >= minPoints) for (const m of more) if (labels[m] === -2) queue.push(m);
+    }
+    cluster += 1;
+  }
+  return { labels, clusters: cluster };
+}
+
+function entropyOf(values) {
+  const counts = new Map();
+  for (const v of values) counts.set(v, (counts.get(v) ?? 0) + 1);
+  const total = values.length;
+  let h = 0;
+  for (const n of counts.values()) {
+    const p = n / total;
+    h -= p * Math.log(p);
+  }
+  return h;
+}
+
+/* A convex hull, so a cluster is a shape rather than a cloud of dots. Andrew's
+   monotone chain; Turf has one but this runs before Turf is loaded and it is
+   fifteen lines. */
+function hullOf(points) {
+  if (points.length < 3) return null;
+  const pts = points.map((p) => [p.x, p.y]).sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+  const cross = (o, a, b) => (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]);
+  const half = (list) => {
+    const out = [];
+    for (const p of list) {
+      while (out.length >= 2 && cross(out[out.length - 2], out[out.length - 1], p) <= 0) out.pop();
+      out.push(p);
+    }
+    out.pop();
+    return out;
+  };
+  const hull = [...half(pts), ...half([...pts].reverse())];
+  return hull.length >= 3 ? hull : null;
+}
+
+/* ---------------------------------------------------------------------------
+   The 15-minute profile
+
+   Click anywhere in Ghana and this walks out from that point along the real
+   street network at 5, 10 and 15 minutes, counts what is reachable in each
+   band, and says what the place is short of.
+
+   It is a diagnosis rather than a map. The catchments are the easy part; the
+   question worth answering is whether a person living at that point can
+   reach the things a day needs, and the six axes below are an attempt at
+   that question rather than a decoration.
+--------------------------------------------------------------------------- */
+
+const BANDS = [
+  { minutes: 5,  colour: "#2BB3A3" },
+  { minutes: 10, colour: "#D9A63C" },
+  { minutes: 15, colour: "#5B7FA6" }
+];
+
+/* The six axes, and what each is divided by to land on 0-100.
+
+   Every normalisation here is a judgement and is written down because of it.
+   A score of 70 means seventy per cent of the reference, and the reference
+   is stated — not "good". Densities are set against a well-served
+   neighbourhood in Accra or Kumasi rather than against Paris, because a
+   scale nothing in Ghana can reach measures nothing. */
+const RADAR_AXES = [
+  { id: "coverage",   label: "Coverage",
+    note: "How many of the seven functions are reachable at all in 15 minutes." },
+  { id: "density",    label: "Density",
+    note: "Places per km² of catchment, against 150/km² — a busy urban quarter." },
+  { id: "diversity",  label: "Diversity",
+    note: "Shannon entropy across the functions, over its maximum for seven." },
+  { id: "essentials", label: "Essentials",
+    note: "Retail, education, healthcare and transport, within 10 minutes." },
+  { id: "choice",     label: "Choice",
+    note: "Of the functions present, the share with three or more options." },
+  { id: "network",    label: "Network",
+    note: "Reachable street length per km², against 20 km/km² — a fine-grained grid." }
+];
+
+const DENSITY_REFERENCE = 150;    // places per km²
+const NETWORK_REFERENCE = 20;     // km of street per km²
+
+const fifteenState = {
+  running: false,
+  picking: false,
+  result: null,
+  /* The last fetch is kept so the lens can move without asking Overpass
+     again: the graph and the POIs cover a whole square kilometre and the
+     lens only ever moves within it. */
+  cache: null
+};
+
+function walkQuery(lat, lon, radius) {
+  return `[out:json][timeout:60];
+way["highway"~"^(${WALKABLE.join("|")})$"](around:${radius},${lat},${lon});
+out body;
+>;
+out skel qt;`;
+}
+
+function placesQuery(lat, lon, radius) {
+  const keys = ["shop", "amenity", "healthcare", "leisure", "office", "craft",
+                "tourism", "public_transport", "railway"];
+  const parts = keys.flatMap((k) => [
+    `node["${k}"](around:${radius},${lat},${lon});`,
+    `way["${k}"](around:${radius},${lat},${lon});`
+  ]).join("\n  ");
+  return `[out:json][timeout:60];
+(
+  ${parts}
+  node["highway"="bus_stop"](around:${radius},${lat},${lon});
+);
+out center tags;`;
+}
+
+/* Shannon entropy over the function counts, normalised by its maximum.
+   Straight out of hotspots.ipynb — the same measure of how evenly a place's
+   functions are spread. */
+function shannonDiversity(counts) {
+  const values = counts.filter((n) => n > 0);
+  if (values.length < 2) return 0;
+  const total = values.reduce((a, b) => a + b, 0);
+  let h = 0;
+  for (const n of values) {
+    const p = n / total;
+    h -= p * Math.log(p);
+  }
+  return h / Math.log(URBAN_FUNCTIONS.length);
+}
+
+async function runFifteenMinute(lat, lon, { radiusMinutes = 15 } = {}) {
+  if (fifteenState.running) return;
+  fifteenState.running = true;
+
+  const say = (message, bad) => {
+    const host = document.getElementById("fm-status");
+    if (host) {
+      host.innerHTML = message;
+      host.style.color = bad ? "var(--clay)" : "";
+    }
+  };
+
+  try {
+    const budgetMax = radiusMinutes * WALK_METRES_PER_MIN;
+    // A circle of the full budget is not enough: the network wanders, so the
+    // straight-line radius has to be larger than the walking distance or the
+    // graph is cut off before Dijkstra reaches its own limit.
+    const radius = Math.round(budgetMax * 1.25);
+    const plane = localPlane(lat, lon);
+
+    say("Fetching the walking network from OpenStreetMap…");
+    const netPayload = await overpassQuery(walkQuery(lat, lon, radius),
+      { label: "Walking network", onStatus: (m) => say(escapeHtml(m)) });
+
+    const graph = buildWalkGraph(netPayload, plane);
+    if (!graph.adjacency.size) {
+      say("No walkable streets are mapped within "
+        + `${(radius / 1000).toFixed(1)} km of there. In much of rural Ghana `
+        + "that is a gap in OpenStreetMap rather than a gap in the ground.", true);
+      return;
+    }
+
+    const start = nearestGraphNode(graph, 0, 0);
+    if (start.metres > 400) {
+      say(`The nearest mapped street is ${Math.round(start.metres)} m away, `
+        + "so a catchment from here would be mostly guesswork.", true);
+      return;
+    }
+
+    say(`Walking the network — ${graph.adjacency.size.toLocaleString()} nodes, `
+      + `${graph.ways.toLocaleString()} ways…`);
+    const cost = walkCosts(graph, start.id, budgetMax);
+
+    say("Fetching what is there…");
+    const poiPayload = await overpassQuery(placesQuery(lat, lon, radius),
+      { label: "Places", onStatus: (m) => say(escapeHtml(m)) });
+
+    const places = [];
+    for (const el of poiPayload.elements) {
+      const fn = classifyOsm(el.tags);
+      if (!fn) continue;
+      const plat = el.lat ?? el.center?.lat;
+      const plon = el.lon ?? el.center?.lon;
+      if (plat === undefined || plon === undefined) continue;
+      const [x, y] = plane.toXY(plat, plon);
+      places.push({ fn, lat: plat, lon: plon, x, y,
+                    name: el.tags?.name || "", tags: el.tags });
+    }
+
+    // The bands, outward. Each one's catchment is the land its streets serve.
+    const bands = BANDS.filter((b) => b.minutes <= radiusMinutes).map((band) => {
+      const budget = band.minutes * WALK_METRES_PER_MIN;
+      const shape = catchmentPolygon(graph, cost, budget, plane);
+      return {
+        ...band, budget, ...shape,
+        streetKm: reachableStreetKm(graph, cost, budget),
+        intersections: countIntersections(graph, cost, budget)
+      };
+    });
+
+    const outer = bands[bands.length - 1];
+    const inner10 = bands.find((b) => b.minutes === 10) ?? outer;
+
+    // Which places fall in which band — the innermost band that contains it.
+    for (const place of places) {
+      place.band = null;
+      for (const band of bands) {
+        if (inCatchmentGrid(band.grid, place.x, place.y)) { place.band = band.minutes; break; }
+      }
+    }
+    const within = places.filter((p) => p.band !== null);
+
+    const counts = {};
+    for (const fn of URBAN_FUNCTIONS) counts[fn.id] = 0;
+    for (const p of within) counts[p.fn] += 1;
+
+    const counts10 = {};
+    for (const fn of URBAN_FUNCTIONS) counts10[fn.id] = 0;
+    for (const p of within) if (p.band <= 10) counts10[p.fn] += 1;
+
+    const present = URBAN_FUNCTIONS.filter((f) => counts[f.id] > 0);
+    const essentialsIn10 = ESSENTIAL_FUNCTIONS.filter((f) => counts10[f.id] > 0);
+    const thin = present.filter((f) => counts[f.id] < 3);
+
+    const areaKm2 = Math.max(outer.areaKm2, 0.01);
+    const radar = {
+      coverage:   (present.length / URBAN_FUNCTIONS.length) * 100,
+      density:    Math.min(100, (within.length / areaKm2) / DENSITY_REFERENCE * 100),
+      diversity:  shannonDiversity(URBAN_FUNCTIONS.map((f) => counts[f.id])) * 100,
+      essentials: (essentialsIn10.length / ESSENTIAL_FUNCTIONS.length) * 100,
+      choice:     present.length
+        ? (present.filter((f) => counts[f.id] >= 3).length / present.length) * 100 : 0,
+      network:    Math.min(100, (outer.streetKm / areaKm2) / NETWORK_REFERENCE * 100)
+    };
+
+    fifteenState.result = {
+      lat, lon, plane, bands, places, within, counts, counts10,
+      present, thin, essentialsIn10, radar, areaKm2,
+      nodes: graph.adjacency.size, ways: graph.ways,
+      startOffset: start.metres,
+      at: new Date().toISOString().slice(11, 19)
+    };
+    fifteenState.cache = { lat, lon, plane, graph, places, radius };
+
+    drawFifteenMinute(fifteenState.result);
+    renderFifteenPane();
+    say("");
+    window.ghLog?.("ok", `15-minute profile at ${lat.toFixed(4)}, ${lon.toFixed(4)}`,
+      `${within.length} places, ${present.length} of 7 functions, `
+      + `${outer.areaKm2.toFixed(2)} km² in 15 minutes`);
+  } catch (err) {
+    say(escapeHtml(err.message || String(err)), true);
+    window.ghLog?.("error", "15-minute profile failed", String(err.message ?? err));
+  } finally {
+    fifteenState.running = false;
+  }
+}
+
+/* ── On the map ───────────────────────────────────────────────────────── */
+
+function drawFifteenMinute(result) {
+  for (const id of ["fm-15", "fm-10", "fm-5", "fm-places", "fm-centre"]) {
+    for (const suffix of ["", "-line", "-circle"]) {
+      const layer = `${id}${suffix}`;
+      if (map.getLayer(layer)) map.removeLayer(layer);
+    }
+    if (map.getSource(id)) map.removeSource(id);
+  }
+
+  // Outward first so the 5-minute band paints over the 15-minute one.
+  for (const band of [...result.bands].reverse()) {
+    if (!band.polygon) continue;
+    const id = `fm-${band.minutes}`;
+    map.addSource(id, { type: "geojson",
+      data: { type: "Feature", properties: { minutes: band.minutes }, geometry: band.polygon } });
+    map.addLayer({ id, type: "fill", source: id,
+      paint: { "fill-color": band.colour, "fill-opacity": 0.34 } });
+    map.addLayer({ id: `${id}-line`, type: "line", source: id,
+      paint: { "line-color": band.colour, "line-width": 0.5, "line-opacity": 0.5 } });
+  }
+
+  const placeFeatures = result.within.map((p) => ({
+    type: "Feature",
+    properties: { fn: p.fn, name: p.name, band: p.band,
+                  label: URBAN_FUNCTIONS.find((f) => f.id === p.fn)?.label ?? p.fn },
+    geometry: { type: "Point", coordinates: [p.lon, p.lat] }
+  }));
+  map.addSource("fm-places", { type: "geojson",
+    data: { type: "FeatureCollection", features: placeFeatures } });
+  map.addLayer({ id: "fm-places", type: "circle", source: "fm-places",
+    paint: {
+      "circle-radius": ["interpolate", ["linear"], ["zoom"], 12, 2.6, 16, 5],
+      "circle-color": ["match", ["get", "fn"],
+        ...URBAN_FUNCTIONS.flatMap((f) => [f.id, f.colour]), "#999"],
+      "circle-stroke-width": 0.8, "circle-stroke-color": "rgba(0,0,0,.45)"
+    } });
+
+  map.addSource("fm-centre", { type: "geojson", data: { type: "Feature", properties: {},
+    geometry: { type: "Point", coordinates: [result.lon, result.lat] } } });
+  map.addLayer({ id: "fm-centre", type: "circle", source: "fm-centre",
+    paint: { "circle-radius": 6, "circle-color": "#fff",
+             "circle-stroke-width": 2.5, "circle-stroke-color": "#111" } });
+
+  registerUserLayer({
+    id: "fm-15", label: "15-minute catchment", kind: "result",
+    layerIds: ["fm-15", "fm-15-line", "fm-10", "fm-10-line", "fm-5", "fm-5-line",
+               "fm-places", "fm-centre"].filter((l) => map.getLayer(l)),
+    sourceId: "fm-15",
+    collection: { type: "FeatureCollection", features: placeFeatures },
+    bbox: bboxOfCollection({ type: "FeatureCollection", features: placeFeatures }),
+    note: `${result.within.length} places, ${result.present.length} of 7 functions`,
+    colour: "#2BB3A3",
+    legend: { type: "classes",
+      names: result.bands.map((b) => `${b.minutes} minutes on foot`),
+      colours: result.bands.map((b) => b.colour) }
+  });
+
+  const box = result.bands[result.bands.length - 1];
+  if (box?.polygon) {
+    const b = bboxOfCollection({ type: "FeatureCollection",
+      features: [{ type: "Feature", properties: {}, geometry: box.polygon }] });
+    if (b) map.fitBounds(b, { padding: 70, duration: 700 });
+  }
+}
+
+/* ── The radar ────────────────────────────────────────────────────────────
+   Drawn as SVG rather than with a chart library: six axes, one polygon, and
+   nothing a dependency would do better. */
+function radarSvg(values, { size = 210, colour = "#2BB3A3", labels = true } = {}) {
+  const W = labels ? size * 1.3 : size;
+  const cx = W / 2, cy = size / 2;
+  const r = size * (labels ? 0.28 : 0.42);
+  const n = RADAR_AXES.length;
+  const at = (i, radius) => {
+    const a = (i / n) * Math.PI * 2 - Math.PI / 2;
+    return [cx + Math.cos(a) * radius, cy + Math.sin(a) * radius];
+  };
+
+  const rings = [0.25, 0.5, 0.75, 1].map((f) =>
+    `<polygon points="${RADAR_AXES.map((_, i) =>
+      at(i, r * f).map((v) => v.toFixed(1)).join(",")).join(" ")}"
+      fill="none" stroke="currentColor" stroke-opacity="${f === 1 ? 0.35 : 0.15}"
+      stroke-width="1"/>`).join("");
+
+  const spokes = RADAR_AXES.map((_, i) =>
+    `<line x1="${cx}" y1="${cy}" x2="${at(i, r)[0].toFixed(1)}" y2="${at(i, r)[1].toFixed(1)}"
+       stroke="currentColor" stroke-opacity=".18" stroke-width="1"/>`).join("");
+
+  const points = RADAR_AXES.map((axis, i) =>
+    at(i, r * Math.max(0, Math.min(100, values[axis.id] ?? 0)) / 100)
+      .map((v) => v.toFixed(1)).join(",")).join(" ");
+
+  const dots = RADAR_AXES.map((axis, i) => {
+    const [x, y] = at(i, r * Math.max(0, Math.min(100, values[axis.id] ?? 0)) / 100);
+    return `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="2.6" fill="${colour}"/>`;
+  }).join("");
+
+  const text = labels ? RADAR_AXES.map((axis, i) => {
+    const [x, y] = at(i, r * 1.22);
+    const anchor = Math.abs(x - cx) < 6 ? "middle" : (x > cx ? "start" : "end");
+    const value = Math.round(values[axis.id] ?? 0);
+    return `<text x="${x.toFixed(1)}" y="${(y + 3).toFixed(1)}" text-anchor="${anchor}"
+       font-size="9.5" fill="currentColor" fill-opacity=".75">${axis.label}
+       <tspan font-size="9" fill="${colour}" fill-opacity="1"> ${value}</tspan></text>`;
+  }).join("") : "";
+
+  return `<svg viewBox="0 0 ${W} ${size}" class="radar" role="img"
+     aria-label="Six-axis profile">${rings}${spokes}
+     <polygon points="${points}" fill="${colour}" fill-opacity=".26"
+       stroke="${colour}" stroke-width="1.6" stroke-linejoin="round"/>
+     ${dots}${text}</svg>`;
+}
+
+/* A sentence about what the numbers say, built from the numbers. Not a
+   verdict — the thresholds are arbitrary and are named in the text — but a
+   reading saves everyone working out the same thing from six bars. */
+function fifteenReading(result) {
+  const { radar, present, thin, counts } = result;
+  const missing = URBAN_FUNCTIONS.filter((f) => counts[f.id] === 0);
+  const absentEssentials = ESSENTIAL_FUNCTIONS.filter((f) => counts[f.id] === 0);
+  const notIn10 = ESSENTIAL_FUNCTIONS.filter((f) =>
+    counts[f.id] > 0 && result.counts10[f.id] === 0);
+
+  const lines = [];
+
+  lines.push(radar.coverage >= 85
+    ? "All or nearly all of the seven functions are reachable on foot."
+    : radar.coverage >= 55
+      ? "This location has broad local reach, but some functions are missing entirely."
+      : "Local reach is narrow: most of what a day needs is not within a walk.");
+
+  if (absentEssentials.length) {
+    lines.push(`Nothing essential is reachable for ${
+      absentEssentials.map((f) => f.label.toLowerCase()).join(", ")}. That is the `
+      + "gap to close before any of the other numbers matter.");
+  } else if (notIn10.length) {
+    lines.push(`${notIn10.map((f) => f.label).join(" and ")} ${
+      notIn10.length === 1 ? "is" : "are"} reachable, but only in the outer band — `
+      + "a quarter of an hour each way for something people need weekly.");
+  } else {
+    lines.push("Every essential — retail, education, healthcare and transport — "
+      + "is within ten minutes.");
+  }
+
+  if (thin.length) {
+    lines.push(`Choice is thin for ${thin.map((f) => f.label.toLowerCase()).join(", ")}: `
+      + "fewer than three options, so one closure removes the function.");
+  } else if (present.length) {
+    lines.push("Every function present has at least three options, so no single "
+      + "closure removes one.");
+  }
+
+  lines.push(radar.network >= 60
+    ? "The street pattern is fine-grained, which is what makes the catchment "
+      + "as large as it is."
+    : "The street pattern is coarse: the catchment is limited by how few ways "
+      + "there are through, not by distance.");
+
+  if (missing.length && missing.length < 4) {
+    lines.push(`Missing altogether: ${missing.map((f) => f.label).join(", ")}.`);
+  }
+  return lines;
+}
+
+function renderFifteenPane() {
+  const host = document.getElementById("pane-fifteen");
+  if (!host) return;
+  const result = fifteenState.result;
+
+  if (!result) {
+    host.innerHTML = `
+      <p class="hint">Click anywhere in Ghana to walk the street network out
+        from that point at 5, 10 and 15 minutes, and read what is reachable.</p>
+      <button type="button" class="btn btn-primary" id="fm-pick">Pick a point on the map</button>
+      <div class="fm-status" id="fm-status"></div>
+      <p class="hint" style="margin-top:14px">It fetches about a square
+        kilometre of streets and places from OpenStreetMap, then walks the
+        network in this browser. Nothing is uploaded and nothing is
+        pre-computed, which is the point: it answers for the corner you
+        pointed at.</p>`;
+    document.getElementById("fm-pick")?.addEventListener("click", startFifteenPick);
+    return;
+  }
+
+  const total = result.within.length;
+  const rows = URBAN_FUNCTIONS.map((fn) => {
+    const n = result.counts[fn.id];
+    const share = total ? (n / total) * 100 : 0;
+    return `<div class="fm-row${n ? "" : " off"}">
+      <i style="background:${fn.colour}"></i>
+      <span class="fm-name">${escapeHtml(fn.label)}</span>
+      <span class="fm-n">${n}</span>
+      <span class="fm-share">${share.toFixed(1)}%</span>
+    </div>`;
+  }).join("");
+
+  host.innerHTML = `
+    <div class="fm-head">
+      <strong>${result.lat.toFixed(4)}, ${result.lon.toFixed(4)}</strong>
+      <button type="button" class="btn btn-quiet" id="fm-pick">Pick another</button>
+    </div>
+    <div class="fm-status" id="fm-status"></div>
+
+    <div class="fm-bands">
+      ${result.bands.map((b) => `<div class="fm-band">
+        <i style="background:${b.colour}"></i>
+        <span>${b.minutes} min</span>
+        <strong>${b.areaKm2.toFixed(2)} km²</strong>
+      </div>`).join("")}
+    </div>
+
+    <h4 class="fm-h">What is reachable in 15 minutes</h4>
+    <div class="fm-rows">${rows}</div>
+    <p class="fm-total">${total.toLocaleString()} places ·
+      ${result.bands[result.bands.length - 1].streetKm.toFixed(1)} km of street ·
+      ${result.bands[result.bands.length - 1].intersections} intersections</p>
+
+    <h4 class="fm-h">Multidimensional profile</h4>
+    <div class="fm-radar">${radarSvg(result.radar)}</div>
+    <p class="hint">Each axis is 0–100 against a stated reference, not against
+      "good". Hover an axis name for what it measures.</p>
+    <ul class="fm-axes">${RADAR_AXES.map((a) =>
+      `<li><strong>${a.label} ${Math.round(result.radar[a.id])}</strong> — ${escapeHtml(a.note)}</li>`
+    ).join("")}</ul>
+
+    <h4 class="fm-h">Reading the result</h4>
+    ${fifteenReading(result).map((line) => `<p class="fm-read">${line}</p>`).join("")}
+
+    <div class="fm-actions">
+      <button type="button" class="btn btn-quiet" id="fm-lens">Open the radar lens</button>
+      <button type="button" class="btn btn-quiet" id="fm-csv">Places as CSV</button>
+      <button type="button" class="btn btn-quiet" id="fm-geojson">Catchments as GeoJSON</button>
+    </div>
+    <p class="hint">Walking speed ${WALK_METRES_PER_MIN} m/min (4.8 km/h) on the
+      OpenStreetMap footway and street network; motorways and anything tagged
+      <code>foot=no</code> are excluded. Catchments are the land within about
+      ${CELL_METRES * 1.5} m of a reachable street, at ${CELL_METRES} m resolution.
+      ${result.nodes.toLocaleString()} nodes, ${result.ways.toLocaleString()} ways.</p>`;
+
+  document.getElementById("fm-pick")?.addEventListener("click", startFifteenPick);
+  document.getElementById("fm-lens")?.addEventListener("click", () => openRadarLens());
+  document.getElementById("fm-csv")?.addEventListener("click", () => {
+    const header = ["function", "name", "band_minutes", "lon", "lat"];
+    const lines = [header.join(",")].concat(result.within.map((p) =>
+      [p.fn, p.name, p.band, p.lon, p.lat].map(csvEscape).join(",")));
+    download("fifteen-minute-places.csv", lines.join("\n"), "text/csv");
+  });
+  document.getElementById("fm-geojson")?.addEventListener("click", () => {
+    const features = result.bands.filter((b) => b.polygon).map((b) => ({
+      type: "Feature",
+      properties: { minutes: b.minutes, area_km2: Number(b.areaKm2.toFixed(4)),
+                    street_km: Number(b.streetKm.toFixed(3)), intersections: b.intersections },
+      geometry: b.polygon
+    }));
+    download("fifteen-minute-catchments.geojson",
+      JSON.stringify({ type: "FeatureCollection", features }, null, 1),
+      "application/geo+json");
+  });
+}
+
+function startFifteenPick() {
+  fifteenState.picking = true;
+  showPanel("fifteen");
+  setStatus("Click anywhere on the map to profile that point.");
+  map.getCanvas().style.cursor = "crosshair";
+}
+
+function wireFifteenMinute() {
+  map.on("click", (e) => {
+    if (!fifteenState.picking) return;
+    fifteenState.picking = false;
+    map.getCanvas().style.cursor = "";
+    showPanel("fifteen");
+    runFifteenMinute(e.lngLat.lat, e.lngLat.lng);
+  });
+  renderFifteenPane();
+}
+
+/* ---------------------------------------------------------------------------
+   The radar lens
+
+   A radar chart that sits on the map and can be dragged. The disc under its
+   centre is highlighted, and the spokes recompute from whatever is inside
+   that disc as it moves.
+
+   The idea is VisQuill's data lens, which is a better one than it first
+   looks. A choropleth makes you read a colour and then find the legend and
+   then convert back to a number, and it can only show one variable at a
+   time. A lens shows six variables as a shape, and the shape changes as you
+   move — so comparing two neighbourhoods is a drag rather than two maps side
+   by side, and the thing you are comparing stays under your eye.
+
+   Two sources, because the question differs:
+     · the 15-minute profile, recomputed live from the network already in
+       memory — move the lens and watch coverage collapse at the edge of town;
+     · any drawn layer's numeric columns, averaged inside the disc.
+--------------------------------------------------------------------------- */
+
+const lensState = {
+  open: false,
+  source: "fifteen",     // "fifteen" | layer id
+  radiusM: 600,
+  centre: null,          // { lat, lon }
+  values: {},
+  axes: [],
+  dragging: false,
+  computing: false,
+  queued: null
+};
+
+const LENS_SOURCE = "radar-lens-disc";
+
+function openRadarLens() {
+  const dock = document.getElementById("lens");
+  if (!dock) return;
+
+  if (!lensState.centre) {
+    const centre = fifteenState.result
+      ? { lat: fifteenState.result.lat, lon: fifteenState.result.lon }
+      : { lat: map.getCenter().lat, lon: map.getCenter().lng };
+    lensState.centre = centre;
+  }
+  lensState.open = true;
+  dock.hidden = false;
+  drawLensDisc();
+  computeLens();
+  renderLens();
+  window.ghLog?.("info", "Radar lens opened",
+    `${lensState.radiusM} m disc, source ${lensState.source}`);
+}
+
+function closeRadarLens() {
+  lensState.open = false;
+  const dock = document.getElementById("lens");
+  if (dock) dock.hidden = true;
+  for (const id of [`${LENS_SOURCE}-fill`, `${LENS_SOURCE}-line`]) {
+    if (map.getLayer(id)) map.removeLayer(id);
+  }
+  if (map.getSource(LENS_SOURCE)) map.removeSource(LENS_SOURCE);
+}
+
+/* The disc itself, as a 64-sided polygon in real metres so it stays a circle
+   on the ground rather than a circle on the screen. */
+function lensDiscPolygon() {
+  const { lat, lon } = lensState.centre;
+  const plane = localPlane(lat, lon);
+  const ring = [];
+  for (let i = 0; i <= 64; i += 1) {
+    const a = (i / 64) * Math.PI * 2;
+    const [plat, plon] = plane.toLatLon(Math.cos(a) * lensState.radiusM,
+                                        Math.sin(a) * lensState.radiusM);
+    ring.push([plon, plat]);
+  }
+  return { type: "Polygon", coordinates: [ring] };
+}
+
+function drawLensDisc() {
+  const data = { type: "Feature", properties: {}, geometry: lensDiscPolygon() };
+  const existing = map.getSource(LENS_SOURCE);
+  if (existing) { existing.setData(data); return; }
+
+  map.addSource(LENS_SOURCE, { type: "geojson", data });
+  map.addLayer({ id: `${LENS_SOURCE}-fill`, type: "fill", source: LENS_SOURCE,
+    paint: { "fill-color": "#2BB3A3", "fill-opacity": 0.14 } });
+  map.addLayer({ id: `${LENS_SOURCE}-line`, type: "line", source: LENS_SOURCE,
+    paint: { "line-color": "#2BB3A3", "line-width": 2, "line-opacity": 0.9 } });
+}
+
+/* ── What is under the disc ───────────────────────────────────────────── */
+
+/* The 15-minute axes, recomputed for the disc's centre from the graph and
+   places already fetched. No network request: the lens only moves inside the
+   square kilometre that was fetched, and outside it the answer is honestly
+   "not fetched" rather than a quietly wrong one. */
+function lensFifteen() {
+  const cache = fifteenState.cache;
+  if (!cache) {
+    return { error: "Run a 15-minute profile first — the lens reads the network "
+                  + "that run fetched." };
+  }
+  const { lat, lon } = lensState.centre;
+  const [cx, cy] = cache.plane.toXY(lat, lon);
+
+  // Outside what was fetched, the counts would be cut off by the edge of the
+  // download rather than by the ground.
+  if (Math.hypot(cx, cy) > cache.radius * 0.8) {
+    return { error: "The lens is outside the area that was fetched. Run a new "
+                  + "profile here, or drag it back." };
+  }
+
+  const start = nearestGraphNode(cache.graph, cx, cy);
+  if (!start.id || start.metres > 400) {
+    return { error: "No mapped street within 400 m of the lens." };
+  }
+
+  const budget = lensState.radiusM;           // metres of walking, not crow-fly
+  const cost = walkCosts(cache.graph, start.id, budget);
+  const shape = catchmentPolygon(cache.graph, cost, budget, cache.plane);
+  const area = Math.max(shape.areaKm2, 0.01);
+
+  const counts = {};
+  for (const fn of URBAN_FUNCTIONS) counts[fn.id] = 0;
+  let total = 0;
+  for (const p of cache.places) {
+    if (!inCatchmentGrid(shape.grid, p.x, p.y)) continue;
+    counts[p.fn] += 1; total += 1;
+  }
+  const present = URBAN_FUNCTIONS.filter((f) => counts[f.id] > 0);
+  const essentials = ESSENTIAL_FUNCTIONS.filter((f) => counts[f.id] > 0);
+  const streetKm = reachableStreetKm(cache.graph, cost, budget);
+
+  return {
+    axes: RADAR_AXES,
+    values: {
+      coverage:   (present.length / URBAN_FUNCTIONS.length) * 100,
+      density:    Math.min(100, (total / area) / DENSITY_REFERENCE * 100),
+      diversity:  shannonDiversity(URBAN_FUNCTIONS.map((f) => counts[f.id])) * 100,
+      essentials: (essentials.length / ESSENTIAL_FUNCTIONS.length) * 100,
+      choice:     present.length
+        ? (present.filter((f) => counts[f.id] >= 3).length / present.length) * 100 : 0,
+      network:    Math.min(100, (streetKm / area) / NETWORK_REFERENCE * 100)
+    },
+    detail: `${total} places · ${present.length} of 7 functions · `
+          + `${streetKm.toFixed(1)} km of street in ${area.toFixed(2)} km²`,
+    counts
+  };
+}
+
+/* Any drawn layer: the mean of its numeric columns for the features inside
+   the disc, each scaled against that column's own range across the whole
+   layer — so a spoke at 100 means "the highest value this layer holds", which
+   is the only reference a column of unknown units can have. */
+function lensLayer(layerId) {
+  const entry = userLayers.get(layerId);
+  const collection = entry?.collection;
+  if (!collection?.features?.length) {
+    return { error: "That layer has no features in this browser to average." };
+  }
+
+  const fields = [...new Set(collection.features
+    .flatMap((f) => Object.keys(f.properties || {})))]
+    .filter((name) => {
+      let seen = 0, numeric = 0;
+      for (const f of collection.features) {
+        const v = f.properties?.[name];
+        if (v === null || v === undefined || v === "") continue;
+        seen += 1;
+        if (typeof v === "number" || Number.isFinite(Number(v))) numeric += 1;
+        if (seen >= 40) break;
+      }
+      return seen > 0 && numeric === seen;
+    })
+    .slice(0, 8);
+
+  if (!fields.length) {
+    return { error: `${entry.label} has no numeric column to put on an axis.` };
+  }
+
+  const { lat, lon } = lensState.centre;
+  const plane = localPlane(lat, lon);
+  const range = {};
+  for (const name of fields) {
+    let lo = Infinity, hi = -Infinity;
+    for (const f of collection.features) {
+      const v = Number(f.properties?.[name]);
+      if (!Number.isFinite(v)) continue;
+      if (v < lo) lo = v; if (v > hi) hi = v;
+    }
+    range[name] = { lo, hi };
+  }
+
+  const inside = [];
+  for (const f of collection.features) {
+    const c = f.geometry && centroidOf(f.geometry);
+    if (!c) continue;
+    const [x, y] = plane.toXY(c[1], c[0]);
+    if (Math.hypot(x, y) <= lensState.radiusM) inside.push(f);
+  }
+
+  const values = {};
+  for (const name of fields) {
+    const nums = inside.map((f) => Number(f.properties?.[name]))
+      .filter((v) => Number.isFinite(v));
+    const { lo, hi } = range[name];
+    const mean = nums.length ? nums.reduce((a, b) => a + b, 0) / nums.length : 0;
+    values[name] = hi > lo && nums.length ? ((mean - lo) / (hi - lo)) * 100 : 0;
+    values[`${name}__raw`] = nums.length ? mean : null;
+  }
+
+  return {
+    axes: fields.map((name) => ({ id: name, label: name,
+      note: `Mean inside the lens, against this layer's range `
+          + `${legendNumber(range[name].lo)} to ${legendNumber(range[name].hi)}.` })),
+    values,
+    detail: inside.length
+      ? `${inside.length} of ${collection.features.length} features inside the disc`
+      : "No features inside the disc",
+    empty: !inside.length
+  };
+}
+
+function computeLens() {
+  if (!lensState.open || !lensState.centre) return;
+  if (lensState.computing) { lensState.queued = true; return; }
+  lensState.computing = true;
+
+  try {
+    const out = lensState.source === "fifteen"
+      ? lensFifteen() : lensLayer(lensState.source);
+    lensState.error = out.error || null;
+    lensState.axes = out.axes || [];
+    lensState.values = out.values || {};
+    lensState.detail = out.detail || "";
+  } catch (err) {
+    lensState.error = err.message || String(err);
+  } finally {
+    lensState.computing = false;
+  }
+
+  if (lensState.queued) { lensState.queued = false; computeLens(); }
+}
+
+/* ── The lens on screen ───────────────────────────────────────────────── */
+
+function renderLens() {
+  const dock = document.getElementById("lens");
+  if (!dock || dock.hidden) return;
+
+  const picker = document.getElementById("lens-source");
+  if (picker && document.activeElement !== picker) {
+    const layers = [...userLayers.values()].filter((e) => e.collection?.features?.length);
+    picker.innerHTML = `<option value="fifteen">15-minute profile</option>`
+      + layers.map((l) =>
+          `<option value="${escapeHtml(l.id)}">${escapeHtml(l.label)}</option>`).join("");
+    picker.value = lensState.source;
+  }
+
+  const chart = document.getElementById("lens-chart");
+  if (chart) {
+    chart.innerHTML = lensState.error
+      ? `<p class="hint" style="padding:18px 10px;text-align:center">${escapeHtml(lensState.error)}</p>`
+      : radarSvgFor(lensState.axes, lensState.values, 230);
+  }
+
+  const detail = document.getElementById("lens-detail");
+  if (detail) detail.textContent = lensState.error ? "" : lensState.detail;
+
+  const where = document.getElementById("lens-where");
+  if (where && lensState.centre) {
+    where.textContent = `${lensState.centre.lat.toFixed(4)}, `
+      + `${lensState.centre.lon.toFixed(4)} · ${lensState.radiusM} m`;
+  }
+}
+
+/* The same drawing as the 15-minute radar, for any set of axes. */
+function radarSvgFor(axes, values, size = 220) {
+  if (!axes.length) return "";
+  // The box is wider than it is tall because the labels sit east and west of
+  // the ring and have nowhere to go otherwise: "Network 68" was rendering as
+  // "work 68" against the edge of the panel.
+  const W = size * 1.28, H = size;
+  const cx = W / 2, cy = H / 2, r = size * 0.27, n = axes.length;
+  const at = (i, radius) => {
+    const a = (i / n) * Math.PI * 2 - Math.PI / 2;
+    return [cx + Math.cos(a) * radius, cy + Math.sin(a) * radius];
+  };
+  const value = (axis) => Math.max(0, Math.min(100, values[axis.id] ?? 0));
+
+  const rings = [0.25, 0.5, 0.75, 1].map((f) =>
+    `<polygon points="${axes.map((_, i) => at(i, r * f).map((v) => v.toFixed(1)).join(",")).join(" ")}"
+       fill="none" stroke="currentColor" stroke-opacity="${f === 1 ? 0.35 : 0.14}" stroke-width="1"/>`).join("");
+  const spokes = axes.map((_, i) =>
+    `<line x1="${cx}" y1="${cy}" x2="${at(i, r)[0].toFixed(1)}" y2="${at(i, r)[1].toFixed(1)}"
+       stroke="currentColor" stroke-opacity=".16" stroke-width="1"/>`).join("");
+  const points = axes.map((a, i) =>
+    at(i, r * value(a) / 100).map((v) => v.toFixed(1)).join(",")).join(" ");
+  const dots = axes.map((a, i) => {
+    const [x, y] = at(i, r * value(a) / 100);
+    return `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="2.6" fill="#2BB3A3"/>`;
+  }).join("");
+  const text = axes.map((axis, i) => {
+    const [x, y] = at(i, r * 1.22);
+    const anchor = Math.abs(x - cx) < 6 ? "middle" : (x > cx ? "start" : "end");
+    const raw = values[`${axis.id}__raw`];
+    const shown = raw === undefined || raw === null
+      ? Math.round(value(axis)) : legendNumber(raw);
+    return `<text x="${x.toFixed(1)}" y="${(y + 3).toFixed(1)}" text-anchor="${anchor}"
+       font-size="9.5" fill="currentColor" fill-opacity=".7"><title>${escapeHtml(axis.note || "")}</title>${
+       escapeHtml(String(axis.label).slice(0, 16))}<tspan font-size="9.5" fill="#2BB3A3"
+       fill-opacity="1"> ${shown}</tspan></text>`;
+  }).join("");
+
+  return `<svg viewBox="0 0 ${W} ${H}" class="radar">${rings}${spokes}
+    <polygon points="${points}" fill="#2BB3A3" fill-opacity=".26" stroke="#2BB3A3"
+      stroke-width="1.6" stroke-linejoin="round"/>${dots}${text}</svg>`;
+}
+
+function moveLens(lat, lon) {
+  lensState.centre = { lat, lon };
+  drawLensDisc();
+  computeLens();
+  renderLens();
+}
+
+function wireRadarLens() {
+  const dock = document.getElementById("lens");
+  if (!dock) return;
+
+  document.getElementById("lens-close")?.addEventListener("click", closeRadarLens);
+
+  const picker = document.getElementById("lens-source");
+  picker?.addEventListener("change", () => {
+    lensState.source = picker.value;
+    computeLens(); renderLens();
+  });
+
+  const radius = document.getElementById("lens-radius");
+  radius?.addEventListener("input", () => {
+    lensState.radiusM = Number(radius.value);
+    const out = document.getElementById("lens-radius-out");
+    if (out) out.textContent = `${lensState.radiusM} m`;
+    drawLensDisc(); computeLens(); renderLens();
+  });
+
+  // Dragging the lens across the map. Pointer events on the map canvas
+  // rather than a DOM handle, because the handle has to be at a place on the
+  // ground and the ground moves when the map does.
+  let dragging = false;
+  const near = (e) => {
+    if (!lensState.centre) return false;
+    const at = map.project([lensState.centre.lon, lensState.centre.lat]);
+    return Math.hypot(at.x - e.point.x, at.y - e.point.y) < 26;
+  };
+
+  map.on("mousedown", (e) => {
+    if (!lensState.open || !near(e)) return;
+    dragging = true;
+    lensState.dragging = true;
+    map.dragPan.disable();
+    map.getCanvas().style.cursor = "grabbing";
+    e.preventDefault();
+  });
+  map.on("mousemove", (e) => {
+    if (!lensState.open) return;
+    if (dragging) { moveLens(e.lngLat.lat, e.lngLat.lng); return; }
+    map.getCanvas().style.cursor = near(e) ? "grab" : "";
+  });
+  map.on("mouseup", () => {
+    if (!dragging) return;
+    dragging = false;
+    lensState.dragging = false;
+    map.dragPan.enable();
+    map.getCanvas().style.cursor = "";
+  });
+
+  // Shift-click puts the lens somewhere without dragging it there.
+  map.on("click", (e) => {
+    if (!lensState.open || !e.originalEvent?.shiftKey) return;
+    moveLens(e.lngLat.lat, e.lngLat.lng);
+  });
+}
+
+/* ---------------------------------------------------------------------------
+   Searching imagery by description
+
+   Type "rooftops" and the places that look like rooftops light up. The method
+   is DinoSats': an image model has already turned every patch of imagery into
+   a vector, a text model has turned the words into a vector of the same kind,
+   and the score is how similar the two are.
+
+   Everything here is the browser half — the cosine, the background
+   correction and the heatmap. The other half, turning imagery into vectors,
+   needs a GPU and runs once per scene: pipelines/06_embed_imagery.py does it
+   and docs/imagery-search.md says how. A scene for Ghana does not exist yet;
+   this loads one the moment it does, from a URL, and says so plainly until
+   then rather than pretending.
+
+   Why bother with the client before the scene exists: the scene is a day of
+   GPU time that somebody with a GPU can give. The client is the part that
+   needs to be right, and the part nobody can contribute in an afternoon.
+
+   The scoring, in full, after DinoSats:
+
+     score = σ(s·cos(q, x) − logΣexp(s·cos(b, x)))   over background prompts b
+
+   A raw cosine says how much a patch looks like "rooftops" on a scale whose
+   zero means nothing. The background correction asks instead whether the
+   patch looks more like rooftops than like water, road, trees or bare
+   ground — which is the question, and which is why the heatmap is readable.
+--------------------------------------------------------------------------- */
+
+const embedState = {
+  scene: null,        // { manifest, codes: Uint8Array, prompts: Map }
+  query: "",
+  background: ["water", "road", "trees", "bare ground", "buildings"],
+  threshold: 0.5,
+  opacity: 0.75,
+  logitScale: 100,    // dino.txt's temperature; the manifest may override it
+  scores: null
+};
+
+const EMBED_LAYER = "imagery-search";
+
+/* A scene is a manifest, a block of quantised vectors and a table of
+   precomputed prompt vectors. Three files, all static, all cacheable — the
+   same shape DinoSats uses, so a scene built for one works in the other. */
+async function loadEmbeddingScene(url) {
+  const say = (m, bad) => {
+    const host = document.getElementById("es-status");
+    if (host) { host.innerHTML = m; host.style.color = bad ? "var(--clay)" : ""; }
+  };
+
+  try {
+    say("Reading the scene manifest…");
+    const base = url.replace(/[^/]*$/, "");
+    const manifest = await (await fetch(url)).json();
+    for (const key of ["width", "height", "dim", "bounds", "embeddings"]) {
+      if (manifest[key] === undefined) throw new Error(`The manifest has no "${key}".`);
+    }
+
+    say(`Loading ${manifest.width}×${manifest.height} patches…`);
+    const codesUrl = new URL(manifest.embeddings, base).href;
+    const buffer = await (await fetch(codesUrl)).arrayBuffer();
+    const expected = manifest.width * manifest.height * manifest.dim;
+    if (buffer.byteLength !== expected) {
+      throw new Error(`The embedding file is ${buffer.byteLength.toLocaleString()} bytes; `
+        + `${manifest.width}×${manifest.height}×${manifest.dim} needs ${expected.toLocaleString()}.`);
+    }
+
+    let prompts = new Map();
+    if (manifest.prompts) {
+      say("Loading the prompt vectors…");
+      const table = await (await fetch(new URL(manifest.prompts, base).href)).json();
+      prompts = new Map(Object.entries(table).map(([k, v]) => [k, Float32Array.from(v)]));
+    }
+
+    embedState.scene = { manifest, codes: new Uint8Array(buffer), prompts, url };
+    embedState.logitScale = manifest.logit_scale ?? 100;
+    embedState.scores = null;
+    say("");
+    window.ghLog?.("ok", `Imagery scene: ${manifest.name ?? url}`,
+      `${(manifest.width * manifest.height).toLocaleString()} patches of `
+      + `${manifest.patch_metres ?? "?"} m, ${prompts.size} prompts`);
+    renderEmbedPane();
+  } catch (err) {
+    say(escapeHtml(err.message || String(err)), true);
+    window.ghLog?.("error", "Could not load the imagery scene", String(err.message ?? err));
+  }
+}
+
+/* Dequantise one patch's vector and normalise it. uint8 with a per-dimension
+   scale and offset, which is what makes a 16-million-patch scene a gigabyte
+   rather than sixteen. */
+function patchVector(index, out) {
+  const { manifest, codes } = embedState.scene;
+  const dim = manifest.dim;
+  const scale = manifest.scale, offset = manifest.offset;
+  let norm = 0;
+  for (let d = 0; d < dim; d += 1) {
+    const raw = codes[index * dim + d];
+    const v = Array.isArray(scale)
+      ? (raw - 128) * scale[d] + (offset ? offset[d] : 0)
+      : (raw - 128) * (scale ?? 1 / 127);
+    out[d] = v;
+    norm += v * v;
+  }
+  norm = Math.sqrt(norm) || 1;
+  for (let d = 0; d < dim; d += 1) out[d] /= norm;
+  return out;
+}
+
+function normalised(vector) {
+  let norm = 0;
+  for (const v of vector) norm += v * v;
+  norm = Math.sqrt(norm) || 1;
+  const out = new Float32Array(vector.length);
+  for (let i = 0; i < vector.length; i += 1) out[i] = vector[i] / norm;
+  return out;
+}
+
+/* Cosine of every patch against one prompt. */
+function scoreAgainst(promptVector) {
+  const { manifest } = embedState.scene;
+  const n = manifest.width * manifest.height;
+  const dim = manifest.dim;
+  const q = normalised(promptVector);
+  const scratch = new Float32Array(dim);
+  const out = new Float32Array(n);
+  for (let i = 0; i < n; i += 1) {
+    patchVector(i, scratch);
+    let dot = 0;
+    for (let d = 0; d < dim; d += 1) dot += scratch[d] * q[d];
+    out[i] = dot;
+  }
+  return out;
+}
+
+function searchImagery(prompt) {
+  const scene = embedState.scene;
+  if (!scene) return { error: "No scene is loaded." };
+  const vector = scene.prompts.get(prompt.trim().toLowerCase());
+  if (!vector) {
+    const some = [...scene.prompts.keys()].slice(0, 8).join(", ");
+    return { error: `"${prompt}" is not among this scene's ${scene.prompts.size} `
+      + `precomputed prompts. Try one of: ${some}. Running an arbitrary prompt `
+      + "needs the text encoder, which this build does not carry." };
+  }
+
+  const query = scoreAgainst(vector);
+  const backgrounds = embedState.background
+    .map((name) => scene.prompts.get(name))
+    .filter(Boolean)
+    .map((v) => scoreAgainst(v));
+
+  const s = embedState.logitScale;
+  const out = new Float32Array(query.length);
+
+  if (!backgrounds.length) {
+    // No backgrounds: the raw cosine, stretched over its own range. Honest,
+    // and much harder to read — which is the point of the correction.
+    let lo = Infinity, hi = -Infinity;
+    for (const v of query) { if (v < lo) lo = v; if (v > hi) hi = v; }
+    for (let i = 0; i < query.length; i += 1) out[i] = (query[i] - lo) / (hi - lo || 1);
+    return { values: out, relative: false };
+  }
+
+  for (let i = 0; i < query.length; i += 1) {
+    // log-sum-exp, shifted by the maximum so exp never overflows.
+    let max = -Infinity;
+    for (const b of backgrounds) if (b[i] > max) max = b[i];
+    let sum = 0;
+    for (const b of backgrounds) sum += Math.exp(s * (b[i] - max));
+    const lse = s * max + Math.log(sum);
+    out[i] = 1 / (1 + Math.exp(lse - s * query[i]));
+  }
+  return { values: out, relative: true };
+}
+
+/* The heatmap, as an image source over the scene's bounds. A canvas rather
+   than a raster tile source: the whole point is that the scores change the
+   moment the prompt does, and re-rendering a canvas is instant. */
+function drawEmbedHeatmap(values) {
+  const { manifest } = embedState.scene;
+  const { width, height, bounds } = manifest;
+
+  const canvas = document.createElement("canvas");
+  canvas.width = width; canvas.height = height;
+  const ctx = canvas.getContext("2d");
+  const image = ctx.createImageData(width, height);
+
+  // Magma-ish, dark to bright: a sequential ramp, because the score is a
+  // quantity with an order and no meaningful middle.
+  const ramp = [[12, 7, 38], [85, 15, 109], [169, 44, 96], [229, 92, 48],
+                [250, 170, 64], [252, 253, 191]];
+  const colour = (t) => {
+    const x = Math.max(0, Math.min(0.999, t)) * (ramp.length - 1);
+    const i = Math.floor(x), f = x - i;
+    const a = ramp[i], b = ramp[Math.min(ramp.length - 1, i + 1)];
+    return [a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f, a[2] + (b[2] - a[2]) * f];
+  };
+
+  for (let i = 0; i < values.length; i += 1) {
+    const v = values[i];
+    const show = v >= embedState.threshold;
+    const t = (v - embedState.threshold) / (1 - embedState.threshold || 1);
+    const [r, g, b] = colour(t);
+    image.data[i * 4] = r;
+    image.data[i * 4 + 1] = g;
+    image.data[i * 4 + 2] = b;
+    image.data[i * 4 + 3] = show ? Math.round(255 * embedState.opacity) : 0;
+  }
+  ctx.putImageData(image, 0, 0);
+
+  const [w, s, e, n] = bounds;
+  const corners = [[w, n], [e, n], [e, s], [w, s]];
+  if (map.getLayer(EMBED_LAYER)) map.removeLayer(EMBED_LAYER);
+  if (map.getSource(EMBED_LAYER)) map.removeSource(EMBED_LAYER);
+  map.addSource(EMBED_LAYER, { type: "image", url: canvas.toDataURL(), coordinates: corners });
+  map.addLayer({ id: EMBED_LAYER, type: "raster", source: EMBED_LAYER,
+    paint: { "raster-opacity": 1, "raster-resampling": "nearest" } });
+
+  registerUserLayer({
+    id: EMBED_LAYER, label: `Imagery search: ${embedState.query}`, kind: "raster",
+    layerIds: [EMBED_LAYER], sourceId: EMBED_LAYER,
+    bbox: [w, s, e, n],
+    note: embedState.scene.manifest.attribution ?? "Imagery embeddings",
+    colour: "#E55C30"
+  });
+}
+
+function runImagerySearch(prompt) {
+  const say = (m, bad) => {
+    const host = document.getElementById("es-status");
+    if (host) { host.innerHTML = m; host.style.color = bad ? "var(--clay)" : ""; }
+  };
+  if (!embedState.scene) { say("Load a scene first.", true); return null; }
+
+  embedState.query = prompt;
+  const out = searchImagery(prompt);
+  if (out.error) { say(escapeHtml(out.error), true); return out; }
+
+  embedState.scores = out.values;
+  drawEmbedHeatmap(out.values);
+
+  let above = 0;
+  for (const v of out.values) if (v >= embedState.threshold) above += 1;
+  const share = (above / out.values.length) * 100;
+  say(`<strong>${above.toLocaleString()} patches</strong> above ${embedState.threshold} `
+    + `(${share.toFixed(1)}% of the scene), scored `
+    + (out.relative ? `against ${embedState.background.length} background prompts.`
+                    : "as a raw cosine — add background prompts to make it readable."));
+  window.ghLog?.("ok", `Imagery search: "${prompt}"`,
+    `${above.toLocaleString()} of ${out.values.length.toLocaleString()} patches`);
+  return out;
+}
+
+function renderEmbedPane() {
+  const host = document.getElementById("pane-imagery");
+  if (!host) return;
+  const scene = embedState.scene;
+
+  if (!scene) {
+    host.innerHTML = `
+      <p class="hint">Search aerial imagery by describing what you are looking
+        for — <em>rooftops</em>, <em>bare ground</em>, <em>water</em> — and the
+        places that look like it light up.</p>
+      <p class="hint">This needs a <strong>scene</strong>: imagery that has
+        already been turned into vectors by an image model. Building one needs
+        a GPU and takes a few hours per city;
+        <code>pipelines/06_embed_imagery.py</code> does it, and
+        <code>docs/imagery-search.md</code> explains it. No scene exists for
+        Ghana yet. When one does, its address goes here.</p>
+      <label class="es-field">
+        <span>Scene manifest</span>
+        <input id="es-url" type="url" placeholder="https://…/accra/scene.json">
+      </label>
+      <button type="button" class="btn btn-primary" id="es-load">Load the scene</button>
+      <div class="fm-status" id="es-status"></div>`;
+    document.getElementById("es-load")?.addEventListener("click", () =>
+      loadEmbeddingScene(document.getElementById("es-url").value.trim()));
+    return;
+  }
+
+  const m = scene.manifest;
+  const examples = [...scene.prompts.keys()].slice(0, 12);
+  host.innerHTML = `
+    <div class="fm-head">
+      <strong>${escapeHtml(m.name ?? "Scene")}</strong>
+      <button type="button" class="btn btn-quiet" id="es-unload">Unload</button>
+    </div>
+    <p class="hint">${(m.width * m.height).toLocaleString()} patches of
+      ${m.patch_metres ?? "?"} m · ${m.dim} dimensions ·
+      ${scene.prompts.size} precomputed prompts</p>
+
+    <label class="es-field">
+      <span>Search</span>
+      <input id="es-query" type="search" placeholder="rooftops" value="${escapeHtml(embedState.query)}">
+    </label>
+    <div class="es-examples">${examples.map((p) =>
+      `<button type="button" class="es-chip" data-prompt="${escapeHtml(p)}">${escapeHtml(p)}</button>`
+    ).join("")}</div>
+    <div class="fm-status" id="es-status"></div>
+
+    <h4 class="fm-h">Display</h4>
+    <label class="es-field"><span>Threshold</span>
+      <input id="es-threshold" type="range" min="0" max="0.95" step="0.05"
+             value="${embedState.threshold}">
+      <output>${embedState.threshold}</output></label>
+    <label class="es-field"><span>Opacity</span>
+      <input id="es-opacity" type="range" min="0.1" max="1" step="0.05"
+             value="${embedState.opacity}">
+      <output>${embedState.opacity}</output></label>
+    <p class="hint">Background prompts: ${embedState.background.map(escapeHtml).join(", ")}.
+      The score is how much better a patch matches your words than these —
+      which is what makes it readable. Changing them changes what a score
+      means, so adding <em>barge</em> cleans up open water and also makes
+      ships look like barges.</p>
+    <p class="hint">${escapeHtml(m.attribution ?? "")}</p>`;
+
+  const go = () => runImagerySearch(document.getElementById("es-query").value.trim());
+  document.getElementById("es-query")?.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") go();
+  });
+  for (const chip of host.querySelectorAll("[data-prompt]")) {
+    chip.addEventListener("click", () => {
+      document.getElementById("es-query").value = chip.dataset.prompt;
+      go();
+    });
+  }
+  for (const [id, key] of [["es-threshold", "threshold"], ["es-opacity", "opacity"]]) {
+    const el = document.getElementById(id);
+    el?.addEventListener("input", () => {
+      embedState[key] = Number(el.value);
+      el.nextElementSibling.textContent = el.value;
+      if (embedState.scores) drawEmbedHeatmap(embedState.scores);
+    });
+  }
+  document.getElementById("es-unload")?.addEventListener("click", () => {
+    embedState.scene = null; embedState.scores = null;
+    if (map.getLayer(EMBED_LAYER)) map.removeLayer(EMBED_LAYER);
+    if (map.getSource(EMBED_LAYER)) map.removeSource(EMBED_LAYER);
+    renderEmbedPane();
+  });
+}
+
+/* ---------------------------------------------------------------------------
    The attribute table
 
    Docked under the map, as it is in ArcGIS Pro and in RustGIS, because that is
@@ -13093,7 +15352,7 @@ function hidePanel() {
 
    What was here before opened the SQL workspace and typed a comment into it.
    That is not an attribute table. It is also not an answer to "what is in this
-   layer", which is the question - and the one a person asks within a minute of
+   layer", which is the question — and the one a person asks within a minute of
    adding anything.
 --------------------------------------------------------------------------- */
 
@@ -13111,8 +15370,8 @@ const tableState = {
 const TABLE_HL_SOURCE = "attr-table-highlight";
 
 /* What a column holds, worked out from the values rather than declared. The
-   type decides how the column sorts - "10" before "9" is wrong for a number
-   and right for a name - and it is shown in the header tooltip. */
+   type decides how the column sorts — "10" before "9" is wrong for a number
+   and right for a name — and it is shown in the header tooltip. */
 function fieldType(rows, name) {
   let seen = 0, numbers = 0;
   for (const row of rows) {
@@ -13149,7 +15408,7 @@ async function openAttributeTable(layerId) {
     // A raster has no rows, and saying so is more use than an empty grid.
     const entry = userLayers.get(id);
     setStatus(entry?.kind === "raster"
-      ? `${entry.label} is a raster - it has pixels, not rows. `
+      ? `${entry.label} is a raster — it has pixels, not rows. `
         + `Summarise it in the Data pane to get a table.`
       : "That layer has no features to show.", true);
     return;
@@ -13249,7 +15508,7 @@ function renderAttributeTable() {
     : tableState.sort.ascending ? " ↑" : " ↓";
 
   head.innerHTML = `<tr><th class="oid">OID</th>${tableState.fields.map((f) =>
-    `<th data-sort="${escapeHtml(f.name)}" title="${escapeHtml(f.name)} (${f.type}) - click to sort"
+    `<th data-sort="${escapeHtml(f.name)}" title="${escapeHtml(f.name)} (${f.type}) — click to sort"
          data-type="${f.type}">${escapeHtml(f.name)}${arrow(f.name)}</th>`).join("")}</tr>`;
 
   // Two thousand rows is already more than anyone reads, and a hundred
@@ -13266,7 +15525,7 @@ function renderAttributeTable() {
         const v = tableValue(feature, f.name);
         const blank = v === "";
         return `<td${blank ? ' class="null"' : ""}${f.type === "number" ? ' data-num="1"' : ""}>${
-          blank ? "-" : escapeHtml(String(v))}</td>`;
+          blank ? "—" : escapeHtml(String(v))}</td>`;
       }).join("")}
     </tr>`;
   }).join("") + (visible.length > CAP
@@ -13350,7 +15609,7 @@ function zoomToTableSelection() {
 }
 
 /* Select by attribute, in the plainest form that is still honest: a column, a
-   comparison and a value. Not SQL - the SQL workspace is a tab away and this
+   comparison and a value. Not SQL — the SQL workspace is a tab away and this
    is for the common case of "show me the districts over 2000 km²". */
 function selectByTableExpression() {
   const column = document.getElementById("table-sel-field")?.value;
@@ -13492,7 +15751,7 @@ let ribbonScrollSync = null;
    column of a grid rather than a layer over the whole window. Opening or
    closing either dock changes that column's width, and nothing told the map.
    The canvas kept its old size and the rest of the column was empty
-   background - which read, correctly enough, as "the map disappeared".
+   background — which read, correctly enough, as "the map disappeared".
 
    One observer rather than a resize call at each of the dozen places that can
    change the layout: docks, the ribbon collapsing, the attribute table, full
@@ -13590,7 +15849,7 @@ function wireDockSearch() {
 
 /* A coordinate, then the drawn layers, then the boundaries. The boundary
    lookup needs the database, so it is skipped rather than waited for when
-   nothing is loaded - a search box that stalls is worse than one that finds
+   nothing is loaded — a search box that stalls is worse than one that finds
    less. */
 async function dockSearchHits(term) {
   const hits = [];
@@ -13601,14 +15860,14 @@ async function dockSearchHits(term) {
     // Written latitude first, as people do, unless that cannot be a latitude.
     const [lat, lng] = Math.abs(a) <= 90 ? [a, b] : [b, a];
     hits.push({ label: `${lat.toFixed(4)}, ${lng.toFixed(4)}`,
-                note: "Coordinate - latitude, longitude",
+                note: "Coordinate — latitude, longitude",
                 go: `coord:${lng},${lat}` });
   }
 
   const needle = term.toLowerCase();
   for (const entry of userLayers.values()) {
     if (entry.label.toLowerCase().includes(needle)) {
-      hits.push({ label: entry.label, note: `Layer - ${entry.note || entry.kind}`,
+      hits.push({ label: entry.label, note: `Layer — ${entry.note || entry.kind}`,
                   go: `layer:${entry.id}` });
     }
   }
@@ -13830,7 +16089,7 @@ function turfLikeDistanceKm(lon1, lat1, lon2, lat2) {
     });
     map.on("mouseout", () => {
       const el = document.getElementById("sb-coords");
-      if (el) el.textContent = "-";
+      if (el) el.textContent = "—";
     });
     renderStatusBar();
 
@@ -13878,6 +16137,9 @@ function turfLikeDistanceKm(lon1, lat1, lon2, lat2) {
     wireAddData();
     wireGhanaLibrary();
     wireAttributeTable();
+    wireFifteenMinute();
+    wireRadarLens();
+    renderEmbedPane();
     wireDropTarget();
     renderBasemapGallery();
     document.getElementById("ribbon-search")?.addEventListener("click", openCommandSearch);
@@ -13942,7 +16204,7 @@ function turfLikeDistanceKm(lon1, lat1, lon2, lat2) {
     renderLegend();
 
     // The right dock opens on Style. Left to itself it would show whichever
-    // pane the old tab strip selected first, which was Layers - and the layer
+    // pane the old tab strip selected first, which was Layers — and the layer
     // list now lives in the left dock, so that put the same content on both
     // sides of the map.
     showPanel("style");
@@ -13993,7 +16255,7 @@ document.getElementById("tab-log")?.addEventListener("click", renderLog);
 
 document.getElementById("log-copy")?.addEventListener("click", (event) => {
   const text = (window.__ghLog || [])
-    .map((e) => `${e.at} [${e.kind}] ${e.message}${e.detail ? " - " + e.detail : ""}`)
+    .map((e) => `${e.at} [${e.kind}] ${e.message}${e.detail ? " — " + e.detail : ""}`)
     .join("\n");
   navigator.clipboard.writeText(
     `Ghana GeoStack log\n${location.href}\n${navigator.userAgent}\n\n${text}`);
@@ -14023,8 +16285,8 @@ document.getElementById("log-clear")?.addEventListener("click", () => {
 // calls back, so the panel waits for a popup that will never open. The
 // 0.1.388 release notes record the move to Google Identity Services.
 //
-// Google Hosted Libraries serves exact versions only - there is no "latest"
-// path - so a wrong number here is a plain 404. Verify any bump by opening
+// Google Hosted Libraries serves exact versions only — there is no "latest"
+// path — so a wrong number here is a plain 404. Verify any bump by opening
 // the URL, and check the release notes before going below this version.
 const EE_API = "https://ajax.googleapis.com/ajax/libs/earthengine/0.1.388/earthengine-api.min.js";
 
@@ -14039,7 +16301,7 @@ const EE_SCOPE = "https://www.googleapis.com/auth/earthengine.readonly";
 
    A client id identifies the *application* to Google, not the person. One
    client belongs to this deployment, and every visitor signs in as themselves
-   against it, granting read-only access to their own Earth Engine account -
+   against it, granting read-only access to their own Earth Engine account —
    which is the flow people expect: press the button, approve, done. Asking
    each visitor to register their own client, as this panel first did, is like
    asking every reader of a website to register the website.
@@ -14151,7 +16413,7 @@ async function connectEarthEngine() {
     "Checking with Google…" +
     '<div style="margin-top:6px;font-size:11px;opacity:.75">If Google says it ' +
     "<em>hasn't verified this app</em>, that is expected while this site's " +
-    "consent screen is in testing. Choose <strong>Continue</strong> - the plain " +
+    "consent screen is in testing. Choose <strong>Continue</strong> — the plain " +
     "link, not the blue button.</div>");
 
   const auth = await eeAuthenticate(client);
@@ -14199,7 +16461,7 @@ async function connectEarthEngine() {
 
    authenticateViaOauth configures the client and tries a silent sign-in: it
    succeeds outright for someone already signed in who has granted access
-   before. When it cannot, it calls onImmediateFailed - which is a normal
+   before. When it cannot, it calls onImmediateFailed — which is a normal
    outcome, not an error. At that point the sign-in has to be interactive, and
    the click that started all this is long gone, so a fresh button is offered
    and its click calls authenticateViaPopup. This is the shape of Google's own
@@ -14262,7 +16524,7 @@ function offerPopupSignIn(finish, failed) {
     '<div style="margin-top:6px;font-size:11px;opacity:.75">Opens a Google window. ' +
     "If nothing appears, allow popups for this site and press it again. A warning " +
     "that Google <em>hasn't verified this app</em> is expected while the consent " +
-    "screen is in testing - choose <strong>Continue</strong>, not Back to safety." +
+    "screen is in testing — choose <strong>Continue</strong>, not Back to safety." +
     "</div>");
 
   const button = document.getElementById("ee-popup");
@@ -14362,7 +16624,7 @@ async function eeDiagnose(project) {
    Everything drawn or measured through Earth Engine went to Ghana's national
    outline, which made the clip setting a half-truth: it governed the tools and
    the OpenStreetMap fetches and nothing else. A raster is where clipping
-   matters most - it is the difference between rendering ten metre land cover
+   matters most — it is the difference between rendering ten metre land cover
    for one district and rendering it for the whole country, which is the same
    picture, a hundred times the work, and a legend no one can read.
 
@@ -14409,7 +16671,7 @@ function clipLabel() {
 /* The zones a summary should cover. Reducing over all 260 districts when the
    clip says one region is work nobody asked for and rows nobody wants. */
 /* Douglas-Peucker, so a boundary can be sent to Earth Engine without sending
-   every vertex. At 0.001 degrees - about 110 m - Ghana's sixteen regions drop
+   every vertex. At 0.001 degrees — about 110 m — Ghana's sixteen regions drop
    from 23,669 vertices to 10,738 and the worst area change is 0.024%, which is
    nothing beside a reduction that counts 5 km rainfall pixels. Measured, not
    assumed. */
@@ -14472,7 +16734,7 @@ async function localBoundaries(level) {
    reorganised in December 2018 into sixteen, so every summary was computed
    over the old boundaries and then joined to the modern ones by name: nine
    names matched, seven regions vanished from the map, and the nine that
-   remained were measured over the wrong areas - old Northern is modern
+   remained were measured over the wrong areas — old Northern is modern
    Northern plus Savannah plus North East. An empty row is a visible failure;
    a row measured over the wrong shape is not.
 
@@ -14484,7 +16746,7 @@ async function eeZonesFor(level) {
 
   let features = collection.features.filter((f) => f.properties?.[column]);
 
-  // A named clip narrows to that boundary by name - and the names agree,
+  // A named clip narrows to that boundary by name — and the names agree,
   // because both sides are now this one file.
   if (clipState.kind === "region" || clipState.kind === "district") {
     const wanted = String(clipState.name).toLowerCase();
@@ -14577,12 +16839,12 @@ function escapeHtml(value) {
 
    Two different problems wear the same word.
 
-   A CONTINUOUS dataset - elevation, temperature, rainfall - needs a ramp, and
+   A CONTINUOUS dataset — elevation, temperature, rainfall — needs a ramp, and
    which ramp is a real choice: a perceptually uniform one shows the data, a
    rainbow invents structure that is not there. These are the usual scientific
    ramps plus a few that suit terrain and water.
 
-   A CATEGORICAL dataset - land cover, burn severity, crop type - needs no ramp
+   A CATEGORICAL dataset — land cover, burn severity, crop type — needs no ramp
    at all. It ships a class table: this value is Tree cover and it is this
    green, because the producer said so. Stretching class codes 10 to 95 across
    a colour ramp produces a picture where the colours mean nothing. The class
@@ -14696,7 +16958,7 @@ function showEeDataset(id) {
         This dataset's footprint does not cover Ghana. It will draw nothing here.</p>`}
 
       ${d.classes ? `<p class="legend-note">This is a classified dataset. It carries
-        its own legend - ${d.classes.names.length} classes with the producer's colours -
+        its own legend — ${d.classes.names.length} classes with the producer's colours —
         so there is no range or palette to choose. <em>Land cover area by region</em>
         measures how much of each class each region holds.</p>` : ""}
 
@@ -14716,12 +16978,12 @@ function showEeDataset(id) {
         <div class="field">
           <label for="ee-reducer">Combine the images by</label>
           <select id="ee-reducer" style="width:100%;height:34px;border-radius:var(--radius);border:1px solid var(--border);background:var(--surface-2);color:var(--text);font-size:13px">
-            <option value="median">median - the usual choice, ignores cloud</option>
+            <option value="median">median — the usual choice, ignores cloud</option>
             <option value="mean">mean</option>
             <option value="max">maximum</option>
             <option value="min">minimum</option>
             <option value="mosaic">most recent pixel</option>
-            <option value="sum">sum - accumulates, for rainfall and counts</option>
+            <option value="sum">sum — accumulates, for rainfall and counts</option>
           </select>
         </div>` : ""}
 
@@ -14729,8 +16991,8 @@ function showEeDataset(id) {
         <div class="field">
           <label for="ee-zonal">Combine the pixels in each zone by</label>
           <select id="ee-zonal" style="width:100%;height:34px;border-radius:var(--radius);border:1px solid var(--border);background:var(--surface-2);color:var(--text);font-size:13px">
-            <option value="mean">mean - for a depth, a temperature or an index</option>
-            <option value="sum">sum - only for per-pixel counts, such as population</option>
+            <option value="mean">mean — for a depth, a temperature or an index</option>
+            <option value="sum">sum — only for per-pixel counts, such as population</option>
           </select>
           <p class="legend-note">Rainfall in millimetres is a depth, not a
             count: summing it across a region gives a number that grows with the
@@ -14762,7 +17024,7 @@ function showEeDataset(id) {
         <div class="field">
           <label for="ee-palette-pick">Palette</label>
           <select id="ee-palette-pick" style="width:100%;height:34px;border-radius:var(--radius);border:1px solid var(--border);background:var(--surface-2);color:var(--text);font-size:13px">
-            <option value="">${vis.palette ? "The producer's own" : "None - greyscale"}</option>
+            <option value="">${vis.palette ? "The producer's own" : "None — greyscale"}</option>
             ${Object.keys(EE_PALETTES).map((k) =>
               `<option value="${k}">${k}</option>`).join("")}
             <option value="custom">Custom…</option>
@@ -14961,7 +17223,7 @@ async function diagnoseEmptyCollection(d, form) {
   if (boundary === 0) {
     return `The boundary for <strong>${escapeHtml(where)}</strong> came back empty,
             so the search area was empty and no image could fall inside it. This
-            is the boundary source, not the dataset or your dates - the
+            is the boundary source, not the dataset or your dates — the
             geoBoundaries collection this reads is a community asset, and a
             project that cannot read it gets nothing rather than an error.`;
   }
@@ -14975,7 +17237,7 @@ async function diagnoseEmptyCollection(d, form) {
   if (inBounds === 0) {
     return `${whole.toLocaleString()} images in this collection, none of them over
             <strong>${escapeHtml(where)}</strong>. This dataset does not cover the
-            area - the search results mark that, and drawing it anyway would give
+            area — the search results mark that, and drawing it anyway would give
             an empty rectangle.`;
   }
 
@@ -14996,7 +17258,7 @@ async function diagnoseEmptyCollection(d, form) {
 
 /* Every exit from here says what happened, because the caller may be the agent
    rather than a person watching the panel. It used to return nothing at all on
-   every failure and the agent tool reported success regardless - which is how
+   every failure and the agent tool reported success regardless — which is how
    "it says it has done it but I don't see the results" is produced. */
 async function addEeLayer(d, replayForm) {
   if (!eeState.ready) {
@@ -15030,8 +17292,8 @@ async function addEeLayer(d, replayForm) {
         .filterBounds(eeClipRegion())
         .style({ color: "E8C67A", fillColor: "00000022", width: 1 });
     } else {
-      // An empty collection is the commonest disappointment - a date range
-      // with no passes over Ghana - and it fails silently as blank tiles, so
+      // An empty collection is the commonest disappointment — a date range
+      // with no passes over Ghana — and it fails silently as blank tiles, so
       // it is checked before anything is drawn.
       const built = buildEeImage(d, form);
       // A class table replaces the min, max and palette entirely: the values
@@ -15097,7 +17359,7 @@ async function addEeLayer(d, replayForm) {
     renderEeLegend(document.getElementById("ee-legend"), d, form);
 
     eeDetailStatus(
-      `<strong>Drawn.</strong> This is a picture - Earth Engine rendered these
+      `<strong>Drawn.</strong> This is a picture — Earth Engine rendered these
        tiles on its own servers, so nothing here can be queried or measured.
        <em>Summarise</em> is what turns it into numbers.
        <div style="margin-top:6px;display:flex;gap:8px">
@@ -15107,7 +17369,7 @@ async function addEeLayer(d, replayForm) {
     // These two live in the status message just written, which is only in the
     // document when the Data panel is open on this dataset. Redrawing after a
     // clip change happens with the panel closed, and reaching for them blindly
-    // threw there - inside the try, so a layer that had already been drawn
+    // threw there — inside the try, so a layer that had already been drawn
     // reported itself as a failure.
     document.getElementById("ee-remove")?.addEventListener("click", () => {
       removeEeLayer(d.id); eeDetailStatus("Removed.");
@@ -15149,7 +17411,7 @@ async function redrawEeLayers() {
   if (!drawn.length || !eeState.ready) return;
 
   window.ghLog?.("info",
-    `Clip changed to ${clipLabel()} - redrawing ${drawn.length} Earth Engine `
+    `Clip changed to ${clipLabel()} — redrawing ${drawn.length} Earth Engine `
     + `layer${drawn.length === 1 ? "" : "s"}`);
 
   for (const { dataset, form } of drawn) {
@@ -15167,7 +17429,7 @@ async function redrawEeLayers() {
 /* Like addEeLayer, every exit says what happened and names the table, because
    the caller may be the agent and its next step is a query against that name.
    It used to return nothing and the tool replied "the table name is in the Data
-   tab" - which the model cannot read, so it guessed, and a guess is wrong: the
+   tab" — which the model cannot read, so it guessed, and a guess is wrong: the
    name is built from the last path segment, so UCSB-CHG/CHIRPS/DAILY becomes
    ee_daily_region, not ee_chirps_region. */
 async function summariseEe(d, level) {
@@ -15193,13 +17455,13 @@ async function summariseEe(d, level) {
   // The other combines the PIXELS inside each zone, and for rainfall that is
   // the mean, because millimetres are a depth. They used to be the same
   // setting, so asking for a sum of rainfall summed the millimetres across
-  // every pixel in the region - a number that grows with the region's area and
+  // every pixel in the region — a number that grows with the region's area and
   // answers "which region is biggest" while looking like "which region is
   // wettest".
   const stat = form.zonal === "sum" ? "sum" : "mean";
 
   eeDetailStatus(`Reducing to ${level}s in Earth Engine. This runs on Google's
-    machines and takes as long as it takes - usually under a minute.`);
+    machines and takes as long as it takes — usually under a minute.`);
 
   try {
     const { image } = buildEeImage(d, form);
@@ -15317,8 +17579,8 @@ async function summariseEe(d, level) {
 /* ── Class areas by zone ───────────────────────────────────────────────────
 
    How much of each region is forest, cropland, built-up, water. A mean or a
-   sum is meaningless on a classified raster - the average of "tree cover" and
-   "mangroves" is nothing - so the reduction counts pixels per class instead
+   sum is meaningless on a classified raster — the average of "tree cover" and
+   "mangroves" is nothing — so the reduction counts pixels per class instead
    and multiplies by pixel area.
 
    ee.Reducer.frequencyHistogram gives {classValue: pixelCount} per zone. The
@@ -15420,7 +17682,7 @@ async function runClassAreas(dataset, level) {
   const biggest = [...rows].sort((a, b) => b.area_km2 - a.area_km2)[0];
 
   eeDetailStatus(
-    `<strong>${rows.length} rows - ${zones} ${level}s by class.</strong>
+    `<strong>${rows.length} rows — ${zones} ${level}s by class.</strong>
      Largest single block: ${escapeHtml(biggest.class_name)} in
      ${escapeHtml(biggest[nameColumn])}, ${biggest.area_km2.toLocaleString()} km².
      <br>Queryable as <code style="font-family:var(--font-mono);color:var(--accent)">ghana.${table}</code>

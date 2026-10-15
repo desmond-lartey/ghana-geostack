@@ -11,7 +11,7 @@ project settings:
                   in to Earth Engine without registering anything themselves.
                   Public by design; not a secret.
     TILES_URL     public pg_tileserv endpoint. Leave unset for a
-                  boundaries-only deployment, which is the safe default -
+                  boundaries-only deployment, which is the safe default —
                   the viewer detects the absence and disables the layers that
                   need a database rather than failing.
     SITE_URL      canonical URL, used in the sitemap.
@@ -38,8 +38,8 @@ TILES_URL = os.getenv("TILES_URL", "").strip()
 
 # The site's own Earth Engine OAuth client. One client identifies this
 # application to Google; every visitor then signs in as themselves against
-# it. A client id is public by design - it travels in the page and in every
-# sign-in request - so it belongs in the build, not in a box each visitor
+# it. A client id is public by design — it travels in the page and in every
+# sign-in request — so it belongs in the build, not in a box each visitor
 # has to fill in. Leave it unset and the panel explains how to make one.
 EE_CLIENT_ID = os.getenv("EE_CLIENT_ID", "").strip()
 SITE_URL = os.getenv("SITE_URL", "").strip().rstrip("/")
@@ -111,8 +111,8 @@ def copy_viewer() -> None:
 
     # Values are substituted through a function rather than a replacement
     # template. A template re-reads backslashes and \1-style group references
-    # out of the *value*, so an id beginning with digits - \1 followed by
-    # "90828671167" reads as group 19 - crashes the build, and a value
+    # out of the *value*, so an id beginning with digits — \1 followed by
+    # "90828671167" reads as group 19 — crashes the build, and a value
     # containing a backslash is silently mangled. A function is handed the
     # value verbatim.
     def set_meta(name: str, value: str, doc: str) -> str:
@@ -192,7 +192,7 @@ def write_metadata() -> None:
 def report() -> None:
     total = sum(p.stat().st_size for p in OUT.rglob("*") if p.is_file())
     count = sum(1 for p in OUT.rglob("*") if p.is_file())
-    print(f"\nBuilt public/ - {count} files, {total / 1e6:.1f} MB")
+    print(f"\nBuilt public/ — {count} files, {total / 1e6:.1f} MB")
 
 
 def index_earth_engine() -> None:

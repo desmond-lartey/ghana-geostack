@@ -2,7 +2,7 @@
 
 ## Source
 
-Ghana Common Operational Dataset - administrative boundaries (COD-AB),
+Ghana Common Operational Dataset — administrative boundaries (COD-AB),
 version v01, valid from 8 March 2021. Published via the Humanitarian Data
 Exchange at https://data.humdata.org/dataset/cod-ab-gha
 
@@ -135,7 +135,7 @@ formalised by constitutional instrument in February 2019.
 `core.admin_region_lineage` records these. A split is not an apportionment: a
 value recorded for Brong Ahafo cannot be divided between its three successors
 without an explicit assumption about distribution. The `share_hint` column
-records what that assumption should be based on - population or area - rather
+records what that assumption should be based on — population or area — rather
 than supplying a ratio.
 
 ## Converting an updated release

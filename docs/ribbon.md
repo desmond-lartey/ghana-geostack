@@ -4,7 +4,7 @@ The viewer is laid out the way ArcGIS Pro is: a tab strip across the top, a
 band of groups under it, and every control running one command.
 
 That is not an aesthetic choice. Most people doing GIS in Ghana learned it in
-ArcGIS Pro or QGIS - in the universities, in the Lands Commission, in the
+ArcGIS Pro or QGIS — in the universities, in the Lands Commission, in the
 district assemblies, in the NGOs. A tool that puts Clip under *Analyze →
 Geoprocessing* and the layer list on the left needs no explaining to any of
 them. A tool that invents its own arrangement asks every one of them to learn
@@ -13,11 +13,11 @@ it first.
 The shape is borrowed from [RustGIS](https://github.com/rustgis/rustgis), whose
 ribbon is itself ArcGIS Pro's: ten tabs, groups within them, and a command
 registry underneath. RustGIS is Rust compiled to WebAssembly and this is a
-single HTML page, so none of its code could be reused - what was taken is the
+single HTML page, so none of its code could be reused — what was taken is the
 architecture, which was the part worth taking.
 
 The whole of the arrangement is here, not the part this viewer can currently
-perform. **10 tabs, 77 groups, 406 controls, 401 commands.** A tool missing
+perform. **10 tabs, 77 groups, 411 controls, 406 commands.** A tool missing
 from the place it belongs reads as *this cannot do that*; the honest answer is
 *not yet*, and the way to say it is to leave the tool where a person would look
 for it and mark it.
@@ -28,7 +28,7 @@ for it and mark it.
 
 | Tab | Holds |
 | --- | --- |
-| **Home** | The Ghana data library, navigate, add data, select, inspect - what you reach for every session |
+| **Home** | The Ghana data library, navigate, add data, select, inspect — what you reach for every session |
 | **Data** | The catalogue, database connections, tables, definition queries, export |
 | **Style** | Symbology, classification, labels, effects, raster rendering |
 | **Edit** | Editing, drawing, snapping, the clipboard |
@@ -47,12 +47,12 @@ The first group on the Home tab is **Ghana Data**, and the first control in it
 is the [Ghana data library](library.md): thirty-five layers for Ghana as
 cards, with a picture, a source, a licence and a plain statement of whether
 each can be drawn right now. Beside it are eleven themed buttons that open the
-same library already narrowed - Boundaries, Population, Health, Education,
+same library already narrowed — Boundaries, Population, Health, Education,
 Water, Transport, Agriculture, Climate, Flood and fire, Energy.
 
 It is first because the Home tab's job is to answer *where do I start*, and
 for anyone opening this for the first time the answer is "see what there is".
-Everything else on Home - Navigate, Add Data, Selection, Inspect - assumes you
+Everything else on Home — Navigate, Add Data, Selection, Inspect — assumes you
 already have something on the map.
 
 ---
@@ -97,13 +97,13 @@ an empty group.
 
 Every control on the ribbon falls into one of two cases, and there is no third.
 Either it is **built**, and pressing it does the thing; or it is an **open
-slot**, and pressing it says so - what the command is for, what it is called,
+slot**, and pressing it says so — what the command is for, what it is called,
 and where in the source to write it. What used not to happen, and now cannot,
 is a built control that appears to do nothing.
 
 The cause was the ribbon's panel commands toggling. **AI Assistant** ran
 `showPanel("ask", { toggle: true })`, which closes the pane if it is already
-the open one - correct for the dock's own tab strip, where the button you press
+the open one — correct for the dock's own tab strip, where the button you press
 is the tab you can see, and wrong for a ribbon button three tabs away from the
 dock. Press it with Ask already open and the pane closed; press it again and it
 opened; from the Analyze tab, where the dock is not necessarily in view, both
@@ -118,8 +118,8 @@ throws, which catches the other half of the same promise.
 
 ## One command, one id
 
-Every control - on the ribbon, in command search, in a keyboard shortcut, in
-anything a plugin adds later - runs the same way:
+Every control — on the ribbon, in command search, in a keyboard shortcut, in
+anything a plugin adds later — runs the same way:
 
 ```js
 runCommand("gp.buffer");
@@ -161,7 +161,7 @@ name and not its tab.
 A command with no `run` is a slot. The ribbon, the registry and the place it
 plugs into are built; the function behind it is not.
 
-There are **316 of them**, against 85 that are built, and they are shown rather
+There are **315 of them**, against 91 that are built, and they are shown rather
 than hidden: a gold dot on the control, and pressing it says what the command
 is for, what it is called, and where to write it. The full list, generated from
 the registry so it cannot go stale, is in
@@ -195,7 +195,7 @@ A group is one entry in `RIBBON`; a tab is one more:
 ] }
 ```
 
-with the matching commands in `COMMANDS`. That is the whole of it - which is
+with the matching commands in `COMMANDS`. That is the whole of it — which is
 the point of a registry, and why the ribbon was built this way rather than as
 markup.
 
@@ -206,8 +206,8 @@ markup.
 Command ids follow RustGIS wherever its ribbon names a single control, so its
 `crates/ui-egui/src/ribbon.rs` reads as a reference implementation: a
 contributor who wants to know what `layout.mapFrame` ought to do can see one
-that works. Where RustGIS routes several controls through one dispatcher -
-`ui.dialog`, `tool.set` - the arguments were doing the identifying, so those
+that works. Where RustGIS routes several controls through one dispatcher —
+`ui.dialog`, `tool.set` — the arguments were doing the identifying, so those
 became ids of their own.
 
 The namespaces are `map`, `layer`, `data`, `table`, `style`, `labels`, `raster`,
@@ -219,7 +219,7 @@ The namespaces are `map`, `layer`, `data`, `table`, `style`, `labels`, `raster`,
 
 ## A note on width
 
-Some tabs are wider than a screen - Publish carries 12 groups and 87
+Some tabs are wider than a screen — Publish carries 12 groups and 87
 controls, Analyze 14 groups. ArcGIS Pro
 collapses a group into a single drop-down when it runs out of room; this does
 not, yet. The band scrolls sideways with the wheel, and **Ctrl K** reaches any
@@ -230,11 +230,11 @@ scrolls it by six tenths of a view. RustGIS puts the same button in the same
 place, for the reason its source gives: the scroll bar would sit across the
 group labels, and the wheel alone is undiscoverable. Nothing on screen said
 the band moved, so a tab with twelve groups read as a tab with four. Group
-collapsing - folding a group into a single drop-down the way ArcGIS Pro does
-when it runs out of room - is still open, as `ui.ribbonCollapseGroups`.
+collapsing — folding a group into a single drop-down the way ArcGIS Pro does
+when it runs out of room — is still open, as `ui.ribbonCollapseGroups`.
 
 A ribbon wider than the screen used to widen the whole window with it. The
-shell is a CSS grid, and a grid item's `min-width` is `auto` - a track of `1fr`
+shell is a CSS grid, and a grid item's `min-width` is `auto` — a track of `1fr`
 is still at least as wide as its widest content, so the Publish band stretched
 the column it sat in, and the column was the application. The right-hand dock
 and the map toolbar were measured at x=4318 in a 1600-pixel window: present,

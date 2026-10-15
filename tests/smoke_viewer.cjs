@@ -210,7 +210,7 @@ async function main() {
     process.exit(1);
   }
 
-  console.log(`viewer runs clean - ${reached.tools} agent tools, specs well formed`);
+  console.log(`viewer runs clean — ${reached.tools} agent tools, specs well formed`);
 }
 
 main().catch((err) => { console.error(err); process.exit(1); });

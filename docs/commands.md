@@ -5,7 +5,7 @@ It is generated from the registry in `web/index.html` by
 `python scripts/commands_doc.py`, so it cannot drift from what the
 interface actually does.
 
-**401 commands. 85 are built. 316 are open.**
+**406 commands. 91 are built. 315 are open.**
 
 An open slot is not a bug. The ribbon, the registry and the place each
 command plugs into are finished; the function behind it is the work, and
@@ -37,6 +37,7 @@ by name.
 | `data.ghanaClimate` | CHIRPS rainfall, land surface temperature, departure from the normal. | Built |
 | `data.ghanaHazard` | Observed flooding, population exposed to it, fire detections and burned area. | Built |
 | `data.ghanaEnergy` | Night lights, and electrification read from them. | Built |
+| `data.imagerySearch` | Describe what you are looking for — rooftops, bare ground, water —  | Built |
 
 ### Navigate
 
@@ -345,7 +346,7 @@ by name.
 
 | Command | Does | Status |
 | --- | --- | --- |
-| `edit.drawPolygon` | Draw an area - also usable as a clip boundary. | **Open** |
+| `edit.drawPolygon` | Draw an area — also usable as a clip boundary. | **Open** |
 | `edit.drawLine` | Draw a line. | **Open** |
 | `edit.drawPoint` | Place a point. | **Open** |
 | `edit.drawText` | Place a label on the map. | **Open** |
@@ -378,7 +379,7 @@ by name.
 
 | Command | Does | Status |
 | --- | --- | --- |
-| `edit.elevation` | Where new features get their elevation - the z field. | **Open** |
+| `edit.elevation` | Where new features get their elevation — the z field. | **Open** |
 | `edit.constant` | Constant…. | **Open** |
 
 ## Analyze
@@ -426,9 +427,13 @@ by name.
 
 | Command | Does | Status |
 | --- | --- | --- |
+| `gp.fifteenMinute` | Click anywhere in Ghana and walk the street network out at 5, 10 and  | Built |
+| `gp.radarLens` | A radar chart you drag across the map. The disc under it is  | Built |
 | `gp.sql` | Run SQL against everything loaded, in the browser. | Built |
+| `stats.hotspot` | DBSCAN clusters of a point layer, with Shannon entropy and the  | Built |
+| `stats.intersections` | Real intersections per square kilometre around a point — how finely the street network is cut. | Built |
+| `stats.walkTime` | Time on foot to the first, third and fifth nearest of each urban function. | Built |
 | `stats.summary` | Count, sum, mean and range by group. | **Open** |
-| `stats.hotspot` | Clusters, after the hotspots notebook: DBSCAN and Shannon entropy. | **Open** |
 | `stats.correlation` | How two columns move together. | **Open** |
 
 ### Assistant

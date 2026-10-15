@@ -8,7 +8,7 @@ deciding what an analysis covers.
 ## The layer stack
 
 Everything this session puts on the map is a card in the Contents column on
-the left, newest at the top - Earth Engine rasters, live OpenStreetMap fetches, query results, tool
+the left, newest at the top — Earth Engine rasters, live OpenStreetMap fetches, query results, tool
 output, catalogue layers. What each card can do is described in
 [The map interface](interface.md).
 
@@ -18,7 +18,7 @@ turn one thing off.
 
 The design is GeoLibre's, because GeoLibre's is right. What differs is
 underneath: a producer registers its layer once, with a label, its layer ids,
-an extent, a colour and a legend if it has one, and everything else follows -
+an extent, a colour and a legend if it has one, and everything else follows —
 the card, the legend entry, the search result, the toolbox input. A new kind of
 output is managed for free rather than needing controls of its own.
 
@@ -42,20 +42,20 @@ that ordering is the point. Overpass answers a bounding box, which almost never
 matches the place anyone had in mind, and an analysis run over whatever
 happened to be fetched answers a question about the fetch rather than about the
 place. A buffer that spills into Togo, a convex hull drawn around the whole
-country, a Voronoi diagram tiling the Atlantic - the same mistake three times,
+country, a Voronoi diagram tiling the Atlantic — the same mistake three times,
 and clipping is the same fix.
 
 What clipping does to each kind of geometry:
 
 - **Points** are kept or dropped by a point-in-polygon test.
-- **Polygons** are cut at the boundary, and keep their attributes - Turf's
+- **Polygons** are cut at the boundary, and keep their attributes — Turf's
   intersect discards them, so they are re-attached deliberately.
 - **Lines** that cross the boundary are kept whole, because Turf has no
   line-polygon clip. That is an approximation and is stated rather than hidden.
 
 ### It applies to everything
 
-The clip is one setting and everything obeys it. That was not true at first -
+The clip is one setting and everything obeys it. That was not true at first —
 it governed the tools and the OpenStreetMap fetches and nothing else, which
 made it a half-truth and the numbers beside it misleading.
 
@@ -73,8 +73,8 @@ status bar at all times, and shown again on each panel that starts work. A
 number read without knowing what it covers is the thing this is guarding
 against.
 
-For Earth Engine the named boundaries come from geoBoundaries server-side - the
-same source the summaries reduce onto - so a layer and the numbers taken from
+For Earth Engine the named boundaries come from geoBoundaries server-side — the
+same source the summaries reduce onto — so a layer and the numbers taken from
 it are cut from exactly the same shape.
 
 The tool reports what happened: how many features fell inside, how many were
@@ -92,7 +92,7 @@ another tool.
 
 The **clip setting** governs what new work covers, and it is the one that
 reaches rasters. An Earth Engine layer is a picture rendered on Google's
-machines - there is no geometry in the browser to cut - so it is cut where it
+machines — there is no geometry in the browser to cut — so it is cut where it
 is made, before the tiles are drawn. That is also why it is worth setting: ten
 metre land cover for one district is a hundredth of the work of the same
 picture for Ghana.

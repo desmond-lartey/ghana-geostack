@@ -170,3 +170,12 @@ jobs:
       # on the first line of every run.
       - name: The geoprocessing tools
         run: node tests/toolbox.cjs
+
+      # The walking network, against a grid whose answers are known: a
+      # catchment that reports the crow-fly area has not walked anything.
+      - name: The 15-minute profile
+        run: node tests/fifteen.cjs
+
+      # The arithmetic between a prompt and a patch, against a fixture scene.
+      - name: Imagery search
+        run: node tests/imagery.cjs

@@ -9,7 +9,7 @@
  *
  * The symbology used to be a card floating over the map. It is under the
  * layer now, where ArcGIS Pro and RustGIS put it, so this reads the layer
- * card rather than that card - but it asks it the same questions.
+ * card rather than that card — but it asks it the same questions.
  */
 const fs = require("fs");
 const http = require("http");
@@ -155,6 +155,6 @@ function serve() {
     if (errors.length) console.error("  page errors: " + errors.slice(0, 3).join(" | "));
     process.exit(1);
   }
-  console.log(`the symbology explains the map - ${after.inCard} classes with `
+  console.log(`the symbology explains the map — ${after.inCard} classes with `
     + "their ranges, under the layer they describe, no card over the map");
 })();

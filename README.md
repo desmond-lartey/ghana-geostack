@@ -244,6 +244,35 @@ waste an afternoon per attempt. Adding a mixed selection reports each one:
 
 Full catalogue in [`docs/library.md`](docs/library.md).
 
+### The 15-minute profile
+
+**Analyze → Statistics → 15-Minute Profile**, then click anywhere in Ghana.
+It fetches the walking network from OpenStreetMap, walks it with Dijkstra at
+5, 10 and 15 minutes, counts the seven urban functions reachable in each
+band, and scores six axes with a written reading of what the place is short
+of. What osmnx and pandana do on a laptop, done in the browser, for the
+corner you pointed at.
+
+The catchments follow the streets rather than a circle - on a regular grid
+that is about half the area, and in a place with few through-routes far less.
+Beside it: a **radar lens** you drag across the map, which recomputes the six
+axes live from whatever is under it, after VisQuill's data lens. And three
+tools from the notebooks: DBSCAN **hot spots** with Shannon entropy and
+category profiling, **intersection density**, and **walking times** to the
+first, third and fifth nearest of each function.
+
+Method, axes, normalisations and limits in
+[`docs/fifteen-minute.md`](docs/fifteen-minute.md).
+
+### Searching imagery by description
+
+Type *rooftops* and the places that look like rooftops light up - the
+[DinoSats](https://github.com/calebrob6/dinosats) method, running entirely in
+the browser against precomputed DINOv3 embeddings. The client is built and
+tested; a scene for Ghana needs a GPU and imagery at a metre or better, and
+[`docs/imagery-search.md`](docs/imagery-search.md) says exactly how to make
+one.
+
 ### The attribute table
 
 **Home → Inspect → Attribute Table**, or the table button on any layer. It
@@ -500,6 +529,16 @@ belonged - are written up in
 [`docs/what-was-broken.md`](docs/what-was-broken.md), each with the test that
 now covers it. Every one of them failed silently, which is the only thing
 they had in common and the reason they lasted.
+
+The 15-minute profile follows the
+[Mashhad prototype](https://www.linkedin.com/feed/) in what it measures, and
+three notebooks in how: `routing_analysis` for pandana's choice-depth
+distinction, `accessibilityhotspot` for DBSCAN with Shannon entropy, and
+`intersection_counts` for real intersections against raw nodes. The radar
+lens is VisQuill's data lens idea, rebuilt in SVG - the GDK itself is an npm
+package and this is one HTML file, so nothing crossed but the idea. Imagery
+search is [DinoSats](https://github.com/calebrob6/dinosats), whose scene
+format this reads so scenes are interchangeable.
 
 The interface owes two debts. The layer cards and the geoprocessing toolbox
 follow [GeoLibre](https://github.com/opengeos/GeoLibre), though the panels

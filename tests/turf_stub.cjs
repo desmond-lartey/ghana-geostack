@@ -1,7 +1,7 @@
 /* A stand-in for Turf, so the geoprocessing tools can be tested offline.
  *
- * The page imports @turf/turf from a CDN. A machine without that CDN - CI, an
- * aeroplane, this container - cannot run a single tool, which meant the
+ * The page imports @turf/turf from a CDN. A machine without that CDN — CI, an
+ * aeroplane, this container — cannot run a single tool, which meant the
  * toolbox was the one part of the viewer with no test at all. That is how it
  * came to be shipped in a state where nothing in it could be used.
  *

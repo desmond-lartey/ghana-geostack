@@ -3,7 +3,7 @@
  * A ribbon is a promise: every control says it does something. Three hundred
  * controls is three hundred chances for a label to outlive its function, so
  * this runs every command that claims to be built and fails on the first one
- * that throws. The slots - commands with no implementation - are checked too,
+ * that throws. The slots — commands with no implementation — are checked too,
  * but for the opposite thing: that they say so rather than failing silently.
  */
 const fs = require("fs");
@@ -103,7 +103,7 @@ function serve() {
   // Closing a panel must give its width to the map, not take the map with
   // it. Each dock is a grid column; a hidden grid item leaves the flow, so
   // without an explicit column the map slid into the `auto` track the dock
-  // had been in - and the map's only child is absolutely positioned, so that
+  // had been in — and the map's only child is absolutely positioned, so that
   // track is zero wide. Closing the layer list made the map 0px, which from
   // the outside looks exactly like the map and everything on it disappearing.
   const docks = await page.evaluate(async () => {
@@ -131,7 +131,7 @@ function serve() {
   });
 
   // A tab wider than the window must say so. The band scrolls with the
-  // wheel, but a wheel is not an affordance - nothing on screen says the band
+  // wheel, but a wheel is not an affordance — nothing on screen says the band
   // moves, so a tab with eleven groups reads as a tab with four.
   const chevrons = await page.evaluate(async () => {
     const band = document.getElementById("ribbon-body");
@@ -227,7 +227,7 @@ function serve() {
     for (const line of bad) console.error("  " + line);
     process.exit(1);
   }
-  console.log(`ribbon holds - ${shape.tabs.length} tabs, ${shape.groups} groups, `
+  console.log(`ribbon holds — ${shape.tabs.length} tabs, ${shape.groups} groups, `
     + `${shape.controls} controls, ${shape.commands} commands, `
     + `${shape.built} built and all of them ran, ${shape.commands - shape.built} slots; `
     + `a tab wider than the window offers a chevron and scrolls by it; `

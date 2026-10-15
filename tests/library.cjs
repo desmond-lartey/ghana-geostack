@@ -2,13 +2,13 @@
  * pressing Add actually add?
  *
  * Two distinct failures to catch. The first is a card that claims a layer is
- * ready and then does nothing when pressed - the catalogue would be
+ * ready and then does nothing when pressed — the catalogue would be
  * advertising. So every entry marked ready must carry a way to draw itself,
  * and a sample of them are added for real and must land on the map.
  *
  * The second is quieter: a card rendering as a strip. Every band of the card
  * is optional-looking to a layout engine, and the grid has twice collapsed
- * them - once to the thumbnail with no text, once to the text with no
+ * them — once to the thumbnail with no text, once to the text with no
  * thumbnail. Both looked deliberate in a screenshot and were not. So the card
  * is measured, not just counted.
  */
@@ -187,7 +187,7 @@ function serve() {
     process.exit(1);
   }
 
-  console.log(`the Ghana library holds - ${out.entries.length} layers across `
+  console.log(`the Ghana library holds — ${out.entries.length} layers across `
     + `${out.themes.length} themes, ${ready.length} ready and all of them drawable; `
     + `cards ${out.shape.card}px with every band; `
     + `added ${out.drawn.length} and said why not for the rest`);

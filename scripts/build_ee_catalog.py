@@ -34,7 +34,7 @@ OUT = ROOT / "public" / "data" / "ee-catalog.json"
 STAC_ROOT = "https://storage.googleapis.com/earthengine-stac/catalog/catalog.json"
 
 # Ghana's bounding box, with a small margin. Used only to flag which datasets
-# actually cover the country - nothing is excluded on this basis, because a
+# actually cover the country — nothing is excluded on this basis, because a
 # global dataset is still the right answer to most questions.
 GHANA_BBOX = (-3.35, 4.65, 1.30, 11.25)
 
@@ -65,7 +65,7 @@ def collect_collection_urls(limit: int | None) -> list[str]:
     """Walk the catalogue tree and return every collection document URL.
 
     A node is a catalogue if it has children, and a collection if it does not.
-    The tree is shallow - provider, then sometimes one more level - so this
+    The tree is shallow — provider, then sometimes one more level — so this
     stays a breadth-first walk rather than anything cleverer.
     """
     root = fetch_json(STAC_ROOT)
@@ -247,7 +247,7 @@ def main() -> None:
     urls = collect_collection_urls(args.limit)
     if not urls:
         # Not an error. The site is expected to build without this.
-        print("  catalogue unreachable - skipping, the viewer will say so",
+        print("  catalogue unreachable — skipping, the viewer will say so",
               file=sys.stderr)
         return
 
@@ -271,7 +271,7 @@ def main() -> None:
             entries.append(entry)
 
     if not entries:
-        print("  nothing usable in the catalogue - skipping", file=sys.stderr)
+        print("  nothing usable in the catalogue — skipping", file=sys.stderr)
         return
 
     entries.sort(key=lambda e: (not e.get("covers_ghana"), e["title"].lower()))

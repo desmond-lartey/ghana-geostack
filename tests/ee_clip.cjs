@@ -2,7 +2,7 @@
  *
  * Earth Engine cannot be reached from a test, so `ee` is stubbed with a
  * recorder: every call is logged with its arguments, and the assertions are
- * about the expression that was built. That is exactly where both bugs lived -
+ * about the expression that was built. That is exactly where both bugs lived —
  * a name sent to a boundary asset that had never heard of it, and a failure
  * that returned nothing while the caller reported success.
  */
